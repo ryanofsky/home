@@ -21,6 +21,9 @@ def russp():
   subprocess.call(["rsync", "-avH", "--delete",
                    "/mnt/russp/.keys/",
                    "/mnt/bup/russp.keys/"])
+  subprocess.call(["rsync", "-avH", "--delete",
+                   "/mnt/russp/.git/",
+                   "/mnt/bup/russp.git/"])
 
 if __name__ == "__main__":
   main()
