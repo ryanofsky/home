@@ -5,18 +5,22 @@
 import sys
 import subprocess
 
-
 def main():
   cmd = sys.argv[1]
-  if cmd == "homeruss":
-    homeruss()
+  if cmd == "russ":
+    russ()
+  elif cmd == "russp":
+    russp()
 
-
-def homeruss():
-  subprocess.call(["rsync", "-av", "--delete",
-                   "/home/russ/task/tasks.tsk",
+def russ():
+  subprocess.call(["rsync", "-avH", "--delete",
+                   "/home/russ/.TaskCoach/tasks.tsk",
                    "/mnt/russp/info/task/tasks.tsk"])
 
+def russp():
+  subprocess.call(["rsync", "-avH", "--delete",
+                   "/mnt/russp/.keys/",
+                   "/mnt/bup/russp.keys/"])
 
 if __name__ == "__main__":
   main()
