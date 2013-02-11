@@ -3,3 +3,9 @@
 	name = Russell Yanofsky
 [color]
 	ui = true
+[merge]
+	conflictstyle = diff3
+[gc]
+	refLogExpire = never
+	reflogexpireunreachable = never
+	auto = 0
