@@ -1,5 +1,8 @@
 .Xauthority
+.bash_history
 .dbus/
 .gnome2/
+.lesshst
+.vim/
 .viminfo
 opt/tmp/
