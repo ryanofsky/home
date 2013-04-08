@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-"""Backup script"""
+"""Backup script
 
-import sys
-import subprocess
-import argparse
-import inspect
-import re
-import contextlib
-import itertools
+Notes:
+
+BUP_DIR=/mnt/bup/data bup fuse /mnt/bupfuse
+fusermount -u /mnt/bupfuse
+ls -l /mnt/bupfuse/*/latest/old
+
 
 # TMPDIR= old save bup_dir name dir_path --exclude-from --pretend
 # TMPDIR= old verify bup_dir name dir_path --exclude-from --pretend
@@ -20,74 +19,190 @@ import itertools
 # old media dir
 # find mp3
 
+"""
+
+MUP_DIR = "/mnt/bup/data"
+
+import sys
+import os
+import subprocess
+import argparse
+import re
+import pipes
+import pygit2
+import tempfile
+import shutil
+
+
 def main():
+  """Run mup."""
   parser = CommandParser()
   parser.add_argument("-p", "--pretend", action="store_true")
   parser.add_commands((Russ, Russp, Old))
   parser.run()
 
+
 class Russ:
+  """Copy from ~russ to ~russp."""
   def run(self, args):
-    subprocess.call(["rsync", "-avH", "--delete",
-                    ] + (args.pretend and ["--dry-run"] or []) + [
-                     "/home/russ/.TaskCoach/tasks.tsk",
-                     "/mnt/russp/info/task/tasks.tsk"])
+    rsync_all("/home/russ/.TaskCoach/tasks.tsk",
+              "/mnt/russp/info/task/tasks.tsk", args.pretend)
+
 
 class Russp:
+  """Copy from ~russp to non-bup backups."""
   def run(self, args):
-    subprocess.call(["rsync", "-avH", "--delete",
-                    ] + (args.pretend and ["--dry-run"] or []) + [
-                     "/mnt/russp/.keys/",
-                     "/mnt/bup/russp.keys/"])
-    subprocess.call(["rsync", "-avH", "--delete",
-                    ] + (args.pretend and ["--dry-run"] or []) + [
-                     "/mnt/russp/.git/",
-                     "/mnt/bup/russp.git/"])
+    rsync_all("/mnt/russp/.keys/",
+              "/mnt/bup/russp.keys/", args.pretend)
+    rsync_all("/mnt/russp/.git/",
+              "/mnt/bup/russp.git/", args.pretend)
+
 
 class Old:
+  """Import old data into bup."""
   @classmethod
   def add_arguments(cls, parser):
     parser.add_commands((Save, Verify))
 
-class OldCommand:
+
+class Save:
+  """Save old directory tree"""
   @classmethod
   def add_arguments(cls, parser):
-    parser.add_argument("--exclude-from")
-    parser.add_argument("bup_dir")
-    parser.add_argument("name")
     parser.add_argument("dir_path")
 
-class Save(OldCommand):
   def run(self, args):
-    print("cmd--old--save", args)
+    check_old_dir(args.dir_path)
 
-class Verify(OldCommand):
+    bup_dir = mup_dir()
+    branch_name = next_branch(bup_dir)
+
+    env = bup_env(bup_dir)
+    abs_dir_path = os.path.abspath(args.dir_path)
+    run(["bup", "index", "-vv", abs_dir_path], env=env)
+    run(["bup", "save", "-n", branch_name, "--graft", abs_dir_path + "=/old",
+         abs_dir_path], env=env)
+    return branch_name
+
+
+class Verify:
+  """Verify old directory tree."""
+  @classmethod
+  def add_arguments(cls, parser):
+    parser.add_argument("branch_name")
+    parser.add_argument("dir_path")
+
   def run(self, args):
-    print("cmd--old--verify", args)
+    tempdir = tempfile.mkdtemp()
+    try:
+      run(["bup", "restore", args.branch_name + "/latest/old/.",
+           "-C", tempdir], env=bup_env(mup_dir()))
+      run(["rsync", "-nia", os.path.abspath(args.dir_path) + "/", tempdir])
+    finally:
+      cleanup(tempdir)
 
-def human(num):
-  for x in ['','K','M','G']:
-    if num < 1024:
+
+def next_branch(bup_dir):
+  """Find next free old.X branch number in bup repository."""
+  if not os.path.isdir(bup_dir):
+    error("bup directory %s not found.\n"
+          "Try: BUP_DIR=%s bup init" %
+          (repr(bup_dir), pipes.quote(bup_dir)))
+  repo = pygit2.Repository(bup_dir)
+  num = 0
+  for ref in repo.listall_references():
+    match = re.match(r"refs/heads/old.(\d+)$", ref)
+    if match:
+      num = max(num, int(match.group(1)) + 1)
+  return "old.%i" % num
+
+
+def check_old_dir(dir_path):
+  """Verify a directory contains nothing but date prefixed subdirectories."""
+  errors = []
+  try:
+    for path in os.listdir(dir_path):
+      if not os.path.isdir(os.path.join(dir_path, path)):
+        errors.append("%s is not a directory" % repr(path))
+      match = re.match(r"\d{4}-\d{2}-\d{2}-.", path)
+      if not match:
+        errors.append("%s not prefixed with YYYY-MM-DD" % repr(path))
+  except OSError as exception:
+    errors.append(str(exception))
+  if errors:
+    error("\n  ".join(["problems with %s" % repr(dir_path)] + errors))
+
+
+def human(num_bytes):
+  """Return number of bytes in human readable form."""
+  for suffix in ['', 'K', 'M', 'G']:
+    if num_bytes < 1024:
       break
-    num /= 1024.0
+    num_bytes /= 1024.0
   else:
-    x = 'T'
-  if num < 10:
-    return "%.2f%s" % (num, x)
-  elif num < 100:
-    return "%.1f%s" % (num, x)
+    suffix = 'T'
+  if num_bytes < 10:
+    return "%.2f%s" % (num_bytes, suffix)
+  elif num_bytes < 100:
+    return "%.1f%s" % (num_bytes, suffix)
   else:
-    return "%.0f%s" % (num, x)
+    return "%.0f%s" % (num_bytes, suffix)
+
+
+def mup_dir():
+  """Get overridden bup directory, or the built in default."""
+  return os.environ.get("MUP_DIR", MUP_DIR)
+
+
+def bup_env(bup_dir):
+  """Get environment block for passing to bup processes."""
+  env = os.environ.copy()
+  env["BUP_DIR"] = bup_dir
+  return env
+
+
+def run(cmd, *args, **kwargs):
+  """Run a command, wrapper around subprocess.call."""
+  if isinstance(cmd, str):
+    print(cmd)
+  else:
+    print(" ".join(map(pipes.quote, cmd)))
+  subprocess.call(cmd, *args, **kwargs)
+
+
+def rsync_all(src, dest, pretend):
+  """Run rsync with directory mirroring options."""
+  run(["rsync", "-avH", "--delete"]
+      + (pretend and ["--dry-run"] or [])
+      + [src, dest])
+
+
+def cleanup(dirpath):
+  """Remove directory tree, and just print an error and continue if unable."""
+  try:
+    shutil.rmtree(dirpath)
+  except OSError as exception:
+    error("could not remove %s\n%s" % (repr(dirpath), exception), status=None)
+
+
+def error(message, status=1):
+  """Print an error and optionally exit with an error code."""
+  print("Error: %s" % message, file=sys.stderr)
+  if status is not None:
+    exit(status)
+
 
 class CommandParser(argparse.ArgumentParser):
+  """ArgumentParser subclass that handles and runs subcommands."""
+
   def add_commands(self, commands, *args, **kwargs):
     subparsers = self.add_subparsers(*args, **kwargs)
     for command in commands:
       if hasattr(command, "subparser"):
         subparser = command.subparser(subparsers)
       else:
-       name = re.sub("(.)([A-Z])", r"\1_\2", command.__name__).lower()
-       subparser = subparsers.add_parser(name)
+        name = re.sub("(.)([A-Z])", r"\1_\2", command.__name__).lower()
+        subparser = subparsers.add_parser(name)
       if hasattr(command, "add_arguments"):
         command.add_arguments(subparser)
       if hasattr(command, "run"):
@@ -96,6 +211,7 @@ class CommandParser(argparse.ArgumentParser):
   def run(self):
     args = self.parse_args()
     args.command().run(args)
+
 
 if __name__ == "__main__":
   main()
