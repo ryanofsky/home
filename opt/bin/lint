@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# sudo pip-python3.2 install pyflakes
+# sudo chmod -R a+rX /usr/lib64/python3.2/site-packages/pyflakes*
+
+pyflakes $HOME/opt/bin/*.py
+pep8-python3.2 --ignore=E111,E121 $HOME/opt/bin/*.py
+pylint-python3.2 -r n -f parseable $HOME/opt/bin/*.py

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+nosetests-python3.2 -w ~/opt/bin
