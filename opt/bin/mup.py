@@ -4,20 +4,16 @@
 
 Notes:
 
+# Create fuse mount.
 BUP_DIR=/mnt/bup/data bup fuse /mnt/bupfuse
 fusermount -u /mnt/bupfuse
 ls -l /mnt/bupfuse/*/latest/old
 
+# Identify encrypted dirs.
+find -name .encfs*
 
-# TMPDIR= old save bup_dir name dir_path --exclude-from --pretend
-# TMPDIR= old verify bup_dir name dir_path --exclude-from --pretend
-
-# old encrypted dir
-# find -name .encfs*
-# old fat dir
-# find / -type f -size +20M -printf 'size name' | sort -n
-# old media dir
-# find mp3
+# Identify big files.
+find / -type f -size +20M -printf 'size name' | sort -n
 
 """
 
