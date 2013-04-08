@@ -1,8 +1,15 @@
 .Xauthority
 .bash_history
+.cache/
+.config/
 .dbus/
+.fontconfig/
+.gconf/
 .gnome2/
+.keys/
 .lesshst
+.local
 .vim/
 .viminfo
 opt/tmp/
+opt/bin/*.pyc
