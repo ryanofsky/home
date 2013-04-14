@@ -53,15 +53,15 @@ class BasicTests(unittest.TestCase):
     self.assertEqual("old.30", mup.next_branch(git_dir))
 
   def test_error(self):
-    error = geterror(mup.error, "test")
+    error = getoutput(mup.error, "test")
     self.assertEqual("Error: test", error)
 
   def test_check_old_dir(self):
     makepaths(self.tempdir, "2012-01-01-joe/ 2011-02-03-a/jkj")
-    error = geterror(mup.check_old_dir, self.tempdir)
+    error = getoutput(mup.check_old_dir, self.tempdir)
     self.assertIsNone(error)
     makepaths(self.tempdir, "2012-01-01-file badpref/")
-    error = geterror(mup.check_old_dir, self.tempdir)
+    error = getoutput(mup.check_old_dir, self.tempdir)
     self.assertIsNotNone(error)
     error_list = sorted(error.split("\n  ")[1:])
     self.assertEqual(["'2012-01-01-file' is not a directory",
@@ -81,17 +81,17 @@ def makepaths(root, paths):
         fileout.write("%s\n" % filepath)
 
 
-def geterror(func, *args, **kwargs):
+def getoutput(func, *args, **kwargs):
   stdout = sys.stdout
   stderr = sys.stderr
   try:
     sys.stdout = io.StringIO()
-    sys.stderr = io.StringIO()
+    sys.stderr = sys.stdout
     try:
       func(*args, **kwargs)
       return None
     except SystemExit:
-      return sys.stderr.getvalue().strip()
+      return sys.stdout.getvalue().strip()
   finally:
     sys.stdout = stdout
     sys.stderr = stderr

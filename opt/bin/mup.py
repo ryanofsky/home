@@ -28,6 +28,7 @@ import pipes
 import pygit2
 import tempfile
 import shutil
+import io
 
 
 def main():
@@ -158,19 +159,29 @@ def bup_env(bup_dir):
 
 
 def run(cmd, *args, **kwargs):
-  """Run a command, wrapper around subprocess.call."""
+  """Run a command."""
   if isinstance(cmd, str):
     print(cmd)
   else:
     print(" ".join(map(pipes.quote, cmd)))
-  subprocess.call(cmd, *args, **kwargs)
+  try:
+    if isinstance(sys.stdout, io.StringIO):
+      # capture output for tests
+      sys.stdout.write(subprocess.check_output(
+          cmd, *args, stderr=subprocess.STDOUT, **kwargs).decode())
+    else:
+      subprocess.check_call(cmd, *args, **kwargs)
+  except subprocess.CalledProcessError as exception:
+    if exception.output is not None:
+      sys.stdout.buffer.write(exception.output.decode())
+    return exception.returncode
 
 
 def rsync_all(src, dest, pretend):
   """Run rsync with directory mirroring options."""
-  run(["rsync", "-avH", "--delete"]
-      + (pretend and ["--dry-run"] or [])
-      + [src, dest])
+  return run(["rsync", "-avH", "--delete"]
+             + (pretend and ["--dry-run"] or [])
+             + [src, dest])
 
 
 def cleanup(dirpath):
