@@ -94,7 +94,8 @@ class Verify:
     try:
       run(["bup", "restore", args.branch_name + "/latest/old/.",
            "-C", tempdir], env=bup_env(mup_dir()))
-      run(["rsync", "-nia", os.path.abspath(args.dir_path) + "/", tempdir])
+      run(["rsync", "-nia", "--delete",
+           os.path.abspath(args.dir_path) + "/", tempdir])
     finally:
       cleanup(tempdir)
 

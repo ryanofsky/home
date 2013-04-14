@@ -29,9 +29,23 @@ class MupTests(unittest.TestCase):
   def tearDown(self):
     mup.cleanup(self.tempdir)
 
-  def test_old(self):
+  def test_old_same(self):
     self.namespace.branch_name = mup.Save().run(self.namespace)
     mup.Verify().run(self.namespace)
+
+  def test_old_diff(self):
+    self.namespace.branch_name = mup.Save().run(self.namespace)
+    makepaths(self.in_dir, "x/3")
+    os.unlink(os.path.join(self.in_dir, "x/2"))
+    code, output = getoutput(mup.Verify().run, self.namespace)
+    self.assertIsNone(code)
+    lines = output.split("\n")
+    self.assertRegexpMatches(lines[0], "bup restore")
+    self.assertRegexpMatches(lines[1], "rsync -nia")
+    self.assertEqual([".d..t...... 2011-01-01-test/x/",
+                      "*deleting   2011-01-01-test/x/2",
+                      ">f+++++++++ 2011-01-01-test/x/3"],
+                     lines[2:])
 
 
 class BasicTests(unittest.TestCase):
@@ -53,17 +67,18 @@ class BasicTests(unittest.TestCase):
     self.assertEqual("old.30", mup.next_branch(git_dir))
 
   def test_error(self):
-    error = getoutput(mup.error, "test")
-    self.assertEqual("Error: test", error)
+    code, output = getoutput(mup.error, "test")
+    self.assertEqual(1, code)
+    self.assertEqual("Error: test", output)
 
   def test_check_old_dir(self):
     makepaths(self.tempdir, "2012-01-01-joe/ 2011-02-03-a/jkj")
-    error = getoutput(mup.check_old_dir, self.tempdir)
-    self.assertIsNone(error)
+    code, output = getoutput(mup.check_old_dir, self.tempdir)
+    self.assertIsNone(code)
     makepaths(self.tempdir, "2012-01-01-file badpref/")
-    error = getoutput(mup.check_old_dir, self.tempdir)
-    self.assertIsNotNone(error)
-    error_list = sorted(error.split("\n  ")[1:])
+    code, output = getoutput(mup.check_old_dir, self.tempdir)
+    self.assertEqual(1, code)
+    error_list = sorted(output.split("\n  ")[1:])
     self.assertEqual(["'2012-01-01-file' is not a directory",
                       "'badpref' not prefixed with YYYY-MM-DD"],
                      error_list)
@@ -89,9 +104,10 @@ def getoutput(func, *args, **kwargs):
     sys.stderr = sys.stdout
     try:
       func(*args, **kwargs)
-      return None
-    except SystemExit:
-      return sys.stdout.getvalue().strip()
+      code = None
+    except SystemExit as exception:
+      code = exception.code
+    return code, sys.stdout.getvalue().strip()
   finally:
     sys.stdout = stdout
     sys.stderr = stderr
