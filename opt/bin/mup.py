@@ -1,21 +1,6 @@
 #!/usr/bin/env python3
 
-"""Backup script
-
-Notes:
-
-# Create fuse mount.
-BUP_DIR=/mnt/bup/data bup fuse /mnt/bupfuse
-fusermount -u /mnt/bupfuse
-ls -l /mnt/bupfuse/*/latest/old
-
-# Identify encrypted dirs.
-find -name .encfs*
-
-# Identify big files.
-find / -type f -size +20M -printf 'size name' | sort -n
-
-"""
+"""Backup script."""
 
 MUP_DIR = "/mnt/bup/data"
 
