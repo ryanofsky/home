@@ -1,3 +1,4 @@
+.VirtualBox
 .Xauthority
 .bash_history
 .cache/
@@ -6,10 +7,12 @@
 .fontconfig/
 .gconf/
 .gnome2/
+.gnucash/
 .keys/
 .lesshst
 .local
 .vim/
 .viminfo
-opt/tmp/
+info/cash/russ.*
 opt/bin/*.pyc
+opt/tmp/
