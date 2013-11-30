@@ -1,0 +1,14 @@
+#!/bin/sh
+
+for ARG in "$@"; do
+  FILE="${ARG%%:*}"
+  FILE="$(r-findpath "$FILE")"
+  LINE="${ARG}:"
+  LINE="${LINE#*:}"
+  LINE="${LINE%%:*}"
+  if [ -n "$LINE" ]; then
+      run emacsclient -n +"$LINE" "$FILE"
+  else
+      run emacsclient -n "$FILE"
+  fi
+done
