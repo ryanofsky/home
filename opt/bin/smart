@@ -2,7 +2,7 @@
 
 # https://help.ubuntu.com/community/Smartmontools
 
-DISKS="sda book sea hit bup"
+DISKS="sda book sea hit mup bup"
 
 run() {
   local CMD=$(echo "$@")
