@@ -34,10 +34,12 @@ class Russ:
 class Russp:
   """Copy from ~russp to non-bup backups."""
   def run(self, args):
+    rsync_all("/home/russ/opt/src/vpn/.git/",
+              "/mnt/mup1/sync/vpn.git/", args.pretend)
     rsync_all("/mnt/russp/.keys/",
-              "/mnt/bup/russp.keys/", args.pretend)
+              "/mnt/mup1/sync/russp.keys/", args.pretend)
     rsync_all("/mnt/russp/.git/",
-              "/mnt/bup/russp.git/", args.pretend)
+              "/mnt/mup1/sync/russp.git/", args.pretend)
 
 
 class Old:
