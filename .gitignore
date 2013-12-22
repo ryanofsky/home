@@ -1,9 +1,14 @@
 .VirtualBox
 .Xauthority
+.android/
+.armory/
 .bash_history
+.bitcoin/
 .cache/
 .config/
 .dbus/
+.emacs.d/
+.emacs-places
 .fontconfig/
 .gconf/
 .gnome2/
@@ -11,6 +16,9 @@
 .keys/
 .lesshst
 .local
+.mplayer/
+.pki/
+.pulse-cookie
 .vim/
 .viminfo
 info/cash/russ.*
