@@ -12,9 +12,10 @@
         'auto-complete
         'pos-tip
         'ace-jump-mode
+        'htmlize
         'expand-region
         'web-mode
-        'flycheck
+        ;'flycheck
         'go-mode
         'smartparens
         'js2-mode
@@ -81,11 +82,6 @@
 (global-set-key "\C-cc" 'org-capture)
 (global-set-key "\C-ca" 'org-agenda)
 (global-set-key "\C-cb" 'org-iswitchb)
-
-;; tabs/spaces
-(setq c-basic-indent 2)
-(setq tab-width 4)
-(setq indent-tabs-mode nil)
 
 ;; http://orgmode.org/manual/Clocking-work-time.html
 (org-clock-persistence-insinuate)
@@ -167,9 +163,9 @@
 
 (define-key evil-normal-state-map (kbd ",") 'my-helm)
 
-(require 'flycheck)
-(setq flycheck-checkers (delq 'html-tidy flycheck-checkers))
-(global-flycheck-mode)
+;(require 'flycheck)
+;(setq flycheck-checkers (delq 'html-tidy flycheck-checkers))
+;(global-flycheck-mode)
 
 (require 'web-mode)
 (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
@@ -181,13 +177,16 @@
 
 ; Indentation
 (setq-default indent-tabs-mode nil)
-(setq-default tab-width 2)
+(setq-default tab-width 8)
 (setq c-basic-offset 2)
 (setq css-indent-offset 2)
 (setq web-mode-markup-indent-offset 2)
 (setq web-mode-css-indent-offset 2)
 (setq web-mode-code-indent-offset 2)
 (setq-default evil-shift-width 2)
+
+; wrapping
+(global-visual-line-mode 1)
 
 ; (global-hl-line-mode 0)
 ; Save minibuffer history.
@@ -237,16 +236,22 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-enabled-themes (quote (tango-dark)))
- '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}"))) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}"))))))
+ '(debug-on-error nil)
+ '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month))) ("~/public_html/agenda.html")) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
  '(org-agenda-files (quote ("~/info/g.org" "~/info/russ.org")))
+ '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
  '(org-capture-templates (quote (("t" "Todo" entry (file+headline "~/info/russ.org" "Tasks") "* TODO %^{Brief Description} %^g
 %?
 Added: %U"))))
+ '(org-clock-continuously t)
+ '(org-clock-idle-time 5)
  '(org-clock-into-drawer "LOGBOOK")
  '(org-clock-persist t)
+ '(org-clock-persist-query-resume nil)
  '(org-directory "~/info")
+ '(org-export-with-drawers t)
  '(org-global-properties (quote (("Effort_ALL" . "0 0:10 0:30 1:00 2:00 3:00 4:00 8:00 16:00 24:00 40:00"))))
  '(org-hide-leading-stars t)
  '(org-log-into-drawer t)
@@ -257,7 +262,7 @@ Added: %U"))))
  '(org-special-ctrl-a/e (quote (t . reversed)))
  '(org-special-ctrl-k t)
  '(org-time-clocksum-use-fractional t)
- '(org-todo-keywords (quote ((sequence "TODO(t)" "WAITING(w@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
+ '(org-todo-keywords (quote ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
