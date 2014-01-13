@@ -14,6 +14,7 @@
         'ace-jump-mode
         'htmlize
         'expand-region
+        'adaptive-wrap
         'web-mode
         ;'flycheck
         'go-mode
@@ -37,7 +38,8 @@
 (when (not package-archive-contents) (package-refresh-contents))
 (starter-kit-elpa-install)
 
-(server-start)
+(load "server")
+(unless (server-running-p) (server-start))
 
 ;; http://ergoemacs.org/emacs/emacs_make_modern.html
 (column-number-mode 1)
@@ -50,6 +52,11 @@
 (setq x-select-enable-primary t)
 (setq select-active-regions t) ;  active region sets primary X11 selection
 (global-set-key [mouse-2] 'mouse-yank-primary)
+
+;; Better buffer management commands
+;; http://ergoemacs.org/emacs/emacs_buffer_management.html
+;;(ido-mode 1)
+;;(defalias 'list-buffers 'ibuffer)
 
 
 ;; http://www.emacswiki.org/emacs/TabBarMode
@@ -65,7 +72,6 @@
                ((eq major-mode 'dired-mode) "emacs")
                (t "user"))))
  (setq tabbar-buffer-groups-function 'my-tabbar-buffer-groups)
-
 
 ;; http://www.emacswiki.org/emacs/UndoTree
 (undo-tree-mode t)
@@ -206,6 +212,24 @@
 ; Tail the compilation buffer.
 (setq compilation-scroll-output t)
 
+(when (string= system-name "ryanofsky.nyc.corp.google.com")
+  ; go/emacs
+  (require 'google)
+  (require 'googlemenu)               ;; handy Google menu bar
+  (require 'google3)                  ;; magically set paths for compiling google3 code
+  (require 'google3-build)            ;; support for blaze builds
+  (require 'csearch)                  ;; Search the whole Google code base.
+  (setq google-build-system "blaze")
+  (define-key evil-normal-state-map (kbd "b") 'google3-build)
+  (define-key evil-visual-state-map (kbd "b") 'google3-build)
+  (global-set-key [f7] 'google-show-tag-locations-regexp)
+  (global-set-key [f8] 'google-show-callers)
+  (global-set-key [f9] 'google-pop-tag)
+  (global-set-key [f10] 'google-show-matching-tags)
+  (setq browse-url-browser-function 'browse-url-generic
+        browse-url-generic-program "/opt/google/chrome/chrome"))
+
+
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . nil)))
 (setq mouse-wheel-progressive-speed t)
 
@@ -237,7 +261,10 @@
  ;; If there is more than one, they won't work right.
  '(custom-enabled-themes (quote (tango-dark)))
  '(debug-on-error nil)
- '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month))) ("~/public_html/agenda.html")) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
+ '(evil-search-module (quote evil-search))
+ '(inhibit-startup-screen t)
+ '(lazy-highlight-cleanup nil)
+ '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month)))) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
  '(org-agenda-files (quote ("~/info/g.org" "~/info/russ.org")))
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
@@ -261,6 +288,7 @@ Added: %U"))))
  '(org-return-follows-link t)
  '(org-special-ctrl-a/e (quote (t . reversed)))
  '(org-special-ctrl-k t)
+ '(org-startup-indented t)
  '(org-time-clocksum-use-fractional t)
  '(org-todo-keywords (quote ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
 (custom-set-faces
@@ -270,4 +298,28 @@ Added: %U"))))
  ;; If there is more than one, they won't work right.
  )
 
+(defun ry/yagenda (agenda-cmd year)
+       "Return agenda command with year timespan."
+  (let*
+    ((ok agenda-cmd)
+    (cmd (copy-tree ok))
+    (options (nth 4 cmd)))
+    (setq options (delq (assoc 'org-agenda-span options) options))
+    (push `(org-agenda-span 'year) options)
+    (push `(org-agenda-start-day ,(concat year "-01-01")) options)
+    (setf (nth 0 cmd) year)
+    (setf (nth 0 cmd) (concat year " Agenda"))
+    (setf (nth 4 cmd) options)
+    (append cmd `(,(concat "~/public_html/" year ".html")))))
+
+(defun ry/publish-agenda ()
+       "Return agenda command with year timespan."
+  (let*
+   ((cmd (nth 1 org-agenda-custom-commands))
+    (org-agenda-custom-commands
+     `(,(ry/yagenda cmd "2013")
+       ,(ry/yagenda cmd "2014")))
+     )
+    (org-batch-store-agenda-views)
+   ))
 ;;; .emacs ends here
