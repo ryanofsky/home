@@ -24,3 +24,9 @@
 info/cash/russ.*
 opt/bin/*.pyc
 opt/tmp/
+.org-timestamps/
+.mozilla/
+.adobe/
+.nx/
+.qt/
+.thunderbird/
