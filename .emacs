@@ -245,6 +245,12 @@
          :publishing-function org-html-publish-to-html
          :headline-levels 4       ; Just the default for this project.
          :auto-preamble t
+         :html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/solarized-light.min.css\" />
+                     <link rel=\"stylesheet\" type=\"text/css\" href=\"css/russ.css\" />"
+         :with-sub-superscript nil
+         :section-numbers nil
+         :with-drawers t
+         :html-postamble ry/post
          )
         ("org-static"
          :base-directory "~/info/"
@@ -322,4 +328,25 @@ Added: %U"))))
      )
     (org-batch-store-agenda-views)
    ))
+
+(defun ry/post (info)
+  ""
+  (let ((spec (org-html-format-spec info)))
+    (let ((date (cdr (assq ?d spec)))
+          (author (cdr (assq ?a spec)))
+          (email (cdr (assq ?e spec)))
+          (creator (cdr (assq ?c spec))))
+      (format "
+<p class=\"author\">%s: %s</p>\n
+<p class=\"date\">%s: %s</p>\n
+<p class=\"creator\">%s</p>\n
+<p class=\"source\"><a href=\"https://user.git.corp.google.com/ryanofsky/home/+/master/info/%s\">Source</a></p>"
+              (org-html--translate "Author" info)
+              author
+              (org-html--translate "Created" info)
+              (format-time-string org-html-metadata-timestamp-format)
+              creator
+              (file-name-nondirectory (plist-get info :input-file))
+              ))))
+
 ;;; .emacs ends here
