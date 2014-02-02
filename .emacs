@@ -14,7 +14,7 @@
         'ace-jump-mode
         'htmlize
         'expand-region
-        ;'adaptive-wrap
+        'adaptive-wrap
         'web-mode
         ;'flycheck
         'go-mode
@@ -288,7 +288,6 @@ Added: %U"))))
  '(org-return-follows-link t)
  '(org-special-ctrl-a/e (quote (t . reversed)))
  '(org-special-ctrl-k t)
- '(org-startup-indented t)
  '(org-time-clocksum-use-fractional t)
  '(org-todo-keywords (quote ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
 (custom-set-faces
