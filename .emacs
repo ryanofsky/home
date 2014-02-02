@@ -288,6 +288,7 @@ Added: %U"))))
  '(org-return-follows-link t)
  '(org-special-ctrl-a/e (quote (t . reversed)))
  '(org-special-ctrl-k t)
+ '(org-adapt-indentation t)
  '(org-time-clocksum-use-fractional t)
  '(org-todo-keywords (quote ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
 (custom-set-faces
