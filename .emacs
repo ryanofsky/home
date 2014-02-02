@@ -14,7 +14,7 @@
         'ace-jump-mode
         'htmlize
         'expand-region
-        'adaptive-wrap
+        ;'adaptive-wrap
         'web-mode
         ;'flycheck
         'go-mode
