@@ -92,6 +92,9 @@
 ;; http://orgmode.org/manual/Clocking-work-time.html
 (org-clock-persistence-insinuate)
 
+(setq browse-url-browser-function 'browse-url-generic
+      browse-url-generic-program "glo")
+
 ;;;;;;;;;;;; AUTOCOMPLETION
 ; Enables tooltip help
 (require 'pos-tip)
