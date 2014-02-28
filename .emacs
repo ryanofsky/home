@@ -271,6 +271,7 @@
  '(custom-enabled-themes (quote (tango-dark)))
  '(debug-on-error nil)
  '(evil-search-module (quote evil-search))
+ '(evil-want-fine-undo t)
  '(inhibit-startup-screen t)
  '(lazy-highlight-cleanup nil)
  '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month)))) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
