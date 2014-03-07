@@ -29,6 +29,21 @@ class MupTests(unittest.TestCase):
   def tearDown(self):
     mup.cleanup(self.tempdir)
 
+  def test_idc(self):
+    save = mup.Save()
+
+    def verify_gay(save, what):
+      self.assertEqual(1, 2) 
+      mup.Save.verify_gay(save, what)
+    
+    with mock.patch.object(save, 'verify_gay', side_effect=verify_gay):
+      checker = EmailChecker()
+      print(checker.is_email_correct('1'))
+      print(checker.is_email_correct('2'))
+    
+
+    
+    
   def test_old_same(self):
     self.namespace.branch_name = mup.Save().run(self.namespace)
     mup.Verify().run(self.namespace)
@@ -46,7 +61,6 @@ class MupTests(unittest.TestCase):
                       "*deleting   2011-01-01-test/x/2",
                       ">f+++++++++ 2011-01-01-test/x/3"],
                      lines[2:])
-
 
 class BasicTests(unittest.TestCase):
   def setUp(self):

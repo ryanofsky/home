@@ -20,72 +20,114 @@ def main():
   """Run mup."""
   parser = CommandParser()
   parser.add_argument("-p", "--pretend", action="store_true")
-  parser.add_commands((Russ, Russp, Old))
+  parser.add_commands((Russ(), Russp(), Old()))
   parser.run()
 
 
 class Russ:
   """Copy from ~russ to ~russp."""
   def run(self, args):
+    errors = []
     rsync_all("/home/russ/.TaskCoach/tasks.tsk",
-              "/mnt/russp/info/task/tasks.tsk", args.pretend)
+              "/mnt/russp/info/task/tasks.tsk", args.pretend, errors)
+    error("Problems during sync:", errors)
 
 
 class Russp:
   """Copy from ~russp to non-bup backups."""
   def run(self, args):
+    errors = []
     rsync_all("/home/russ/opt/src/vpn/.git/",
-              "/mnt/mup1/sync/vpn.git/", args.pretend)
+              "/mnt/mup1/sync/vpn.git/", args.pretend, errors)
     rsync_all("/mnt/russp/.keys/",
-              "/mnt/mup1/sync/russp.keys/", args.pretend)
+              "/mnt/mup1/sync/russp.keys/", args.pretend, errors)
     rsync_all("/mnt/russp/.git/",
-              "/mnt/mup1/sync/russp.git/", args.pretend)
+              "/mnt/mup1/sync/russp.git/", args.pretend, errors)
+    error("Problems during sync:", errors)
 
 
 class Old:
   """Import old data into bup."""
-  @classmethod
   def add_arguments(cls, parser):
-    parser.add_commands((Save, Verify))
+    parser.add_commands((Save(), Verify()))
+
+  def save(self, branch_name, src_path, dest_path, env):
+    run(["bup", "index", "-vv", src_path], env=env)
+    run(["bup", "save", "-n", branch_name, "--graft",
+         src_path + "=/" + dest_path, src_path], env=env)
+
+  def fuse_check(self, src_path, bup_path, env, errors):
+    tempdir = tempfile.mkdtemp(prefix="mf-")
+    try:
+      run(["bup", "fuse", tempdir], errors, env=env)
+      try:
+        output = run(["rsync", "-irl", "--delete", src_path + "/",
+             os.path.join(tempdir, bup_path) + "/"], errors, True)
+        if output:
+          errors.append("Unexpected rsync output.")
+      finally:
+        run(["fusermount", "-u", tempdir], errors)
+    finally:
+      warn(os.rmdir, tempdir)
+
+  def restore_check(self, src_path, bup_path, env, delete=False):
+    tempdir = tempfile.mkdtemp(prefix="mr-")
+    try:
+      run(["bup", "restore", bup_path + "/.", "-C", tempdir], env=env)
+      if delete:
+        args = ["-iacH", "--remove-source-files"] 
+      else:
+        args = ["-nia", "--delete"]
+      run(["rsync"] + args + [src_path + "/", temp_path + "/"])
+      if delete:
+        rmdirs(src_path)
+    finally:
+      warn(shutil.rmtree, tempdir)
 
 
-class Save:
+class Save(Old):
   """Save old directory tree"""
-  @classmethod
   def add_arguments(cls, parser):
+    parser.add_argument("--delete", action="store_true")
     parser.add_argument("dir_path")
+    parser.add_argument("name", nargs="?")
 
   def run(self, args):
-    check_old_dir(args.dir_path)
-
+    errors = []
+    if args.name is None:
+      check_old_dir(args.dir_path, errors)
+      dest_path = "old"
+    else:
+      check_old_name(args.name, errors)
+      dest_path = "old/{}".format(args.name)
+    if errors:
+      error("problems with %s" % repr(dir_path), errors)
+      
     bup_dir = mup_dir()
     branch_name = next_branch(bup_dir)
-
     env = bup_env(bup_dir)
-    abs_dir_path = os.path.abspath(args.dir_path)
-    run(["bup", "index", "-vv", abs_dir_path], env=env)
-    run(["bup", "save", "-n", branch_name, "--graft", abs_dir_path + "=/old",
-         abs_dir_path], env=env)
+    src_path = os.path.abspath(args.dir_path)
+    bup_path = os.path.join(branch_name, "latest", dest_path)
+    self.save(branch_name, src_path, dest_path, env)
+    self.fuse_check(src_path, bup_path, env, errors)
+    error("Fuse rsync check failed.", errors)
+    self.restore_check(src_path, bup_path, env, delete=args.delete)
     return branch_name
 
 
-class Verify:
+class Verify(Old):
   """Verify old directory tree."""
-  @classmethod
   def add_arguments(cls, parser):
     parser.add_argument("branch_name")
     parser.add_argument("dir_path")
 
   def run(self, args):
-    tempdir = tempfile.mkdtemp()
-    try:
-      run(["bup", "restore", args.branch_name + "/latest/old/.",
-           "-C", tempdir], env=bup_env(mup_dir()))
-      run(["rsync", "-nia", "--delete",
-           os.path.abspath(args.dir_path) + "/", tempdir])
-    finally:
-      cleanup(tempdir)
-
+    bup_dir = mup_dir()
+    branch_name = args.branch_name
+    env = bup_env(bup_dir)
+    src_path = os.path.abspath(args.dir_path)
+    bup_path = os.path.join(branch_name, "latest", dest_path)
+    self.restore_check(src_path, bup_path, env, delete=False)
 
 def next_branch(bup_dir):
   """Find next free old.X branch number in bup repository."""
@@ -102,20 +144,21 @@ def next_branch(bup_dir):
   return "old.%i" % num
 
 
-def check_old_dir(dir_path):
+def check_old_name(dir_name, errors):
+  match = re.match(r"\d{4}-\d{2}-\d{2}-.", dir_name)
+  if not match:
+    errors.append("%s not prefixed with YYYY-MM-DD" % repr(dir_name))
+
+
+def check_old_dir(dir_path, errors):
   """Verify a directory contains nothing but date prefixed subdirectories."""
-  errors = []
   try:
     for path in os.listdir(dir_path):
       if not os.path.isdir(os.path.join(dir_path, path)):
         errors.append("%s is not a directory" % repr(path))
-      match = re.match(r"\d{4}-\d{2}-\d{2}-.", path)
-      if not match:
-        errors.append("%s not prefixed with YYYY-MM-DD" % repr(path))
+      check_old_name(path, errors)
   except OSError as exception:
     errors.append(str(exception))
-  if errors:
-    error("\n  ".join(["problems with %s" % repr(dir_path)] + errors))
 
 
 def human(num_bytes):
@@ -146,47 +189,62 @@ def bup_env(bup_dir):
   return env
 
 
-def run(cmd, *args, **kwargs):
+def run(cmd, errors=None, tee=False, *args, **kwargs):
   """Run a command."""
-  if isinstance(cmd, str):
-    print(cmd)
-  else:
-    print(" ".join(map(pipes.quote, cmd)))
+  # FIXME: tee implementation sucks in that it redirects subprocess
+  # standard error to the standard out. A better implementation would
+  # capture errors while still allowing them to go the error stream.
+  cmd_str = cmd if isinstance(cmd, str) else " ".join(map(pipes.quote, cmd))
+  print(cmd_str)
+  output = None
+  testing = isinstance(sys.stdout, io.StringIO)
   try:
-    if isinstance(sys.stdout, io.StringIO):
-      # capture output for tests
-      sys.stdout.write(subprocess.check_output(
-          cmd, *args, stderr=subprocess.STDOUT, **kwargs).decode())
+    if tee or testing:
+      output = subprocess.check_output(
+        cmd, *args, stderr=subprocess.STDOUT, **kwargs)
     else:
       subprocess.check_call(cmd, *args, **kwargs)
   except subprocess.CalledProcessError as exception:
-    if exception.output is not None:
-      sys.stdout.buffer.write(exception.output.decode())
-    return exception.returncode
+    output = exception.output.decode()
+    message = "Command failed with status {}: {}".format(exception.returncode, cmd_str))
+    if errors is None:
+      error(message)
+    else:
+      errors.append(error)
+  if testing:
+    sys.stdout.write(output.decode(errors="surrogateescape"))
+  return output
 
-
-def rsync_all(src, dest, pretend):
+  
+def rsync_all(src, dest, pretend, errors):
   """Run rsync with directory mirroring options."""
   return run(["rsync", "-avH", "--delete"]
              + (pretend and ["--dry-run"] or [])
-             + [src, dest])
+             + [src, dest], errors)
 
+    
+def rmdirs(dirpath):
+  for dirpath, dirnames, filenames in os.walk(dirpath, topdown=False):
+    for dirname in dirnames:
+      warn(os.rmdir, os.path.join(dirpath, dirname))
 
-def cleanup(dirpath):
-  """Remove directory tree, and just print an error and continue if unable."""
-  try:
-    shutil.rmtree(dirpath)
-  except OSError as exception:
-    error("could not remove %s\n%s" % (repr(dirpath), exception), status=None)
-
-
-def error(message, status=1):
+   
+def error(message, errors=None, status=1):
   """Print an error and optionally exit with an error code."""
-  print("Error: %s" % message, file=sys.stderr)
-  if status is not None:
-    exit(status)
+  if errors is None or errors:
+    first = "{}: {}".format("Warning" if status is None else "Error", message)
+    print("\n  ".join([first] + (errors or [])), file=sys.stderr)
+    if status is not None:
+      sys.exit(status)
 
+      
+def warn(cmd, *args, *kwargs):
+  try:
+    cmd(*args, **kwargs)
+  except OSError as exception:
+    error("{} in {!r} *{!r} **{!r}".format(exception, cmd, args, kwargs), status=None))
 
+    
 class CommandParser(argparse.ArgumentParser):
   """ArgumentParser subclass that handles and runs subcommands."""
 
@@ -205,7 +263,7 @@ class CommandParser(argparse.ArgumentParser):
 
   def run(self):
     args = self.parse_args()
-    args.command().run(args)
+    args.command.run(args)
 
 
 if __name__ == "__main__":
