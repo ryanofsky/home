@@ -280,6 +280,8 @@
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
+ '(org-archive-location "%s_archive::datetree/")
+ '(org-archive-save-context-info (quote (time file category todo itags olpath)))
  '(org-capture-templates (quote (("t" "Todo" entry (file+headline "~/info/russ.org" "Tasks") "* TODO %^{Brief Description} %^g
 %?
 Added: %U"))))
