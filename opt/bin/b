@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+ROOT=/mnt/mup1/tape
+BRANCH=tape
+SRC=/mnt/book1/tape
+MNT=/mnt/mup1-tape
+GRAFT=/tape
+
+b-fuse() {
+  run fusermount -u "$MNT" || true
+  BUP_DIR="$ROOT" run bup fuse "$MNT"
+}
+
+b-status() {
+  run bup index -f "$ROOT/$BRANCH-pending" "$SRC"
+  run bup index -f "$ROOT/$BRANCH-head" -sl "$SRC" | sort -k4 > /tmp/a
+  run bup index -f "$ROOT/$BRANCH-pending" -sl "$SRC" | sort -k4 > /tmp/b
+  diff /tmp/a /tmp/b | colordiff
+}
+
+b-save() {
+  BUP_DIR="$ROOT" run bup save -f "$ROOT/$BRANCH-pending" -9 -n "$BRANCH" --graft "$SRC"="$GRAFT" "$SRC"
+  for F in "$ROOT/$BRANCH-pending"*; do
+    if [ -e "$F" ]; then
+      D="${F/-pending/-head}"
+      run rm -rf "$D"
+      run cp -a "$F" "$D"
+    fi
+  done
+  BUP_DIR="$ROOT" bup fsck -g
+}
+
+run() {
+  echo "$@" 1>&2
+  "$@"
+}
+
+CMD="$1"
+shift
+b-$CMD "$@"
