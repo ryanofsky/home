@@ -284,12 +284,16 @@
  '(org-archive-save-context-info (quote (time file category todo itags olpath)))
  '(org-capture-templates (quote (("t" "Todo" entry (file+headline "~/info/russ.org" "Tasks") "* TODO %^{Brief Description} %^g
 %?
-Added: %U"))))
+Added: %U") ("i" "Idea" entry (file+datetree "~/info/ideas.org") "* %?
+Entered on %U
+  %i
+  %a"))))
  '(org-clock-continuously t)
  '(org-clock-idle-time 5)
  '(org-clock-into-drawer "LOGBOOK")
  '(org-clock-persist t)
  '(org-clock-persist-query-resume nil)
+ '(org-datetree-add-timestamp (quote inactive))
  '(org-directory "~/info")
  '(org-export-with-drawers t)
  '(org-global-properties (quote (("Effort_ALL" . "0 0:10 0:30 1:00 2:00 3:00 4:00 8:00 16:00 24:00 40:00"))))
