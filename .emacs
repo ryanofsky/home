@@ -263,6 +263,8 @@
          :publishing-function org-publish-attachment)
         ("org" :components ("org-notes" "org-static"))))
 
+(add-to-list 'auto-mode-alist '("\\.org_archive$" . org-mode))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -276,7 +278,7 @@
  '(lazy-highlight-cleanup nil)
  '(org-adapt-indentation t)
  '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month)))) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
- '(org-agenda-files (quote ("~/info/g.org" "~/info/russ.org")))
+ '(org-agenda-files (quote ("~/info/g.org" "~/info/russ.org" "~/info/g.org_archive" "~/info/russ.org_archive")))
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
