@@ -11,10 +11,12 @@
   (list 'evil
         'auto-complete
         'pos-tip
+        'org
         'ace-jump-mode
         'htmlize
         'expand-region
         'adaptive-wrap
+        'tabbar
         'web-mode
         ;'flycheck
         'go-mode
