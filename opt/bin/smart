@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Usage:
+#   smart status
+#   smart long
 # https://help.ubuntu.com/community/Smartmontools
 
-DISKS="sda book sea hit mup bup"
+DISKS="${DISKS:-sda book sea hit mup bup fort}"
 
 run() {
   local CMD=$(echo "$@")
@@ -16,7 +19,7 @@ run() {
 
 cmd() {
   local DISK="$1" O=
-  if [ "$DISK" = book ]; then
+  if [ "$DISK" = book -o "$DISK" = fort ]; then
     O="-d sat"
   fi
   shift
