@@ -10,6 +10,7 @@
 .emacs-places
 .fontconfig/
 .gconf/
+.gnome/
 .gnome2/
 .gnucash/
 .gqview/
