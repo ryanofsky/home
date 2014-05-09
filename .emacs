@@ -241,7 +241,7 @@
 (setq org-publish-project-alist
       '(
         ("org-notes"
-         :base-directory "~/info/"
+         :base-directory "~/google/"
          :base-extension "org"
          :publishing-directory "~/public_html/"
          :recursive t
@@ -256,7 +256,7 @@
          :html-postamble ry/post
          )
         ("org-static"
-         :base-directory "~/info/"
+         :base-directory "~/google/2014/org-static/"
          :base-extension "css\\|js\\|png\\|jpg\\|gif\\|pdf\\|mp3\\|ogg\\|swf"
          :publishing-directory "~/public_html/"
          :recursive t
@@ -278,15 +278,15 @@
  '(lazy-highlight-cleanup nil)
  '(org-adapt-indentation t)
  '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month)))) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
- '(org-agenda-files (quote ("~/info/g.org" "~/info/russ.org" "~/info/g.org_archive" "~/info/russ.org_archive")))
+ '(org-agenda-files (quote ("~/google/log.org" "~/google/todo.org" "~/google/todo.org_archive" "~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
  '(org-archive-location "%s_archive::datetree/")
  '(org-archive-save-context-info (quote (time file category todo itags olpath)))
- '(org-capture-templates (quote (("t" "Todo" entry (file+headline "~/info/russ.org" "Tasks") "* TODO %^{Brief Description} %^g
+ '(org-capture-templates (quote (("t" "Todo" entry (file+headline "~/russ/todo.org" "Tasks") "* TODO %^{Brief Description} %^g
 %?
-Added: %U") ("i" "Idea" entry (file+datetree "~/info/ideas.org") "* %?
+Added: %U") ("i" "Idea" entry (file+datetree "~/russ/ideas.org") "* %?
 Entered on %U
   %i
   %a"))))
@@ -296,7 +296,7 @@ Entered on %U
  '(org-clock-persist t)
  '(org-clock-persist-query-resume nil)
  '(org-datetree-add-timestamp (quote inactive))
- '(org-directory "~/info")
+ '(org-directory "~/google")
  '(org-export-with-drawers t)
  '(org-global-properties (quote (("Effort_ALL" . "0 0:10 0:30 1:00 2:00 3:00 4:00 8:00 16:00 24:00 40:00"))))
  '(org-hide-leading-stars t)
@@ -353,7 +353,7 @@ Entered on %U
 <p class=\"author\">%s: %s</p>\n
 <p class=\"date\">%s: %s</p>\n
 <p class=\"creator\">%s</p>\n
-<p class=\"source\"><a href=\"https://user.git.corp.google.com/ryanofsky/home/+/master/info/%s\">Source</a></p>"
+<p class=\"source\"><a href=\"https://user.git.corp.google.com/ryanofsky/home/+/master/google/%s\">Source</a></p>"
               (org-html--translate "Author" info)
               author
               (org-html--translate "Created" info)
