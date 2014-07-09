@@ -94,9 +94,6 @@
 ;; http://orgmode.org/manual/Clocking-work-time.html
 (org-clock-persistence-insinuate)
 
-(setq browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "glo")
-
 ;;;;;;;;;;;; AUTOCOMPLETION
 ; Enables tooltip help
 (require 'pos-tip)
@@ -246,8 +243,7 @@
   (global-set-key [f9] 'google-pop-tag)
   (global-set-key [f10] 'google-show-matching-tags)
   (setq browse-url-browser-function 'browse-url-generic
-        browse-url-generic-program "/opt/google/chrome/chrome"))
-
+        browse-url-generic-program "google-chrome-stable"))
 
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . nil)))
 (setq mouse-wheel-progressive-speed t)
