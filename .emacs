@@ -169,6 +169,10 @@
 
 (define-key helm-map (kbd "<escape>") 'helm-keyboard-quit)
 
+;; Try to make buffer list more useful with similar names
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+
 (require 'recentf)
 (setq recentf-exclude '("\\.recentf" "^/tmp/" "/.git/" "/.emacs.d/elpa/"))
 (setq recentf-max-saved-items 100)
