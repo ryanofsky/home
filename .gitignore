@@ -27,6 +27,7 @@ opt/tmp/
 .pki/
 .pulse-cookie
 .qt/
+store
 .thunderbird/
 .vim/
 .viminfo
