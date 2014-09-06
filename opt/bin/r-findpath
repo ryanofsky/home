@@ -23,6 +23,11 @@ while true; do
   fi
   NFILE="${FILE#*/}"
   if test "$NFILE" = "$FILE"; then
+    NFILE=$(git ls-files | grep "$FILE")
+    if test -e "$NFILE"; then
+      echo -n "$NFILE"
+      exit 0
+    fi
     echo -n "$1"
     exit 1
   fi
