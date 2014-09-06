@@ -142,6 +142,12 @@
 (require 'ace-jump-mode)
 (define-key evil-normal-state-map (kbd "f") 'ace-jump-mode)
 
+(require 'windmove)
+(global-set-key (kbd "C-c <up>") 'windmove-up)
+(global-set-key (kbd "C-c <down>") 'windmove-down)
+(global-set-key (kbd "C-c <right>") 'windmove-right)
+(global-set-key (kbd "C-c <left>") 'windmove-left)
+
 ;; Don't wait for any other keys after escape is pressed.
 (setq evil-esc-delay 0)
 
@@ -158,6 +164,8 @@
 (setq helm-M-x-always-save-history t)
 (define-key evil-normal-state-map (kbd "t") 'helm-M-x)
 (define-key evil-visual-state-map (kbd "t") 'helm-M-x)
+(define-key evil-normal-state-map (kbd "s") 'helm-buffers-list)
+(define-key evil-visual-state-map (kbd "s") 'helm-buffers-list)
 
 (define-key helm-map (kbd "<escape>") 'helm-keyboard-quit)
 
