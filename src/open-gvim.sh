@@ -3,7 +3,7 @@
 for ARG in "$@";
 do
   FILE="${ARG%%:*}";
-  FILE="$(r-findpath "$FILE")"
+  FILE="$(echo-relpath.sh "$FILE")"
   LINE="${ARG}:";
   LINE="${LINE#*:}";
   LINE="${LINE%%:*}";

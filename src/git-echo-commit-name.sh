@@ -7,7 +7,7 @@ fi
 
 HASH="$1"
 TIME=$(git log -n1 --format=%at "$HASH")
-PATCHID=$(patch-id $HASH)
+PATCHID=$(git-echo-patch-name.sh $HASH)
 
 num() {
   local NAME="$1"
@@ -36,13 +36,13 @@ if [ ! -e "$TIMES" ]; then
     git show-ref | grep -v " refs/tags/archive/" | grep -v " refs/exported/" | grep -v " refs/remotes/" | grep -v "stash" |
     while read RHASH REF; do
       RANGE=$RHASH
-      BASE=$(git5-base $RHASH)
+      BASE=$(git-echo-base.sh $RHASH)
       if [ -n "$BASE" ]; then
         RANGE=$BASE..$RANGE
       fi
       git log --format="%H %at" $RANGE |
       while read CHASH CTIME; do
-        CPATCHID="$(patch-id $CHASH || echo empty)"
+        CPATCHID="$(git-echo-patch-name.sh $CHASH || echo empty)"
         echo "$CHASH $REF $CTIME $CPATCHID"
       done
     done

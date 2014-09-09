@@ -18,13 +18,13 @@ def popen(cmd, git_dir=None):
   return subprocess.Popen(cmd, shell=isinstance(cmd, basestring), stdout=subprocess.PIPE, env=env).stdout
 
 def bash_base(path, commit):
-  return (popen(["git5-base", commit], path).read().strip(),
-          popen(["git5-cl", commit], path).read().strip())
+  return (popen(["git-echo-base.sh", commit], path).read().strip(),
+          popen(["git-echo-cl.sh", commit], path).read().strip())
 
 def bash_syms(path, commit):
   min = None
   min_key = None
-  for line in popen(["grefs", commit], path):
+  for line in popen(["git-echo-commit-name.sh", commit], path):
     exact, desc, rhash = line.strip().split()
     exact = bool(int(exact))
     m = re.search(r"(?:work|export)-.+?\.(\d+)", desc)
@@ -36,7 +36,7 @@ def bash_syms(path, commit):
   return [min] if min else []
 
 def bash_lines(path, *revs):
-  return popen(("glines",) + revs, path).read().strip()
+  return popen(("ocd-diffstat-lines.sh",) + revs, path).read().strip()
 
 def geturl(path, h, hp=None, log=False):
   proj = os.path.basename(os.path.dirname(path))
