@@ -261,7 +261,7 @@
 (setq mouse-wheel-progressive-speed t)
 
 ;; http://orgmode.org/guide/Publishing.html
-(require 'org-publish)
+(require 'ox-publish)
 (setq org-publish-project-alist
       '(
         ("org-notes"
