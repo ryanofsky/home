@@ -29,8 +29,8 @@ for ARG in "$@"; do
   LINE="${LINE#*:}"
   LINE="${LINE%%:*}"
   if [ -n "$LINE" ]; then
-      run emacsclient "${O[@]}" +"$LINE" "$FILE"
+      run.sh emacsclient "${O[@]}" +"$LINE" "$FILE"
   else
-      run emacsclient "${O[@]}" "$FILE"
+      run.sh emacsclient "${O[@]}" "$FILE"
   fi
 done
