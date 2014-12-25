@@ -4,8 +4,9 @@
 # including some apparently interactive shells such as scp and rcp
 # that can't tolerate any output.  So make sure this doesn't display
 # anything or bad things will happen !
-export TMPDIR="$HOME/opt/tmp"
-export PATH="$PATH:$HOME/opt/bin"
+export TMPDIR="$HOME/.local/tmp"
+export PATH="$HOME/.local/bin:$HOME/russ/src:$HOME/google/src:$HOME/src:$PATH"
+export PYTHONPATH="$HOME/russ/src/lib:$HOME/google/src/lib:$HOME/src/lib:$PYTHONPATH"
 umask u=rwx,g=,o=
 
 
