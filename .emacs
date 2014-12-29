@@ -302,16 +302,52 @@
  '(inhibit-startup-screen t)
  '(lazy-highlight-cleanup nil)
  '(org-adapt-indentation t)
- '(org-agenda-custom-commands (quote (("n" "Agenda and all TODO's" ((agenda "" nil) (alltodo "" nil)) nil) ("r" "Russ Agenda" agenda "" ((org-agenda-overriding-header "Russ Agenda") (org-agenda-view-columns-initially nil) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-start-with-log-mode (quote (closed clock state))) (org-agenda-span (quote month)))) ("q" "Russ Todos" alltodo "" ((org-agenda-view-columns-initially t) (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}") (org-agenda-skip-function (quote (org-agenda-skip-entry-if (quote todo) (quote ("DEFERRED"))))) (org-agenda-sorting-strategy (quote (scheduled-up effort-up)))) ("~/public_html/todo.html")))))
- '(org-agenda-files (quote ("~/google/log.org" "~/google/todo.org" "~/google/todo.org_archive" "~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
+ '(org-agenda-custom-commands
+   (quote
+    (("n" "Agenda and all TODO's"
+      ((agenda "" nil)
+       (alltodo "" nil))
+      nil)
+     ("r" "Russ Agenda" agenda ""
+      ((org-agenda-overriding-header "Russ Agenda")
+       (org-agenda-view-columns-initially nil)
+       (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}")
+       (org-agenda-start-with-log-mode
+        (quote
+         (closed clock state)))
+       (org-agenda-span
+        (quote month))))
+     ("q" "Russ Todos" alltodo ""
+      ((org-agenda-view-columns-initially t)
+       (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}")
+       (org-agenda-skip-function
+        (quote
+         (org-agenda-skip-entry-if
+          (quote todo)
+          (quote
+           ("DEFERRED")))))
+       (org-agenda-sorting-strategy
+        (quote
+         (scheduled-up effort-up))))
+      ("~/public_html/todo.html")))))
+ '(org-agenda-files
+   (quote
+    ("~/google/log.org" "~/google/todo.org" "~/google/todo.org_archive" "~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
  '(org-archive-location "%s_archive::datetree/")
  '(org-archive-save-context-info (quote (time file category todo itags olpath)))
- '(org-capture-templates (quote (("t" "Todo" entry (file+headline "~/russ/todo.org" "Tasks") "* TODO %^{Brief Description} %^g
+ '(org-capture-templates
+   (quote
+    (("t" "Todo" entry
+      (file+headline "~/russ/todo.org" "Tasks")
+      "* TODO %^{Brief Description} %^g
 %?
-Added: %U") ("i" "Idea" entry (file+datetree "~/russ/ideas.org") "* %?
+Added: %U")
+     ("i" "Idea" entry
+      (file+datetree "~/russ/ideas.org")
+      "* %?
 Entered on %U
   %i
   %a"))))
@@ -323,7 +359,9 @@ Entered on %U
  '(org-datetree-add-timestamp (quote inactive))
  '(org-directory "~/google")
  '(org-export-with-drawers t)
- '(org-global-properties (quote (("Effort_ALL" . "0 0:10 0:30 1:00 2:00 3:00 4:00 8:00 16:00 24:00 40:00"))))
+ '(org-global-properties
+   (quote
+    (("Effort_ALL" . "0 0:10 0:30 1:00 2:00 3:00 4:00 8:00 16:00 24:00 40:00"))))
  '(org-hide-leading-stars t)
  '(org-link-search-must-match-exact-headline nil)
  '(org-log-into-drawer t)
@@ -334,7 +372,9 @@ Entered on %U
  '(org-special-ctrl-a/e (quote (t . reversed)))
  '(org-special-ctrl-k t)
  '(org-time-clocksum-use-fractional t)
- '(org-todo-keywords (quote ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
+ '(org-todo-keywords
+   (quote
+    ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
