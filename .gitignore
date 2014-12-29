@@ -30,4 +30,6 @@
 .thunderbird/
 .vim/
 .viminfo
+src/android-sdk-linux/
+src/bitcoinj/
 src/bup/
