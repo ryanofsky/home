@@ -374,7 +374,7 @@ Entered on %U
  '(org-time-clocksum-use-fractional t)
  '(org-todo-keywords
    (quote
-    ((sequence "TODO(t)" "BLOCKED(b@/@)" "DEFERRED(r)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
+    ((sequence "TODO(t)" "WAIT(w@/@)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
