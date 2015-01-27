@@ -9,6 +9,7 @@ export PATH="$HOME/.local/bin:$HOME/russ/src:$HOME/google/src:$HOME/src:$PATH"
 export PYTHONPATH="$HOME/russ/src/lib:$HOME/google/src/lib:$HOME/src/lib:$PYTHONPATH"
 export EDITOR=vim
 umask u=rwx,g=,o=
+export LC_COLLATE=C
 
 
 # Test for an interactive shell.  There is no need to set anything
