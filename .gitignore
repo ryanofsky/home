@@ -32,4 +32,5 @@
 .viminfo
 src/android-sdk-linux/
 src/bitcoinj/
+src/btrfs-progs/
 src/bup/
