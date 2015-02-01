@@ -16,7 +16,8 @@ armove() {
   if [ "$DIR" = "$FILE" ]; then
     local TMP="$(mktemp)"
     run touch --reference="$SRC" "$TMP"
-    run mv -n "$SRC/$FILE" "$DST/$FILE"
+    run cp -an --reflink "$SRC/$FILE" "$DST/$FILE"
+    run rm -r "$SRC/$FILE"
     run touch --reference="$TMP" "$SRC"
     rm -f "$TMP"
     if [ -e "$SRC/FILE" -o -h "$SRC/FILE" ]; then
