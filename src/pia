@@ -1,0 +1,13 @@
+#!/bin/bash
+
+PIP0=192.168.39.1
+
+COOKIE=$(xauth list $DISPLAY | cut -d' ' -f2-)
+CONN=${DISPLAY%.*}
+PORT=$(( 6000 + ${CONN#*:} ))
+
+export DISPLAY=${DISPLAY/localhost/$PIP0}
+
+sudo bash -c "systemctl start pia-x11@$PORT
+su - pia -c 'xauth add $DISPLAY $COOKIE'
+exec ip netns exec pia su - pia"
