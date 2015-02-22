@@ -332,7 +332,7 @@
       ("~/public_html/todo.html")))))
  '(org-agenda-files
    (quote
-    ("~/google/log.org" "~/google/todo.org" "~/google/todo.org_archive" "~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
+    ("~/google/log.org" "~/google/todo.org_archive" "~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
