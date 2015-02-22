@@ -1,0 +1,70 @@
+[general]
+accounts = Russ, Russg
+pythonfile = ~/.offlineimap.py
+
+[Account Russ]
+localrepository = LocalRepo
+remoterepository = RemoteRepo
+status_backend = sqlite
+synclabels = yes
+
+[Repository LocalRepo]
+type = GmailMaildir
+localfolders = ~/store/mail
+
+[Repository RemoteRepo]
+type = Gmail
+remoteuser = russ@yanofsky.org
+oauth2 = True
+oauth2_client_id_eval = get_pw("russ", "oauth2_client_id")
+oauth2_client_secret_eval = get_pw("russ", "oauth2_client_secret")
+oauth2_refresh_token_eval = get_pw("russ", "oauth2_refresh_token")
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+folderfilter = lambda x: x in ['[Gmail]/All Mail', '[Gmail]/Spam', '[Gmail]/Trash']
+
+[Account Russg]
+localrepository = LocalRepog
+remoterepository = RemoteRepog
+status_backend = sqlite
+synclabels = yes
+
+[Repository LocalRepog]
+type = GmailMaildir
+localfolders = ~/store/mailg
+
+[Repository RemoteRepog]
+type = Gmail
+remoteuser = ryanofsky@gmail.com
+oauth2 = True
+oauth2_client_id_eval = get_pw("russg", "oauth2_client_id")
+oauth2_client_secret_eval = get_pw("russg", "oauth2_client_secret")
+oauth2_refresh_token_eval = get_pw("russg", "oauth2_refresh_token")
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+folderfilter = lambda x: x in ['[Gmail]/All Mail', '[Gmail]/Spam', '[Gmail]/Trash']
+
+
+
+
+[Account Testdel]
+localrepository = Localdel
+remoterepository = Remotedel
+status_backend = sqlite
+synclabels = yes
+syncgids = yes
+maxage = 1
+
+[Repository Localdel]
+type = GmailMaildir
+localfolders = ~/store/testdel
+
+[Repository Remotedel]
+type = Gmail
+remoteuser = russ@yanofsky.org
+oauth2 = True
+oauth2_client_id_eval = get_pw("russ", "oauth2_client_id")
+oauth2_client_secret_eval = get_pw("russ", "oauth2_client_secret")
+oauth2_refresh_token_eval = get_pw("russ", "oauth2_refresh_token")
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+folderfilter = lambda x: x in ['[Gmail]/All Mail', '[Gmail]/Spam', '[Gmail]/Trash']
+
+
