@@ -6,6 +6,8 @@ import io
 import json
 import os
 import urllib
+import urllib.parse
+import urllib.request
 import yaml
 import os
 import contextlib
@@ -27,10 +29,13 @@ NFO_MODSEQ = "modseq"
 NFO_DATE = "date"
 NFO_FLAGS = "flags"
 
+STORE_DIR = "~/store/mail/2013"
+OAUTH2_URL = "https://accounts.google.com/o/oauth2/token"
+
 def main():
-  store = Store(os.path.expanduser("~/store/mail/2013"))
-  imap = connect()
-  gmail_sync.setup_capture(imap, store)
+  store = Store(os.path.expanduser(STORE_DIR))
+  imap = connect(store)
+  setup_capture(imap, store)
   store.start_capture()
   try:
     sync(store, imap)
@@ -105,12 +110,11 @@ def connect(store):
     'refresh_token': store.config[CONFIG_OAUTH2_REFRESH_TOKEN],
     'grant_type': 'refresh_token'
   })
-  with urllib.request.urlopen(oauth2_url, bytes(data_str, "utf8")) as fp:
+  with urllib.request.urlopen(OAUTH2_URL, bytes(data_str, "utf8")) as fp:
     fp = io.TextIOWrapper(fp, "utf8")
     http = json.load(fp)
-    oauth2_str = 'user=%s\001auth=Bearer %s\001\001' % (user, http['access_token'])
+    oauth2_str = 'user=%s\001auth=Bearer %s\001\001' % (store.config[CONFIG_USER], http['access_token'])
     imap = imaplib.IMAP4_SSL('imap.gmail.com')
-    add_counters(imap, store)
     imap.debug = 4
     imap.authenticate('XOAUTH2', lambda response: oauth2_str)
     return imap
