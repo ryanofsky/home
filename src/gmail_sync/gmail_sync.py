@@ -32,6 +32,8 @@ NFO_FLAGS = "flags"
 STORE_DIR = "~/store/mail/2013"
 OAUTH2_URL = "https://accounts.google.com/o/oauth2/token"
 
+imaplib._MAXLINE += 1000000000
+
 def main():
   store = Store(os.path.expanduser(STORE_DIR))
   imap = connect(store)
