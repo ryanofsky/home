@@ -192,7 +192,7 @@ def search(imap, query):
   status, data = imap.uid("SEARCH", None, query)
   if status != "OK":
      raise Exception("search failed status={!r} data={!r}".format(status, data))
-  return map(int, re.match(b"[0-9 ]+", data[0]).group(0).split())
+  return map(int, re.match(b"[0-9 ]*", data[0]).group(0).split())
 
 
 def fetch(imap, uid, fetch_body):
