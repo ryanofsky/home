@@ -32,6 +32,7 @@ def test_sync(test, loop, tmpdir):
     gmail_sync.setup_capture(imap, store)
     store.start_capture()
     try:
+      store.config[gmail_sync.CONFIG_NEXT_UID] = 0
       store.config[gmail_sync.CONFIG_UIDVALIDITY] = 11
       def store_log(msg):
         with open(store.log_path, "a") as fp:

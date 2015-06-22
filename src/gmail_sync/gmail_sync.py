@@ -29,6 +29,16 @@ NFO_FLAGS = "flags"
 
 def main():
   store = Store(os.path.expanduser("~/store/mail/2013"))
+  imap = connect()
+  gmail_sync.setup_capture(imap, store)
+  store.start_capture()
+  try:
+    sync(store, imap)
+    log_counters(store)
+    imap.close()
+    imap.logout()
+  finally:
+    store.stop_capture()
 
 class Store:
   def __init__(self, directory):
@@ -132,11 +142,12 @@ def sync(store, imap):
   # FIXME: Should add on QRESYNC param when gmail supports it (rfc7162)
   imap.select('"[Gmail]/All Mail"', readonly=True)
   last_modseq = store.config.get(CONFIG_LAST_MODSEQ, 0)
-  last_next_uid = store.config.get(CONFIG_NEXT_UID, 0)
+  last_next_uid = store.config.get(CONFIG_NEXT_UID)
   last_uidvalidity = store.config.get(CONFIG_UIDVALIDITY)
   max_modseq = int(imap.untagged_responses["HIGHESTMODSEQ"][0])
   next_uid = int(imap.untagged_responses["UIDNEXT"][0])
   max_uid = next_uid - 1
+  min_uid = last_next_uid if last_next_uid is not None else max_uid
   uidvalidity = int(imap.untagged_responses["UIDVALIDITY"][0])
   if last_uidvalidity is not None and last_uidvalidity != uidvalidity:
     raise Exception("uidvalidity {} expected {}".format(uidvalidity, last_uidvalidity))
