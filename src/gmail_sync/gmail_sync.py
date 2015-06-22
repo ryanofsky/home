@@ -157,9 +157,9 @@ def sync(store, imap):
     raise Exception("uidvalidity {} expected {}".format(uidvalidity, last_uidvalidity))
 
   # Search for uids greater than last downloaded message.
-  uids = search(imap, "{}:{}".format(last_next_uid, max_uid))
+  uids = search(imap, "{}:{}".format(min_uid, max_uid))
   uids = collections.OrderedDict((x, None) for x in sorted(uids))
-  for uid in range(last_next_uid, next_uid):
+  for uid in range(min_uid, next_uid):
     if uid not in uids:
       touch(store.del_path(uid))
       continue
