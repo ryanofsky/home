@@ -19,7 +19,7 @@ CONFIG_OAUTH2_CLIENT_SECRET = "oauth2_client_secret"
 CONFIG_OAUTH2_REFRESH_TOKEN = "oauth2_refresh_token"
 CONFIG_OAUTH2_URL = "oauth2_url"
 CONFIG_USER = "user"
-CONFIG_LAST_MODSEQ = "last_modseq"
+CONFIG_LAST_MAX_MODSEQ = "last_max_modseq"
 CONFIG_NEXT_UID = "next_uid"
 CONFIG_UIDVALIDITY = "uidvalidity"
 NFO_GM_THRID = "gm_thrid"
@@ -147,47 +147,32 @@ def setup_capture(imap, store):
 def sync(store, imap):
   # FIXME: Should add on QRESYNC param when gmail supports it (rfc7162)
   imap.select('"[Gmail]/All Mail"', readonly=True)
-  last_modseq = store.config.get(CONFIG_LAST_MODSEQ, 0)
-  last_next_uid = store.config.get(CONFIG_NEXT_UID)
   last_uidvalidity = store.config.get(CONFIG_UIDVALIDITY)
-  max_modseq = int(imap.untagged_responses["HIGHESTMODSEQ"][0])
-  next_uid = int(imap.untagged_responses["UIDNEXT"][0])
-  max_uid = next_uid - 1
-  min_uid = last_next_uid if last_next_uid is not None else max_uid
+  last_next_uid = store.config.get(CONFIG_NEXT_UID)
+  last_max_modseq = store.config.get(CONFIG_LAST_MAX_MODSEQ)
   uidvalidity = int(imap.untagged_responses["UIDVALIDITY"][0])
+  next_uid = int(imap.untagged_responses["UIDNEXT"][0])
+  max_modseq = int(imap.untagged_responses["HIGHESTMODSEQ"][0])
   if last_uidvalidity is not None and last_uidvalidity != uidvalidity:
     raise Exception("uidvalidity {} expected {}".format(uidvalidity, last_uidvalidity))
 
   # Search for uids greater than last downloaded message.
-  uids = search(imap, "{}:{}".format(min_uid, max_uid))
-  uids = collections.OrderedDict((x, None) for x in sorted(uids))
-  for uid in range(min_uid, next_uid):
-    if uid not in uids:
-      touch(store.del_path(uid))
-      continue
-    msg_path = store.msg_path(uid)
-    if os.path.exists(msg_path):
-      continue
-    nfo, body = fetch(imap, uid, True)
-
-    save_data(store.nfo_path(uid), nfo)
-    make_parent_dirs(msg_path)
-    with atomic_write(msg_path, binary=True) as fp:
-      fp.write(body)
-
+  if last_next_uid is not None and last_next_uid != next_uid:
+    if last_next_uid > next_uid:
+      raise Exception("last_next_uid {} > next_uid{}".format(last_next_uid, next_uid))
+    uids = search(imap, "{}:{}".format(last_next_uid, next_uid - 1))
+    uids = collections.OrderedDict((x, None) for x in sorted(uids))
+    for uid in range(last_next_uid, next_uid):
+      save(store, imap, uid, deleted=uid not in uids)
   store.config[CONFIG_NEXT_UID] = next_uid
   store.save_config()
 
-  uids = search(imap, 'MODSEQ {}'.format(last_modseq))
-  last_modseq = last_modseq
-  for uid in uids:
-    nfo, body = fetch(imap, uid, False)
-    if last_modseq is None or last_modseq < nfo[NFO_MODSEQ]:
-      last_modseq = nfo[NFO_MODSEQ]
-    save_data(store.nfo_path(uid), nfo)
-    make_parent_dirs(msg_path)
-
-  store.config[CONFIG_LAST_MODSEQ] = last_modseq
+  # Search for message modified since last modseq.
+  if last_max_modseq is not None and last_max_modseq != max_modseq:
+    uids = search(imap, 'MODSEQ {}'.format(last_max_modseq))
+    for uid in uids:
+      save(store, imap, uid, refresh_flags=True)
+  store.config[CONFIG_LAST_MAX_MODSEQ] = max_modseq
   store.save_config()
 
 def search(imap, query):
@@ -196,6 +181,32 @@ def search(imap, query):
      raise Exception("search failed status={!r} data={!r}".format(status, data))
   return map(int, re.match(b"[0-9 ]*", data[0]).group(0).split())
 
+def save(store, imap, uid, deleted=False, refresh_flags=False):
+  msg_path = store.msg_path(uid)
+  nfo_path = store.nfo_path(uid)
+  del_path = store.del_path(uid)
+
+  msg_exists = os.path.exists(msg_path)
+  nfo_exists = os.path.exists(nfo_path)
+  del_exists = os.path.exists(del_path)
+
+  if deleted and not del_exists:
+    if nfo_exists or msg_exists:
+      store.log("Error: marking downloaded file deleted uid={} msg_exists={} "
+                " nfo_exists={}".format(uid, msg_exists, nfo_exists))
+    touch(del_path)
+    return
+
+  if nfo_exists and msg_exists and not refresh_flags:
+    return
+
+  nfo, body = fetch(imap, uid, not msg_exists)
+  make_parent_dirs(nfo_path)
+  save_data(nfo_path, nfo)
+  if body is not None:
+    make_parent_dirs(msg_path)
+    with atomic_write(msg_path, binary=True) as fp:
+      fp.write(body)
 
 def fetch(imap, uid, fetch_body):
   req_fields = ("(X-GM-THRID X-GM-MSGID X-GM-LABELS MODSEQ INTERNALDATE "

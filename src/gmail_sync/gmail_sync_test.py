@@ -32,12 +32,14 @@ def test_sync(test, loop, tmpdir):
     gmail_sync.setup_capture(imap, store)
     store.start_capture()
     try:
-      store.config[gmail_sync.CONFIG_NEXT_UID] = 0
+      store.config[gmail_sync.CONFIG_NEXT_UID] = 3
+      store.config[gmail_sync.CONFIG_LAST_MAX_MODSEQ] = 0
       store.config[gmail_sync.CONFIG_UIDVALIDITY] = 11
       def store_log(msg):
         with open(store.log_path, "a") as fp:
           fp.write(msg + "\n")
       store.log = store_log
+      gmail_sync.touch(store.msg_path(2))
       gmail_sync.sync(store, imap)
       gmail_sync.log_counters(store)
       imap.close()
@@ -66,7 +68,7 @@ def test_sync(test, loop, tmpdir):
     b"* OK [HIGHESTMODSEQ 1248303]\r\n",
     b"OK (Success)\r\n")
   yield from expect_command(test, client_reader, client_writer,
-    b"UID SEARCH 0:9\r\n",
+    b"UID SEARCH 3:9\r\n",
     b"* SEARCH 5 9 (MODSEQ 1248339)\r\n",
     b"OK (Success)\r\n")
   yield from expect_command(test, client_reader, client_writer,
@@ -111,9 +113,7 @@ def test_sync(test, loop, tmpdir):
         output_files[relfile] = data
 
   expected_files = {
-      '0000/0000.del': b'',
-      '0000/0001.del': b'',
-      '0000/0002.del': b'',
+      '0000/0002.txt': b'',
       '0000/0002.yaml': {'date': '01-Jan-2013 23:36:00 +0000',
                          'flags': ['\\Seen'],
                          'gm_labels': ['1-info',
@@ -148,7 +148,7 @@ def test_sync(test, loop, tmpdir):
                          'gm_msgid': 1423005041855881429,
                          'gm_thrid': 1423005031746205660,
                          'modseq': 1005137},
-      'config.yaml': {'last_modseq': 1005137, 'next_uid': 10, 'uidvalidity': 11},
+      'config.yaml': {'last_max_modseq': 1248303, 'next_uid': 10, 'uidvalidity': 11},
       'log.txt': b'read 926 write 350\n'}
 
   test.maxDiff = None
