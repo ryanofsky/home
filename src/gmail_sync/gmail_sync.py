@@ -31,6 +31,7 @@ NFO_FLAGS = "flags"
 
 STORE_DIR = "~/store/mail/2013"
 OAUTH2_URL = "https://accounts.google.com/o/oauth2/token"
+MAX_BYTES = 1000000
 
 imaplib._MAXLINE += 1000000000
 
@@ -160,7 +161,7 @@ def sync(store, imap):
   if last_next_uid is not None and last_next_uid != next_uid:
     if last_next_uid > next_uid:
       raise Exception("last_next_uid {} > next_uid{}".format(last_next_uid, next_uid))
-    uids = search(imap, "{}:{}".format(last_next_uid, next_uid - 1))
+    uids = search(imap, "UID {}:{}".format(last_next_uid, next_uid - 1))
     uids = collections.OrderedDict((x, None) for x in sorted(uids))
     for uid in range(last_next_uid, next_uid):
       save(store, imap, uid, deleted=uid not in uids)
@@ -175,11 +176,34 @@ def sync(store, imap):
   store.config[CONFIG_LAST_MAX_MODSEQ] = max_modseq
   store.save_config()
 
+  save_uids(store, imap)
+
+def save_uids(store, imap):
+  uids_path = os.path.join(store.directory, "uids.txt")
+  if not os.path.exists(uids_path):
+    return
+
+  with open(uids_path, "rt") as fp:
+    for line in fp:
+      if line.startswith("#"):
+        continue
+      if store.read_bytes + store.sent_bytes > MAX_BYTES:
+        print("Enough bytes")
+        break
+      uid = int(line.strip())
+      print("uid{}", uid)
+      break
+
 def search(imap, query):
   status, data = imap.uid("SEARCH", None, query)
   if status != "OK":
      raise Exception("search failed status={!r} data={!r}".format(status, data))
   return map(int, re.match(b"[0-9 ]*", data[0]).group(0).split())
+
+def save_search(store, imap, query, name):
+  with open(os.path.join(store.directory, name), "a") as fp:
+    for uid in sorted(search(imap, query), reverse=True):
+      fp.write("{}\n".format(uid))
 
 def save(store, imap, uid, deleted=False, refresh_flags=False):
   msg_path = store.msg_path(uid)
