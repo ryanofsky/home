@@ -68,7 +68,7 @@ def test_sync(test, loop, tmpdir):
     b"* OK [HIGHESTMODSEQ 1248303]\r\n",
     b"OK (Success)\r\n")
   yield from expect_command(test, client_reader, client_writer,
-    b"UID SEARCH 3:9\r\n",
+    b"UID SEARCH UID 3:9\r\n",
     b"* SEARCH 5 9 (MODSEQ 1248339)\r\n",
     b"OK (Success)\r\n")
   yield from expect_command(test, client_reader, client_writer,
@@ -149,7 +149,7 @@ def test_sync(test, loop, tmpdir):
                          'gm_thrid': 1423005031746205660,
                          'modseq': 1005137},
       'config.yaml': {'last_max_modseq': 1248303, 'next_uid': 10, 'uidvalidity': 11},
-      'log.txt': b'read 926 write 350\n'}
+      'log.txt': b'read 926 write 354\n'}
 
   test.maxDiff = None
   test.assertEqual(output_files, expected_files);
