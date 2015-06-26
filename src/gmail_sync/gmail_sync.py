@@ -223,7 +223,7 @@ def save(store, imap, uid, deleted=False, refresh_flags=False):
   if nfo_exists and msg_exists and not refresh_flags:
     return
 
-  nfo, body = fetch(imap, uid, not msg_exists)
+  nfo, body = fetch(store, imap, uid, not msg_exists)
   make_parent_dirs(nfo_path)
   save_data(nfo_path, nfo)
   if body is not None:
@@ -231,7 +231,7 @@ def save(store, imap, uid, deleted=False, refresh_flags=False):
     with atomic_write(msg_path, binary=True) as fp:
       fp.write(body)
 
-def fetch(imap, uid, fetch_body):
+def fetch(store, imap, uid, fetch_body):
   req_fields = ("(X-GM-THRID X-GM-MSGID X-GM-LABELS MODSEQ INTERNALDATE "
                 "FLAGS{})".format(" BODY.PEEK[]" if fetch_body else ""))
   re_fields = (br"(\d+) \(X-GM-THRID (\d+) X-GM-MSGID (\d+) X-GM-LABELS "
@@ -243,10 +243,12 @@ def fetch(imap, uid, fetch_body):
     raise Exception("search failed status={!r} data={!r}".format(status, data))
 
   if fetch_body:
-    if len(data) != 2 or len(data[0]) != 2 or data[1] != b")":
+    if len(data) < 2 or len(data[0]) != 2 or data[1] != b")":
       raise Exception("search failed status={!r} data={!r}".format(status, data))
     nfo_str = data[0][0]
     body = data[0][1]
+    if len(data) > 2:
+      store.log("Unexpected data during fetch uid {}: {!r}".format(uid, data[2:]))
   else:
     if len(data) < 1:
       raise Exception("search failed status={!r} data={!r}".format(status, data))
