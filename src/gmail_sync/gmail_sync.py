@@ -191,8 +191,7 @@ def save_uids(store, imap):
         print("Enough bytes")
         break
       uid = int(line.strip())
-      print("uid{}", uid)
-      break
+      save(store, imap, uid)
 
 def search(imap, query):
   status, data = imap.uid("SEARCH", None, query)
