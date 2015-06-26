@@ -31,7 +31,7 @@ NFO_FLAGS = "flags"
 
 STORE_DIR = "~/store/mail/2013"
 OAUTH2_URL = "https://accounts.google.com/o/oauth2/token"
-MAX_BYTES = 1000000
+MAX_BYTES = 1000000 * 500
 
 imaplib._MAXLINE += 1000000000
 
