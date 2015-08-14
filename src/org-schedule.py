@@ -23,9 +23,9 @@ def replace(txt):
   date = None
   for orig_date, orig_str in orig_dates:
     if prev_orig_date is None or prev_orig_date.year != orig_date.year:
-      date = datetime.date(orig_date.year, 1, 2)
+      date = datetime.date(orig_date.year, 1, 3)
     elif prev_orig_date != orig_date:
-      date += datetime.timedelta(2)
+      date += datetime.timedelta(3)
     new_dates[orig_str] = "SCHEDULED: <{:%Y-%m-%d %a}".format(date)
     prev_orig_date = orig_date
 
