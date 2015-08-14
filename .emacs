@@ -265,7 +265,7 @@
 (setq org-publish-project-alist
       '(
         ("org-notes"
-         :base-directory "~/google/"
+         :base-directory "~/google.pub/"
          :base-extension "org"
          :publishing-directory "~/public_html/"
          :recursive t
@@ -302,12 +302,20 @@
  '(inhibit-startup-screen t)
  '(lazy-highlight-cleanup nil)
  '(org-adapt-indentation t)
+ '(org-clock-mode-line-total 'current)
  '(org-agenda-custom-commands
    (quote
     (("n" "Agenda and all TODO's"
       ((agenda "" nil)
        (alltodo "" nil))
       nil)
+     ("t" "Todo Agenda" agenda ""
+      ((org-agenda-overriding-header "Todo Agenda")
+       (org-agenda-view-columns-initially nil)
+       (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}")
+       (org-agenda-use-time-grid nil)
+       (org-agenda-span
+        (quote month))))
      ("r" "Russ Agenda" agenda ""
       ((org-agenda-overriding-header "Russ Agenda")
        (org-agenda-view-columns-initially nil)
@@ -319,7 +327,7 @@
         (quote month))))
      ("q" "Russ Todos" alltodo ""
       ((org-agenda-view-columns-initially t)
-       (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:} %6CLOCKSUM{Total}")
+       (org-agenda-overriding-columns-format "%66ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:}")
        (org-agenda-skip-function
         (quote
          (org-agenda-skip-entry-if
@@ -332,7 +340,7 @@
       ("~/public_html/todo.html")))))
  '(org-agenda-files
    (quote
-    ("~/google/log.org" "~/google/todo.org_archive" "~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
+    ("~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
  '(org-agenda-log-mode-add-notes t)
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-start-on-weekday nil)
@@ -352,7 +360,6 @@ Entered on %U
   %i
   %a"))))
  '(org-clock-continuously t)
- '(org-clock-idle-time 5)
  '(org-clock-into-drawer "LOGBOOK")
  '(org-clock-persist t)
  '(org-clock-persist-query-resume nil)
@@ -374,7 +381,7 @@ Entered on %U
  '(org-time-clocksum-use-fractional t)
  '(org-todo-keywords
    (quote
-    ((sequence "TODO(t)" "WAIT(w@/@)" "|" "DONE(d@/@)" "NVM(n@/@)")))))
+    ((sequence "NEXT(n)" "WAIT(w@/@)" "PROJ(p)" "|" "DONE(d@/@)" "NVM(v@/@)" "DEAD(x@/@)" "EXPORTED(e@/@)")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
