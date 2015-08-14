@@ -15,7 +15,7 @@
         'ace-jump-mode
         'htmlize
         'expand-region
-        'adaptive-wrap
+        ;'adaptive-wrap -- broken?
         'tabbar
         'web-mode
         ;'flycheck
