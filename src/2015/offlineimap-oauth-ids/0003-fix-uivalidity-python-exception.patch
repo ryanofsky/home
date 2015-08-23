@@ -1,0 +1,32 @@
+From 29e1ae244ef2e64fa8c90c5d0f26dc15da8bcecd Mon Sep 17 00:00:00 2001
+From: Russell Yanofsky <russ@yanofsky.org>
+Date: Mon, 16 Feb 2015 16:04:51 -0500
+Subject: [PATCH 3/5] fix uivalidity python exception
+
+---
+ offlineimap/accounts.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/offlineimap/accounts.py b/offlineimap/accounts.py
+index 638c102..5e87cd5 100644
+--- a/offlineimap/accounts.py
++++ b/offlineimap/accounts.py
+@@ -432,13 +432,13 @@ def syncfolder(account, remotefolder, quick):
+             if not localfolder.check_uidvalidity():
+                 ui.validityproblem(localfolder)
+                 localrepos.restore_atime()
+-                print 'ACTION { "name" : "validityProblemLocal", "path" : %s }' % imaputil.quote( "%s" % self )
++                print 'ACTION { "name" : "validityProblemLocal", "path" : %s }' % imaputil.quote( "%s" % remotefolder )
+                 sys.stdout.flush()
+                 return
+             if not remotefolder.check_uidvalidity():
+                 ui.validityproblem(remotefolder)
+                 localrepos.restore_atime()
+-                print 'ACTION { "name" : "validityProblemRemote", "path" : %s }' % imaputil.quote( "%s" % self )
++                print 'ACTION { "name" : "validityProblemRemote", "path" : %s }' % imaputil.quote( "%s" % remotefolder )
+                 sys.stdout.flush()
+                 return
+         else:
+-- 
+2.5.0
+

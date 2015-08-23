@@ -1,0 +1,113 @@
+diff --git a/cmd/restore-cmd.py b/cmd/restore-cmd.py
+index d527489..8996e51 100755
+--- a/cmd/restore-cmd.py
++++ b/cmd/restore-cmd.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python
+-import copy, errno, sys, stat, re
++import copy, datetime, errno, sys, stat, re
+ from bup import options, git, metadata, vfs
+ from bup.helpers import *
+ from bup._helpers import write_sparsely
+@@ -18,6 +18,8 @@ map-group=  given OLD=NEW, restore OLD group as NEW group
+ map-uid=    given OLD=NEW, restore OLD uid as NEW uid
+ map-gid=    given OLD=NEW, restore OLD gid as NEW gid
+ q,quiet     don't show progress meter
++l,list      list files, don't write output
++size        calculate sizes in file list
+ """
+ 
+ total_restored = 0
+@@ -37,7 +39,7 @@ def verbose2(s):
+ 
+ 
+ def plog(s):
+-    if opt.quiet:
++    if opt.quiet or opt.list:
+         return
+     qprogress(s)
+ 
+@@ -50,8 +52,46 @@ def valid_restore_path(path):
+         return True
+ 
+ 
+-def print_info(n, fullname):
+-    if stat.S_ISDIR(n.mode):
++def print_list(n, meta, fullname):
++    if meta:
++        mode = meta.mode
++        size = meta.size
++        mtime = meta.mtime / 1e9
++        target = meta.symlink_target
++    else:
++        mode = n.mode
++        size = None
++        mtime = n.mtime
++        target = None
++
++    if size is None and opt.size:
++        size = n.size()
++
++    size_str = "{:17}".format("?") if size is None else "{:17,d}".format(size)
++    mtime_str = str(datetime.datetime.utcfromtimestamp(int(mtime)))
++
++    if stat.S_ISLNK(mode):
++      suffix = " -> {}".format(target)
++    elif stat.S_ISDIR(mode):
++      suffix = "/"
++    elif stat.S_ISCHR(mode):
++      suffix = " [char device]"
++    elif stat.S_ISBLK(mode):
++      suffix = " [block device]"
++    elif stat.S_ISFIFO(mode):
++      suffix = " [named pipe]"
++    elif stat.S_ISSOCK(mode):
++      suffix = " [socket]"
++    else:
++      suffix = ""
++
++    print "{}  {}  {}{}".format(mtime_str, size_str, fullname, suffix)
++
++
++def print_info(n, meta, fullname):
++    if opt.list:
++        print_list(n, meta, fullname)
++    elif stat.S_ISDIR(n.mode):
+         verbose1('%s/' % fullname)
+     elif stat.S_ISLNK(n.mode):
+         verbose2('%s@ -> %s' % (fullname, n.readlink()))
+@@ -217,7 +257,7 @@ def do_root(n, sparse, owner_map, restore_root_meta = True):
+         if mfile:
+             meta_stream = mfile.open()
+             root_meta = metadata.Metadata.read(meta_stream)
+-        print_info(n, '.')
++        print_info(n, root_meta, '.')
+         total_restored += 1
+         plog('Restoring: %d\r' % total_restored)
+         for sub in n:
+@@ -255,13 +295,13 @@ def do_node(top, n, sparse, owner_map, meta = None):
+             if mfile:
+                 meta_stream = mfile.open()
+                 meta = metadata.Metadata.read(meta_stream)
+-        print_info(n, fullname)
++        print_info(n, meta, fullname)
+ 
+         created_hardlink = False
+-        if meta and meta.hardlink_target:
++        if meta and meta.hardlink_target and not opt.list:
+             created_hardlink = hardlink_if_possible(fullname, n, meta)
+ 
+-        if not created_hardlink:
++        if not created_hardlink and not opt.list:
+             create_path(n, fullname, meta)
+             if meta:
+                 if stat.S_ISREG(meta.mode):
+@@ -277,7 +317,7 @@ def do_node(top, n, sparse, owner_map, meta = None):
+             if meta_stream and not stat.S_ISDIR(sub.mode):
+                 m = metadata.Metadata.read(meta_stream)
+             do_node(top, sub, sparse, owner_map, meta = m)
+-        if meta and not created_hardlink:
++        if meta and not created_hardlink and not opt.list:
+             apply_metadata(meta, fullname, opt.numeric_ids, owner_map)
+     finally:
+         if meta_stream:

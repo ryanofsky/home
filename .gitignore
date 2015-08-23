@@ -36,3 +36,4 @@
 .vim/
 .viminfo
 src/bup/
+src/etc/

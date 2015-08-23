@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import os
+import stat
+import sys
+import datetime
+
+def p(path, name):
+  s = os.lstat(path)
+  mtime = s.st_mtime
+  size = s.st_size
+  if stat.S_ISLNK(s.st_mode):
+    suffix = " -> {}".format(os.readlink(path))
+  elif stat.S_ISDIR(s.st_mode):
+    suffix = "/"
+  elif stat.S_ISCHR(s.st_mode):
+    suffix = " [char device]"
+  elif stat.S_ISBLK(s.st_mode):
+    suffix = " [block device]"
+  elif stat.S_ISFIFO(s.st_mode):
+    suffix = " [named pipe]"
+  elif stat.S_ISSOCK(s.st_mode):
+    suffix = " [socket]"
+  else:
+    suffix = ""
+  print "{}  {:17,d}  {}{}".format(datetime.datetime.utcfromtimestamp(int(mtime)), size, name, suffix)
+
+for root_dir in sys.argv[1:] or ['.']:
+  for dir, dirs, files in os.walk(root_dir):
+    rel_dir = os.path.relpath(dir, root_dir)
+    if rel_dir == ".":
+      rel_dir = ""
+    p(dir, rel_dir)
+    for file in files:
+      p(os.path.join(dir, file), os.path.join(rel_dir, file))

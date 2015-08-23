@@ -1,0 +1,38 @@
+From 44f27c187896c6adf348eb4177afbd56d188666a Mon Sep 17 00:00:00 2001
+From: Russell Yanofsky <russ@yanofsky.org>
+Date: Mon, 16 Feb 2015 16:05:23 -0500
+Subject: [PATCH 4/5] add oauth2 python eval support
+
+---
+ offlineimap/repository/IMAP.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/offlineimap/repository/IMAP.py b/offlineimap/repository/IMAP.py
+index a5501ca..d798a04 100644
+--- a/offlineimap/repository/IMAP.py
++++ b/offlineimap/repository/IMAP.py
+@@ -326,12 +326,21 @@ class IMAPRepository(BaseRepository):
+         return self.getconf('oauth2_url')
+ 
+     def getoauth2clientid(self):
++        expr = self.getconf('oauth2_client_id_eval', None)
++        if expr is not None:
++            return self.localeval.eval(expr)
+         return self.getconf('oauth2_client_id')
+ 
+     def getoauth2clientsecret(self):
++        expr = self.getconf('oauth2_client_secret_eval', None)
++        if expr is not None:
++            return self.localeval.eval(expr)
+         return self.getconf('oauth2_client_secret')
+ 
+     def getoauth2refreshtoken(self):
++        expr = self.getconf('oauth2_refresh_token_eval', None)
++        if expr is not None:
++            return self.localeval.eval(expr)
+         return self.getconf('oauth2_refresh_token')
+ 
+     def getfolders(self):
+-- 
+2.5.0
+

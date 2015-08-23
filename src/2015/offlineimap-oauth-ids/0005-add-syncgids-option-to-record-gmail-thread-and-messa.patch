@@ -1,0 +1,44 @@
+From 06b22fdd4587dff46823c334b45214f87f7d478a Mon Sep 17 00:00:00 2001
+From: Russell Yanofsky <russ@yanofsky.org>
+Date: Mon, 16 Feb 2015 23:46:08 -0500
+Subject: [PATCH 5/5] add syncgids option to record gmail thread and message
+ ids
+
+---
+ offlineimap/folder/Gmail.py | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/offlineimap/folder/Gmail.py b/offlineimap/folder/Gmail.py
+index 61145c6..208c5a5 100644
+--- a/offlineimap/folder/Gmail.py
++++ b/offlineimap/folder/Gmail.py
+@@ -54,6 +54,13 @@ class GmailFolder(IMAPFolder):
+         # enables / disables label sync
+         self.synclabels = self.repository.account.getconfboolean('synclabels', False)
+ 
++        # enables / disables gmail message id / thread id headers
++        self.syncgids = self.repository.account.getconfboolean('syncgids', False)
++
++        if self.syncgids:
++            self.imap_query.insert(0, 'X-GM-MSGID')
++            self.imap_query.insert(1, 'X-GM-THRID')
++
+         # if synclabels is enabled, add a 4th pass to sync labels
+         if self.synclabels:
+             self.imap_query.insert(0, 'X-GM-LABELS')
+@@ -84,6 +91,12 @@ class GmailFolder(IMAPFolder):
+         # msbody is in [0][1].
+         body = data[0][1].replace("\r\n", "\n")
+ 
++        if self.syncgids:
++            msgid = re.search(r'X-GM-MSGID (\d+)', data[0][0]).group(1)
++            thrid = re.search(r'X-GM-THRID (\d+)', data[0][0]).group(1)
++            body = self.addmessageheader(body, '\n', 'X-GM-MSGID', msgid)
++            body = self.addmessageheader(body, '\n', 'X-GM-THRID', thrid)
++
+         # Embed the labels into the message headers
+         if self.synclabels:
+             m = re.search('X-GM-LABELS\s*\(([^\)]*)\)', data[0][0])
+-- 
+2.5.0
+
