@@ -23,7 +23,7 @@ while true; do
   fi
   NFILE="${FILE#*/}"
   if test "$NFILE" = "$FILE"; then
-    NFILE=$(git ls-files | grep "$FILE")
+    NFILE=$(git ls-files | grep "\(^\|/\)$FILE" | tail -n1)
     if test -e "$NFILE"; then
       echo -n "$NFILE"
       exit 0

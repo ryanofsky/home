@@ -1,13 +1,14 @@
 import json
 import sys
 import yaml
+import re
 
 def main():
   config = yaml.load(open(sys.argv[1]))
   Rules(config).dump()
-  
+
   #groups = open("/home/ryanofsky/russp/groups.txt").read().split()
-  #print_missing(rules, groups)
+  #print_missing(config, groups)
 
 def print_missing(config, groups):
   exprs = set()
