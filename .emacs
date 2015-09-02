@@ -260,6 +260,9 @@
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . nil)))
 (setq mouse-wheel-progressive-speed t)
 
+(setq browse-url-browser-function 'browse-url-generic
+      browse-url-generic-program "chromium")
+
 ;; http://orgmode.org/guide/Publishing.html
 (require 'ox-publish)
 (setq org-publish-project-alist
