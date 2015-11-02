@@ -305,7 +305,6 @@
  '(inhibit-startup-screen t)
  '(lazy-highlight-cleanup nil)
  '(org-adapt-indentation t)
- '(org-clock-mode-line-total 'current)
  '(org-agenda-custom-commands
    (quote
     (("n" "Agenda and all TODO's"
@@ -364,6 +363,7 @@ Entered on %U
   %a"))))
  '(org-clock-continuously t)
  '(org-clock-into-drawer "LOGBOOK")
+ '(org-clock-mode-line-total (quote current))
  '(org-clock-persist t)
  '(org-clock-persist-query-resume nil)
  '(org-datetree-add-timestamp (quote inactive))
@@ -377,6 +377,9 @@ Entered on %U
  '(org-log-into-drawer t)
  '(org-log-note-clock-out t)
  '(org-log-states-order-reversed nil)
+ '(org-modules
+   (quote
+    (org-bbdb org-bibtex org-docview org-gnus org-habit org-info org-irc org-mhe org-rmail org-w3m)))
  '(org-odd-levels-only t)
  '(org-return-follows-link t)
  '(org-special-ctrl-a/e (quote (t . reversed)))
