@@ -387,7 +387,7 @@ Entered on %U
  '(org-time-clocksum-use-fractional t)
  '(org-todo-keywords
    (quote
-    ((sequence "NEXT(n)" "WAIT(w@/@)" "PROJ(p)" "|" "DONE(d@/@)" "NVM(v@/@)" "DEAD(x@/@)" "EXPORTED(e@/@)")))))
+    ((sequence "NEXT(n)" "WAIT(w@/@)" "PROJ(p)" "GOAL(g)" "|" "DONE(d@/@)" "NVM(v@/@)" "DEAD(x@/@)" "EXPORTED(e@/@)")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
