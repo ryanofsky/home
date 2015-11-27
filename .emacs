@@ -47,7 +47,6 @@
 (column-number-mode 1)
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (setq backup-directory-alist (list (cons ".*" backup-dir)))
-(setq auto-save-default nil) ; stop creating those #autosave# files
 
 ;; Get middle click to work.
 ;; http://www.emacswiki.org/emacs/CopyAndPaste
