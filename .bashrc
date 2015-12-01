@@ -22,6 +22,7 @@ fi
 
 
 # Put your fun stuff here.
+alias s='stty sane'
 
 # Look for file in parent directories, print relative path.
 findup () {
