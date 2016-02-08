@@ -170,7 +170,7 @@ def parse_chase_pdftext(json_filename):
     return txns, opening_balance, closing_balance, stream
 
 
-TextFragment = namedtuple("TextFragment", "filename pageno y x ord text")
+TextFragment = namedtuple("TextFragment", "pageno y x ord text")
 
 class Txn:
     pass

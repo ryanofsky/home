@@ -1,5 +1,5 @@
 diff --git a/tools/pdf2txt.py b/tools/pdf2txt.py
-index 5eb24bf..cd26e89 100755
+index 5eb24bf..f2845f8 100755
 --- a/tools/pdf2txt.py
 +++ b/tools/pdf2txt.py
 @@ -1,14 +1,54 @@
@@ -48,7 +48,7 @@ index 5eb24bf..cd26e89 100755
 +        x = dec2int(x)
 +        y = dec2int(y)
 +        self.chase_out.append((
-+            self.chase_filename, self.chase_page, -y, x, self.chase_ord, text
++            self.chase_page, -y, x, self.chase_ord, text
 +        ))
 +        return PDFTextDevice.render_string_horizontal(self, seq, matrix, pos, *args)
 +
