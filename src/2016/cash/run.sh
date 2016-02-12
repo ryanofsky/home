@@ -24,7 +24,7 @@ if [ ! -e 0-chase-txt ]; then
     done
 fi
 
-rm -rf 1-chase-data
+#rm -rf 1-chase-data
 if [ ! -e 1-chase-data ]; then
     mkdir 1-chase-data
 
@@ -37,4 +37,16 @@ with open("1-chase-data/2014-07-18.json", "w") as fp:
 '
 
   test-eq 1-chase-data/2014-07-18.json expected-1-chase-data-2014-07-18.json
+fi
+
+rm -rf 9-mypay-data
+if [ ! -e 9-mypay-data ]; then
+    mkdir 9-mypay-data
+
+    python3.5 -c '
+import cash
+cash.parse_mypay_html("mypay.html")
+' > 9-mypay-data/txt
+
+  test-eq 9-mypay-data/txt expected-9-mypay-data.txt
 fi
