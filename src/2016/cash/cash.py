@@ -41,26 +41,37 @@ def parse_mypay_html(filename):
         assert tbody[3][0][0][0].text == "Pay details"
         assert len(tbody[4]) == 5
 
+        netpay = parse_price(netpay)
         print(paydate, docid, netpay)
 
         assert len(tbody[5]) == 2
         assert tbody[5][0].attrib["colspan"] == "2"
         assert tbody[5][0].attrib["rowspan"] == "2"
         assert tbody[5][0][0][0].text == "Earnings"
-        tab(tbody[5][0], docid, PAY)
+        total = 0
+        for label, details, current in tab(tbody[5][0], docid, PAY):
+            current = parse_price(current, True)
+            total += current
+            print("  {}: {}{} -- {}".format(PAY, label, details, current))
 
         assert tbody[5][1].attrib["colspan"] == "3"
         assert tbody[5][1][0][0].text == "Deductions"
-        tab(tbody[5][1], docid, DED)
+        for label, details, current in tab(tbody[5][1], docid, DED):
+            current = parse_price(current, True)
+            total -= current
+            print("  {}: {}{} -- {}".format(DED, label, details, current))
 
         assert len(tbody[6]) == 1
         assert tbody[6][0].attrib["colspan"] == "3"
         assert tbody[6][0][0][0].text == "Taxes"
-        tab(tbody[6][0], docid, TAX)
+        for label, details, current in tab(tbody[6][0], docid, TAX):
+            current = parse_price(current, True)
+            total -= current
+            print("  {}: {}{} -- {}".format(TAX, label, details, current))
 
+        assert total == netpay
         assert len(tbody[8]) == 1
         assert tbody[8][0][0][0].text == "Pay summary"
-
 
 def tab(el, docid, table_type):
     if table_type == PAY:
@@ -111,7 +122,6 @@ def tab(el, docid, table_type):
                 if label == "401K Pretax" or label == "Pretax 401 Flat" or label == "ER Benefit Cost":
                     goog_401k = goog_current
                 else:
-                   print("fuck", docid, label)
                    assert False
             assert garbage == "\xa0"
         else:
@@ -119,7 +129,16 @@ def tab(el, docid, table_type):
             label, income, current, ytd, garbage = bodycols
             assert garbage == "\xa0"
         if current != "$0.00":
-          print("  {}: {}{} -- {}".format(table_type, label, details, current))
+          yield label, details, current
+
+def parse_price(price_str, allow_negative=False):
+    price = 1
+    if allow_negative and price_str[0] == "(" and price_str[-1] == ")":
+        price *= -1
+        price_str = price_str[1:-1]
+    dollars, cents = re.match(r"\$([0-9,]+)\.([0-9]{2})", price_str).groups()
+    price *= int(cents) + 100 * int(dollars.replace(",", ""))
+    return price
 
 def parse_chase_pdftext(json_filename):
     with open(json_filename) as fp:
