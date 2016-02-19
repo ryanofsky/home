@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 from collections import namedtuple
 from lxml import etree
 from lxml.cssselect import CSSSelector
@@ -136,7 +137,9 @@ def parse_price(price_str, allow_negative=False):
     if allow_negative and price_str[0] == "(" and price_str[-1] == ")":
         price *= -1
         price_str = price_str[1:-1]
-    dollars, cents = re.match(r"\$([0-9,]+)\.([0-9]{2})", price_str).groups()
+    if price_str[0] == "$":
+        price_str = price_str[1:]
+    dollars, cents = re.match(r"^([0-9,]+)\.([0-9]{2})$", price_str).groups()
     price *= int(cents) + 100 * int(dollars.replace(",", ""))
     return price
 
@@ -145,14 +148,18 @@ def parse_chase_pdftext(json_filename):
         fragments = [TextFragment(*fragment) for fragment in json.load(fp)]
     stream = FragmentStream(fragments)
     stream.discard_until("Beginning Balance")
-    opening_balance = next(stream).text
+    opening_balance_str = next(stream).text
+    opening_balance = parse_price(opening_balance_str)
     stream.discard_until("Ending Balance")
-    closing_balance = next(stream).text
+    closing_balance_str = next(stream).text
+    closing_balance = parse_price(closing_balance_str)
     stream.discard_until("TRANSACTION DETAIL")
     assert next(stream).text == "Beginning Balance"
-    assert next(stream).text == opening_balance
+    assert next(stream).text == opening_balance_str
     next(stream)
     txns = []
+    #print("!!!{} {}".format(opening_balance_str, closing_balance_str), file=sys.stderr)
+    cur_balance = opening_balance
     while True:
         if stream.fragment.pageno != stream.prev_fragment.pageno:
             print(stream.fragment)
@@ -170,21 +177,24 @@ def parse_chase_pdftext(json_filename):
             continue
 
         txn = Txn()
-        txn.balance = words.pop()
-        txn.amount = words.pop()
+        txn.balance = parse_price(words.pop())
+        txn.amount = parse_price(words.pop())
         if words[-1] == "-":
             words.pop()
-            txn.debit = True
-        else:
-            txn.debit = False
+            txn.amount *= -1
         #words.append(repr(stream.fragment))
         txn.info = [" ".join(words)]
         txns.append(txn)
 
+        assert txn.balance == cur_balance + txn.amount
+        cur_balance = txn.balance
+
         if stream.fragment.text == "Ending Balance":
             break
-    assert next(stream).text == closing_balance
+    assert next(stream).text == closing_balance_str
     stream.discard_until(None)
+
+    assert cur_balance == closing_balance
 
     return txns, opening_balance, closing_balance, stream
 
