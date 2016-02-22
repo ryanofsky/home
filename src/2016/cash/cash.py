@@ -77,11 +77,13 @@ def parse_mypay_html(filename):
 def tab(el, docid, table_type):
     if table_type == PAY:
         if docid.startswith("RSU"):
-            expected_cols = ['Pay type', 'Hours', 'Pay rate', 'Piece units', 'Piece Rate', 'current', 'YTD']
+            expected_cols = ['Pay type', 'Hours', 'Pay rate', 'Piece units',
+                             'Piece Rate', 'current', 'YTD']
         else:
             expected_cols = ['Pay type', 'Hours', 'Pay rate', 'current', 'YTD']
     elif table_type == DED:
-        expected_cols = ['Employee', 'Employer', 'Deduction', 'current', 'YTD', 'current', 'YTD']
+        expected_cols = ['Employee', 'Employer', 'Deduction', 'current', 'YTD',
+                         'current', 'YTD']
     else:
         assert table_type == TAX
         expected_cols = ['Taxes', 'Based on', 'current', 'YTD']
@@ -110,7 +112,8 @@ def tab(el, docid, table_type):
         details = ""
         if table_type == PAY:
             if docid.startswith("RSU"):
-                label, hours, rate, piece_units, piece_rate, current, ytd = bodycols
+                label, hours, rate, piece_units, piece_rate, current, ytd = \
+                    bodycols
                 assert piece_units == "0.000000"
                 assert piece_rate == "$0.00"
             else:
@@ -120,7 +123,8 @@ def tab(el, docid, table_type):
         elif table_type == DED:
             label, current, ytd, goog_current, goog_ytd, garbage = bodycols
             if goog_current != "$0.00":
-                if label == "401K Pretax" or label == "Pretax 401 Flat" or label == "ER Benefit Cost":
+                if label in ("401K Pretax", "Pretax 401 Flat",
+                             "ER Benefit Cost"):
                     goog_401k = goog_current
                 else:
                    assert False
@@ -143,6 +147,14 @@ def parse_price(price_str, allow_negative=False):
     price *= int(cents) + 100 * int(dollars.replace(",", ""))
     return price
 
+def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
+                    discarded_text_output_filename):
+    txns, discarded_text = parse_chase_pdftext(pdftext_input_json_filename)
+    with open(txns_output_json_filename, "w") as fp:
+        json.dump(txns, fp, sort_keys=True, indent=4)
+    with open(discarded_text_output_filename, "w") as fp:
+        fp.write(discarded_text)
+
 def parse_chase_pdftext(json_filename):
     with open(json_filename) as fp:
         fragments = [TextFragment(*fragment) for fragment in json.load(fp)]
@@ -158,13 +170,15 @@ def parse_chase_pdftext(json_filename):
     assert next(stream).text == opening_balance_str
     next(stream)
     txns = []
-    #print("!!!{} {}".format(opening_balance_str, closing_balance_str), file=sys.stderr)
+    #print("!!!{} {}".format(opening_balance_str, closing_balance_str),
+    #      file=sys.stderr)
     cur_balance = opening_balance
     while True:
         if stream.fragment.pageno != stream.prev_fragment.pageno:
             print(stream.fragment)
             print(stream.prev_fragment)
-            assert re.match(r"Page +\d+ +of +\d+", txns[-1].info[-1].strip()), txns[-1].info[-1]
+            assert re.match(r"Page +\d+ +of +\d+", txns[-1].info[-1].strip()), \
+                txns[-1].info[-1]
             txns[-1].info.pop()
             stream.discard_until('(continued)')
             stream.discard_until('TRANSACTION DETAIL')
@@ -177,7 +191,8 @@ def parse_chase_pdftext(json_filename):
             continue
 
         txn = Txn()
-        txn.balance = parse_price(words.pop())
+        txn.old_balance = cur_balance
+        txn.new_balance = parse_price(words.pop())
         txn.amount = parse_price(words.pop())
         if words[-1] == "-":
             words.pop()
@@ -186,8 +201,8 @@ def parse_chase_pdftext(json_filename):
         txn.info = [" ".join(words)]
         txns.append(txn)
 
-        assert txn.balance == cur_balance + txn.amount
-        cur_balance = txn.balance
+        assert txn.new_balance == txn.old_balance + txn.amount
+        cur_balance = txn.new_balance
 
         if stream.fragment.text == "Ending Balance":
             break
@@ -196,8 +211,8 @@ def parse_chase_pdftext(json_filename):
 
     assert cur_balance == closing_balance
 
-    return txns, opening_balance, closing_balance, stream
-
+    return [(txn.old_balance, txn.new_balance, txn.amount, txn.info)
+            for txn in txns], stream.discarded_text
 
 TextFragment = namedtuple("TextFragment", "pageno y x ord text")
 

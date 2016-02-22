@@ -12,6 +12,7 @@ test-eq() {
     fi
 }
 
+# rm -rf 0-chase-txt
 if [ ! -e 0-chase-txt ]; then
     mkdir 0-chase-txt
 
@@ -24,22 +25,21 @@ if [ ! -e 0-chase-txt ]; then
     done
 fi
 
-rm -rf 1-chase-data
+# rm -rf 1-chase-data
 if [ ! -e 1-chase-data ]; then
     mkdir 1-chase-data
-
     python3.5 -c '
 import cash, json
-txns, _, _, _ = cash.parse_chase_pdftext("0-chase-txt/2014-07-18.json")
-with open("1-chase-data/2014-07-18.json", "w") as fp:
-  json.dump([(txn.balance, txn.amount, txn.info) for txn in txns],
-            fp, sort_keys=True, indent=4)
+cash.dump_chase_txns("0-chase-txt/2014-07-18.json",
+                     "1-chase-data/2014-07-18.json",
+                     "1-chase-data/2014-07-18.discard")
 '
 
   test-eq 1-chase-data/2014-07-18.json expected-1-chase-data-2014-07-18.json
+  test-eq 1-chase-data/2014-07-18.discard expected-1-chase-data-2014-07-18.discard
 fi
 
-rm -rf 9-mypay-data
+# rm -rf 9-mypay-data
 if [ ! -e 9-mypay-data ]; then
     mkdir 9-mypay-data
 
