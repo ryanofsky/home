@@ -241,17 +241,13 @@ class FragmentStream:
             self.discarded_text += "\n" if self.on_newline() else " "
         self.discarded_text += fragment.text
 
-    def discard_until(self, pattern):
-        pattern_is_str = isinstance(pattern, str)
+    def discard_until(self, text):
         for fragment in self:
-            if pattern_is_str:
-                if fragment.text == pattern: return
-            elif pattern is not None:
-                m = pattern.match(fragment.text)
-                if m: return m
+            if fragment.text == text:
+                break
             self.discard(fragment)
         else:
-            if pattern is not None:
+            if text is not None:
                 raise StopIteration
 
     def on_newline(self):
