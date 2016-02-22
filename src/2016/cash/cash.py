@@ -185,6 +185,9 @@ def parse_chase_pdftext(json_filename):
             next(stream)
             continue
 
+        if stream.fragment.text == "Ending Balance":
+            break
+
         words = stream.readline()
         if not re.match(r"\d{2}/\d{2}", words[0]):
             txns[-1].info.append(" ".join(words))
@@ -204,8 +207,6 @@ def parse_chase_pdftext(json_filename):
         assert txn.new_balance == txn.old_balance + txn.amount
         cur_balance = txn.new_balance
 
-        if stream.fragment.text == "Ending Balance":
-            break
     assert next(stream).text == closing_balance_str
     stream.discard_until(None)
 
