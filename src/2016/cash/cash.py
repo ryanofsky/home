@@ -168,21 +168,19 @@ def parse_chase_pdftext(json_filename):
     stream.discard_until("TRANSACTION DETAIL")
     assert next(stream).text == "Beginning Balance"
     assert next(stream).text == opening_balance_str
-    next(stream)
+    next(stream) # load up fragment for readline() call and checks below
     txns = []
     #print("!!!{} {}".format(opening_balance_str, closing_balance_str),
     #      file=sys.stderr)
     cur_balance = opening_balance
     while True:
         if stream.fragment.pageno != stream.prev_fragment.pageno:
-            print(stream.fragment)
-            print(stream.prev_fragment)
             assert re.match(r"Page +\d+ +of +\d+", txns[-1].info[-1].strip()), \
                 txns[-1].info[-1]
             txns[-1].info.pop()
             stream.discard_until('(continued)')
             stream.discard_until('TRANSACTION DETAIL')
-            next(stream)
+            next(stream) # load up fragment for readline() call and checks in next iteration
             continue
 
         if stream.fragment.text == "Ending Balance":
