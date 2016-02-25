@@ -1,7 +1,8 @@
+import io
 import json
 import re
 import sys
-from collections import namedtuple
+from collections import namedtuple, deque
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
@@ -158,108 +159,270 @@ def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
 def parse_chase_pdftext(json_filename):
     with open(json_filename) as fp:
         fragments = [TextFragment(*fragment) for fragment in json.load(fp)]
-    stream = FragmentStream(fragments)
-    stream.discard_until("Beginning Balance")
-    opening_balance_str = next(stream).text
-    opening_balance = parse_price(opening_balance_str)
-    stream.discard_until("Ending Balance")
-    closing_balance_str = next(stream).text
-    closing_balance = parse_price(closing_balance_str)
-    stream.discard_until("TRANSACTION DETAIL")
-    assert next(stream).text == "Beginning Balance"
-    assert next(stream).text == opening_balance_str
-    next(stream) # load up fragment for readline() call and checks below
+    it = PeekIterator(fragments, lookahead=1, lookbehind=2)
+    discarded_text = io.StringIO()
+    v1, v0 = fragments_discard_until(
+        it, discarded_text,
+        re.compile(r"(^Beginning Balance$)|(^Opening$)")).groups()
+    if v1:
+        assert not v0
+        line = fragments_read_line(it)
+        assert line[:-1] == ["Beginning Balance"], line
+        opening_balance_str = line[-1]
+
+        fragments_discard_until(it, discarded_text, "Ending Balance")
+        line = fragments_read_line(it)
+        assert line[:-1] == ["Ending Balance"], line
+        closing_balance_str = line[-1]
+
+        def discard_header(it):
+            fragments_discard_until(it, discarded_text, "TRANSACTION DETAIL")
+            it.__next__()
+
+        discard_header(it)
+        line = fragments_read_line(it)
+        assert line == ["Beginning Balance", opening_balance_str], line
+
+    elif v0:
+        assert not v1
+        line = fragments_read_line(it)
+        assert line[:3] == ["Opening", "Balance", "$"], line
+        opening_balance_str = line[3]
+
+        line = fragments_read_line(it)
+        assert line[:-1] == ["Additions", "$"]
+        parse_price(line[-1])
+
+        line = fragments_read_line(it)
+        assert line[:-1] == ["Deductions", "$"]
+        parse_price(line[-1])
+
+        line = fragments_read_line(it)
+        assert line[:-1] == ["Ending", "Balance", "$"], line
+        closing_balance_str = line[-1]
+
+        def discard_header(it):
+            line = fragments_read_line(it)
+            assert line == ["Activity"], line
+
+            line = fragments_read_line(it)
+            assert line == ["Date", "Description", "Additions",
+                            "Deductions", "Balance"], line
+
+        discard_header(it)
+        line = fragments_read_line(it)
+        assert len(line) == 5 and line[1:4] == ["Opening", "Balance", "$"]
+        assert opening_balance_str == line[4]
+        opening_date = line[0] # unused for now
+    else:
+        assert False
+
     txns = []
-    #print("!!!{} {}".format(opening_balance_str, closing_balance_str),
-    #      file=sys.stderr)
-    cur_balance = opening_balance
     while True:
-        if stream.fragment.pageno != stream.prev_fragment.pageno:
-            assert re.match(r"Page +\d+ +of +\d+", txns[-1].info[-1].strip()), \
-                txns[-1].info[-1]
-            txns[-1].info.pop()
-            stream.discard_until('(continued)')
-            stream.discard_until('TRANSACTION DETAIL')
-            next(stream) # load up fragment for readline() call and checks in next iteration
+        if it.peek(1).pageno != it.peek(0).pageno:
+            # drop garbage from end of previous transaction
+            if v1:
+                assert re.match(r"Page +\d+ +of +\d+",
+                                " ".join(txns[-1].info[-1]).strip()), \
+                    txns[-1].info[-1]
+                txns[-1].info.pop()
+
+            fragments_discard_until(it, discarded_text, '(continued)')
+            line = fragments_read_line(it)
+            assert line == ["(continued)"], line
+            discard_header(it)
             continue
 
-        if stream.fragment.text == "Ending Balance":
-            break
+        line = fragments_read_line(it)
+        #print("  -- line -- {}".format(line))
+        if v1:
+            if line[0] == "Ending Balance":
+                assert line[1:] == [closing_balance_str]
+                break
 
-        words = stream.readline()
-        if not re.match(r"\d{2}/\d{2}", words[0]):
-            txns[-1].info.append(" ".join(words))
+        if not re.match(r"\d{2}/\d{2}", line[0]):
+            txns[-1].info.append(line)
             continue
+
+        if v0:
+            if line[1:] == ['Ending', 'Balance', '$', closing_balance_str]:
+                closing_date = line[0] # unused for now
+                break
 
         txn = Txn()
-        txn.old_balance = cur_balance
-        txn.new_balance = parse_price(words.pop())
-        txn.amount = parse_price(words.pop())
-        if words[-1] == "-":
-            words.pop()
-            txn.amount *= -1
-        #words.append(repr(stream.fragment))
-        txn.info = [" ".join(words)]
+        #print("newtxn {}".format(line))
+        txn.info = [line]
         txns.append(txn)
 
-        assert txn.new_balance == txn.old_balance + txn.amount
-        cur_balance = txn.new_balance
+    fragments_discard_until(it, discarded_text, None)
 
-    assert next(stream).text == closing_balance_str
-    stream.discard_until(None)
+    opening_balance = parse_price(opening_balance_str)
+    closing_balance = parse_price(closing_balance_str)
+    cur_balance = opening_balance
+    for txn in txns:
+        #print("looptxn {}".format(txn.info))
+        txn.old_balance = cur_balance
+        words = txn.info[0 if v1 else -1]
+        txn.new_balance = parse_price(words.pop())
+        if v0: assert words.pop() == "$"
+        txn.amount = parse_price(words.pop())
+        if v0: assert words.pop() == "$"
+        if v1:
+          if words[-1] == "-":
+            words.pop()
+            txn.amount *= -1
+        if v0:
+          if txn.new_balance != txn.old_balance + txn.amount:
+              txn.amount *= -1
+
+        assert txn.new_balance == txn.old_balance + txn.amount, \
+            (txn.new_balance, txn.old_balance, txn.amount)
+        cur_balance = txn.new_balance
 
     assert cur_balance == closing_balance
 
-    return [(txn.old_balance, txn.new_balance, txn.amount, txn.info)
-            for txn in txns], stream.discarded_text
+    return [(txn.old_balance, txn.new_balance, txn.amount,
+             [" ".join(line) for line in txn.info])
+            for txn in txns], discarded_text.getvalue()
+
+
+def fragments_discard_until(it, discarded_text, pattern):
+    pattern_is_str = isinstance(pattern, str)
+    while not it.at_end():
+        fragment = it.peek(1)
+
+        if pattern_is_str:
+            if fragment.text == pattern: return
+        elif pattern is not None:
+            m = pattern.match(fragment.text)
+            if m: return m
+
+        if not it.at_start():
+            prev_fragment = it.peek(0)
+            discarded_text.write("\n" if prev_fragment.y != fragment.y else " ")
+        discarded_text.write(fragment.text)
+        it.__next__()
+
+    if pattern is not None:
+        raise Exception("unexpected end of file")
+
+def fragments_read_line(it):
+    words = []
+    for fragment in it:
+        words.append(fragment.text)
+        if it.at_end() or it.peek(1).y != fragment.y:
+            break
+    return words
+
 
 TextFragment = namedtuple("TextFragment", "pageno y x ord text")
+
 
 class Txn:
     pass
 
-class FragmentStream:
-    def __init__(self, fragments):
-        self.iter = iter(fragments)
-        self.discarded_text = ""
-        self.fragment = None
+
+class PeekIterator:
+    """Iterator wrapper allowing peek at next and previous elements in sequence.
+
+    Wrapper does not change underlying sequence at all, so for example:
+
+        it = PeekIterator([2, 4, 6, 8, 10], lookahead=1, lookbehind=2):
+        for x in it:
+            print(x)
+
+    will simply print the sequence 2, 4, 6, 8, 10.
+
+    The main feature the iterator provides is a peek() method allowing
+    access to preceding and following elements. So for example, when x
+    is 6 it.peek(1) will return 8, it.peek(-1) will return(4), and
+    it.peek(0) will return 6.
+    """
+    def __init__(self, it, lookahead=0, lookbehind=0):
+        self.it = iter(it)
+        self.lookahead = lookahead
+        self.lookbehind = lookbehind
+        self.cache = deque()
+        self.prev_elems = 0  # cached elements previously returned by __next__.
+
+        # Add next values from underlying iterator to lookahead cache.
+        for _ in range(lookahead):
+            try:
+                self.cache.append(self.it.__next__())
+            except StopIteration:
+                break
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        self.prev_fragment = self.fragment
-        self.fragment = None
-        self.fragment = self.iter.__next__()
-        assert self.fragment
-        #print("GOT", self.fragment)
-        return self.fragment
+        # Add next value from underlying iterator to lookahead
+        # cache. The if condition avoids a redundant call to
+        # it.__next__() if a previous call raised StopIteration (in
+        # which the lookahead section of the cache will have unused
+        # capacity).
+        if len(self.cache) >= self.lookahead + self.prev_elems:
+            try:
+                self.cache.append(self.it.__next__())
+            except StopIteration:
+                pass
 
-    def discard(self, fragment):
-        if self.discarded_text:
-            self.discarded_text += "\n" if self.on_newline() else " "
-        self.discarded_text += fragment.text
-
-    def discard_until(self, pattern):
-        pattern_is_str = isinstance(pattern, str)
-        for fragment in self:
-            if pattern_is_str:
-                if fragment.text == pattern: return
-            elif pattern is not None:
-                m = pattern.match(fragment.text)
-                if m: return m
-            self.discard(fragment)
-        else:
-            if pattern is not None:
+        try:
+            # If next sequence element is present in the cache, return
+            # it and increment prev_elems. Otherwise the sequence is
+            # over, so raise StopIteration.
+            if self.prev_elems < len(self.cache):
+                self.prev_elems += 1
+                return self.cache[self.prev_elems - 1]
+            else:
+                assert self.prev_elems == len(self.cache)
                 raise StopIteration
 
-    def on_newline(self):
-        return not self.prev_fragment or self.prev_fragment.y != self.fragment.y
+        finally:
+            # Pop a value from the lookbehind cache if it is over
+            # capacity from the append above.
+            if self.prev_elems > self.lookbehind:
+                self.cache.popleft()
+                self.prev_elems -= 1
+                assert self.prev_elems == self.lookbehind
 
-    def readline(self):
-        words = [self.fragment.text]
-        for fragment in self:
-            if self.on_newline():
-                break
-            words.append(fragment.text)
-        return words
+    def peek(self, offset):
+        """Return element of sequence relative to current iterator position.
+
+        Value of "offset" argument controls which sequence element the
+        peek call returns, according to chart below:
+
+         Offset   Return value
+          -2      ...
+          -1      element that was returned by last last __next__() call
+           0      element that was returned by last __next__() call
+           1      element that will be returned by next __next__() call
+           2      element that will be returned by next next __next__() call
+           3      ...
+
+        Call will fail if offset is not in range (-lookbind_size,
+        lookahead_size] or if there is attempt to read values from
+        after the end, or before the beginning of the sequence.
+        """
+        assert offset <= self.lookahead, \
+            "PeekIterator lookahead value {} is too low to support peeks at " \
+            "offset {}. Must increase lookahead to at least {}.".format(
+                self.lookahead, self.offset, self.offset)
+        assert offset > -self.lookbehind, \
+            "PeekIterator lookbehind value {} is too low to support peeks at " \
+            " offset {}. Must increase lookbehind to at least {}.".format(
+                self.lookbehind, self.offset, 1 - self.offset)
+        pos = self.prev_elems - 1 + offset
+        assert pos >= 0, "Can't peek before first element in sequence."
+        assert pos < len(self.cache), "Can't peek beyond last element in sequence."
+        return self.cache[pos]
+
+    def at_end(self):
+        assert self.lookahead > 0, \
+            "at_end method only available with lookahead > 0"
+        return self.prev_elems >= len(self.cache)
+
+    def at_start(self):
+        assert self.lookbehind > 0, \
+            "at_start method only available with lookbehind > 0"
+        return self.prev_elems == 0

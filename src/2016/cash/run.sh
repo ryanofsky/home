@@ -30,11 +30,16 @@ if [ ! -e 1-chase-data ]; then
     mkdir 1-chase-data
     python3.5 -c '
 import cash, json
+cash.dump_chase_txns("0-chase-txt/2005-10-20.json",
+                     "1-chase-data/2005-10-20.json",
+                     "1-chase-data/2005-10-20.discard")
 cash.dump_chase_txns("0-chase-txt/2014-07-18.json",
                      "1-chase-data/2014-07-18.json",
                      "1-chase-data/2014-07-18.discard")
 '
 
+  test-eq 1-chase-data/2005-10-20.json expected-1-chase-data-2005-10-20.json
+  test-eq 1-chase-data/2005-10-20.discard expected-1-chase-data-2005-10-20.discard
   test-eq 1-chase-data/2014-07-18.json expected-1-chase-data-2014-07-18.json
   test-eq 1-chase-data/2014-07-18.discard expected-1-chase-data-2014-07-18.discard
 fi
