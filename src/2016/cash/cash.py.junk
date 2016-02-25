@@ -1,0 +1,53 @@
+###############################################################################
+Maybe useful next/previous iterator classes. Replaced by more general PeekIterator.
+###############################################################################
+class NextIterator:
+    """Iterator wrapper with next_val and at_end attributes."""
+    def __init__(self, it):
+        self.it = it
+        try:
+            self.next_val = self.it.__next__()
+        except StopIteration:
+            self.at_end = True
+        else:
+            self.at_end = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.at_end:
+            raise StopIteration
+        try:
+            self.next_val = self.it.__next__()
+        except StopIteration:
+            self.at_end = True
+            del self.next_val
+
+class PrevIterator:
+    """Iterator wrapper with prev_val and at_start attributes."""
+    def __init__(self, it):
+        self.it = it
+        self.at_start = True
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.prev_val = self.it.__next__()
+        self.at_start = False
+        return prev_val
+
+
+class PrevNextIterator(NextIterator):
+    """Iterator wrapper with prev_val, next_val, at_start, and at_end attributes."""
+    def __init__(self, it):
+        super().__init__(PrevIterator(it))
+
+    @property
+    def prev_val(self):
+        return self.it.prev_val
+
+    @property
+    def at_start(self):
+        return self.it.at_start
