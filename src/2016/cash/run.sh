@@ -29,13 +29,28 @@ fi
 if [ ! -e 1-chase-data ]; then
     mkdir 1-chase-data
     python3.5 -c '
-import cash, json
+import cash, os
 cash.dump_chase_txns("0-chase-txt/2005-10-20.json",
                      "1-chase-data/2005-10-20.json",
                      "1-chase-data/2005-10-20.discard")
 cash.dump_chase_txns("0-chase-txt/2014-07-18.json",
                      "1-chase-data/2014-07-18.json",
                      "1-chase-data/2014-07-18.discard")
+for filename in os.listdir("0-chase-txt"):
+    assert filename.endswith(".json")
+    if filename >= "2006-09-21.json" and filename <= "2007-01-19.json":
+        print("SKIP == {} ==".format(filename))
+        continue
+    if filename >= "2007-02-20.json" and filename <= "2007-08-17.json":
+        print("SKIP == {} ==".format(filename))
+        continue
+    print("== {} ==".format(filename))
+    pdftext_input_json_filename = os.path.join("0-chase-txt", filename)
+    txns_output_json_filename = os.path.join("1-chase-data", filename)
+    discarded_text_output_filename = txns_output_json_filename[:-5] + ".discard"
+    cash.dump_chase_txns(pdftext_input_json_filename,
+                        txns_output_json_filename,
+                        discarded_text_output_filename)
 '
 
   test-eq 1-chase-data/2005-10-20.json expected-1-chase-data-2005-10-20.json

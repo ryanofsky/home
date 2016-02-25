@@ -161,6 +161,40 @@ def parse_chase_pdftext(json_filename):
         fragments = [TextFragment(*fragment) for fragment in json.load(fp)]
     it = PeekIterator(fragments, lookahead=1, lookbehind=2)
     discarded_text = io.StringIO()
+    # 2005-10-20 thru 2006-08-17
+    #   - v0
+    #   - parses successfully
+    # 2006-09-21
+    #   - v1_0
+    #   - can't parse because transactions grouped by date
+    #   - Switch to signed "AMOUNT" column instead of positive "Additions" and "Deductions" columns
+    #   - Switch to "Beginning Balance" instead of "Opening Balance"
+    #   - Fragments are now groups of words with spaces, instead of individual words
+    #   - Transactions grouped by dates and only include daily balances, only way to distinguish them is by slightly larger vertical spacing
+    #   - Dates no longer included on beginning/ending balance transaction lines
+    #   - ALL CAPS transations with lots of extra wrapping, and multilevel indent
+    # 2006-10-19 thru 2007-01-19
+    #   - can't parse because transactions grouped by date
+    #   - No more ALL CAPS transactions, no more multilevel indent
+    # 2007-02-20 thru 2007-06-19
+    #   - can't parse because deposit amounts are bolded, screw up read_line
+    #   - Transactions no longer grouped by date
+    # 2007-07-19
+    #   - parses successfully
+    #   - deposit bolding no longer moves stuff to new line and breaks parsing
+    # 2007-08-17
+    #   - can't parse because overdraft & negative balance
+    # 2007-09-20 thru 2008-03-19
+    #   - parses successfully
+    # 2008-04-17 thru 2011-08-17
+    #   - parses successfully
+    #   - lines between transactions
+    #   - slightly wider column
+    # 2011-09-20 thru 2015-11-19
+    #   - v1_1
+    #   - parses successfully
+    #   - [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"] header is now image instead of text
+    #   - Begin and ending header dates are no longer available
     v1, v0 = fragments_discard_until(
         it, discarded_text,
         re.compile(r"(^Beginning Balance$)|(^Opening$)")).groups()
@@ -180,6 +214,11 @@ def parse_chase_pdftext(json_filename):
             it.__next__()
 
         discard_header(it)
+
+        if it.peek(1).text == " DATE":
+            line = fragments_read_line(it)
+            assert line == [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"], line
+
         line = fragments_read_line(it)
         assert line == ["Beginning Balance", opening_balance_str], line
 
