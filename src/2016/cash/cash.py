@@ -1,8 +1,10 @@
+import bisect
 import io
 import json
 import re
 import sys
 from collections import namedtuple, deque
+from enum import IntEnum
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
@@ -157,15 +159,15 @@ def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
         fp.write(discarded_text)
 
 def parse_chase_pdftext(json_filename):
+    version = pdf_version(json_filename)
+
     with open(json_filename) as fp:
         fragments = [TextFragment(*fragment) for fragment in json.load(fp)]
     it = PeekIterator(fragments, lookahead=1, lookbehind=2)
     discarded_text = io.StringIO()
     # 2005-10-20 thru 2006-08-17
-    #   - v0
     #   - parses successfully
     # 2006-09-21
-    #   - v1_0
     #   - can't parse because transactions grouped by date
     #   - Switch to signed "AMOUNT" column instead of positive "Additions" and "Deductions" columns
     #   - Switch to "Beginning Balance" instead of "Opening Balance"
@@ -191,15 +193,15 @@ def parse_chase_pdftext(json_filename):
     #   - lines between transactions
     #   - slightly wider column
     # 2011-09-20 thru 2015-11-19
-    #   - v1_1
     #   - parses successfully
     #   - [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"] header is now image instead of text
     #   - Begin and ending header dates are no longer available
-    v1, v0 = fragments_discard_until(
+    found_begin, found_open = fragments_discard_until(
         it, discarded_text,
         re.compile(r"(^Beginning Balance$)|(^Opening$)")).groups()
-    if v1:
-        assert not v0
+    if version >= Pdf.V2006_09:
+        assert found_begin
+        assert not found_open
         line = fragments_read_line(it)
         assert line[:-1] == ["Beginning Balance"], line
         opening_balance_str = line[-1]
@@ -221,9 +223,9 @@ def parse_chase_pdftext(json_filename):
 
         line = fragments_read_line(it)
         assert line == ["Beginning Balance", opening_balance_str], line
-
-    elif v0:
-        assert not v1
+    else:
+        assert found_open
+        assert not found_begin
         line = fragments_read_line(it)
         assert line[:3] == ["Opening", "Balance", "$"], line
         opening_balance_str = line[3]
@@ -253,14 +255,12 @@ def parse_chase_pdftext(json_filename):
         assert len(line) == 5 and line[1:4] == ["Opening", "Balance", "$"]
         assert opening_balance_str == line[4]
         opening_date = line[0] # unused for now
-    else:
-        assert False
 
     txns = []
     while True:
         if it.peek(1).pageno != it.peek(0).pageno:
             # drop garbage from end of previous transaction
-            if v1:
+            if version >= Pdf.V2006_09:
                 assert re.match(r"Page +\d+ +of +\d+",
                                 " ".join(txns[-1].info[-1]).strip()), \
                     txns[-1].info[-1]
@@ -274,7 +274,7 @@ def parse_chase_pdftext(json_filename):
 
         line = fragments_read_line(it)
         #print("  -- line -- {}".format(line))
-        if v1:
+        if version >= Pdf.V2006_09:
             if line[0] == "Ending Balance":
                 assert line[1:] == [closing_balance_str]
                 break
@@ -283,7 +283,7 @@ def parse_chase_pdftext(json_filename):
             txns[-1].info.append(line)
             continue
 
-        if v0:
+        if version < Pdf.V2006_09:
             if line[1:] == ['Ending', 'Balance', '$', closing_balance_str]:
                 closing_date = line[0] # unused for now
                 break
@@ -301,16 +301,16 @@ def parse_chase_pdftext(json_filename):
     for txn in txns:
         #print("looptxn {}".format(txn.info))
         txn.old_balance = cur_balance
-        words = txn.info[0 if v1 else -1]
+        words = txn.info[0 if version >= Pdf.V2006_09 else -1]
         txn.new_balance = parse_price(words.pop())
-        if v0: assert words.pop() == "$"
+        if version < Pdf.V2006_09: assert words.pop() == "$"
         txn.amount = parse_price(words.pop())
-        if v0: assert words.pop() == "$"
-        if v1:
+        if version < Pdf.V2006_09: assert words.pop() == "$"
+        if version >= Pdf.V2006_09:
           if words[-1] == "-":
             words.pop()
             txn.amount *= -1
-        if v0:
+        if version < Pdf.V2006_09:
           if txn.new_balance != txn.old_balance + txn.amount:
               txn.amount *= -1
 
@@ -355,6 +355,15 @@ def fragments_read_line(it):
 
 
 TextFragment = namedtuple("TextFragment", "pageno y x ord text")
+
+
+Pdf = IntEnum("Pdf", "V2005_10 V2006_09 V2006_10 V2007_02 V2007_07 V2007_08 "
+              "V2007_09 V2008_04 V2011_09")
+
+
+def pdf_version(json_filename):
+    vstr = "V{}_{}".format(*re.match(r"^.*?/([0-9]{4})-([0-9]{2})-[0-9]{2}.json$", json_filename).groups())
+    return Pdf(bisect.bisect(list(Pdf.__members__.keys()), vstr))
 
 
 class Txn:
