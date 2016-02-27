@@ -424,10 +424,9 @@ def parse_chase_pdftext(json_filename):
 
     assert cur_balance == closing_balance
 
-    return [(txn.prev_balance, txn.balance, txn.amount,
-             [(("{:%m/%d} ".format(txn.date) if i==0 else "")
-               +   " ".join(frag.text for frag in desc))
-              for i, desc in enumerate(txn.descs)])
+    return [(txn.date.isoformat(), txn.prev_balance, txn.balance, txn.amount,
+             [" ".join(frag.text for frag in desc)
+              for desc in txn.descs])
             for txn in txns], discarded_text.getvalue()
 
 
