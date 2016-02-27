@@ -32,7 +32,7 @@ if [ ! -e 1-chase-data ]; then
 import cash, os
 for filename in os.listdir("0-chase-txt"):
     assert filename.endswith(".json")
-    if filename >= "2007-02-20.json" and filename <= "2007-08-17.json":
+    if filename == "2007-08-17.json":
         print("SKIP == {} ==".format(filename))
         continue
     print("== {} ==".format(filename))

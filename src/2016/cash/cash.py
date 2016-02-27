@@ -325,8 +325,7 @@ def parse_chase_pdftext(json_filename):
                 assert not junk
                 continue
 
-            assert len(desc) == 1
-            if desc[0].text == "Ending Balance":
+            if desc and desc[0].text == "Ending Balance":
                 assert not date
                 assert not add
                 assert not ded
@@ -378,7 +377,29 @@ def parse_chase_pdftext(json_filename):
                 assert len(balance) == 2
                 assert balance[0].text == "$"
 
+        # Determine whether line begins a new transaction. If line
+        # contains a date it always indicates a new transaction. But
+        # not every transaction has its own date (transactions are
+        # grouped by date starting sep 2006, so also start a new
+        # transaction when there is a tranaction amount. But avoid
+        # doing this on oldstyle pdfs because they align amounts to
+        # bottom of transaction instead of top.
         if txn_date is not None or (newstyle and txn_amount is not None):
+            # If transaction is missing an amount value, look at
+            # previous transaction to see if it consists solely of an
+            # amount with no date, balance or description. If so,
+            # remove that transaction and use the amount from it. This
+            # is needed for a few statements starting feb 2007 which
+            # add bolding to deposits amounts. The bolding moves up
+            # the amount fragment text y positions slightly, isolating
+            # them on their own lines.
+            if newstyle and txn_amount is None:
+                prev_txn = txns.pop()
+                assert prev_txn.date is None
+                assert prev_txn.amount is not None
+                assert prev_txn.balance is None
+                assert prev_txn.descs == [[]]
+                txn_amount = prev_txn.amount
             txn = Txn()
             txn.date = txn_date
             txn.amount = txn_amount
@@ -404,7 +425,7 @@ def parse_chase_pdftext(json_filename):
     cur_balance = opening_balance
     txnit = PeekIterator(txns, lookahead=1, lookbehind=2)
     for txn in txnit:
-        assert txn.descs[0] # true when amount precedes date, wrong date
+        assert txn.descs[0] # FIXME: add more checking here
         assert txn.amount is not None
         if txn.date is None:
             txn.date = txnit.peek(-1).date
