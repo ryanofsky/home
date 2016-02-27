@@ -1,9 +1,10 @@
 diff --git a/tools/pdf2txt.py b/tools/pdf2txt.py
-index 5eb24bf..f2845f8 100755
+index 5eb24bf..0d2d815 100755
 --- a/tools/pdf2txt.py
 +++ b/tools/pdf2txt.py
-@@ -1,14 +1,54 @@
+@@ -1,14 +1,63 @@
  #!/usr/bin/env python
++import os
  import sys
 +import json
 +import math
@@ -18,7 +19,8 @@ index 5eb24bf..f2845f8 100755
  from pdfminer.cmapdb import CMapDB
  from pdfminer.layout import LAParams
  from pdfminer.image import ImageWriter
-+from pdfminer.utils import apply_matrix_pt
++from pdfminer.utils import apply_matrix_pt, decode_text
++from pdfminer.pdffont import PDFUnicodeNotDefined
 +
 +def dec2int(x):
 +    x10 = x * 10
@@ -39,18 +41,25 @@ index 5eb24bf..f2845f8 100755
 +        self.chase_ord = 0
 +        return PDFTextDevice.begin_page(self, page, ctm)
 +
-+    def render_string_horizontal(self, seq, matrix, pos, *args):
++    def render_string_horizontal(self, seq, matrix, pos, font, *args):
 +        self.chase_ord += 1
 +        assert len(seq) == 1
-+        text = seq[0].decode("cp1252")
++        text = []
++        for cid in font.decode(seq[0]):
++            try:
++                text.append(font.to_unichr(cid))
++            except PDFUnicodeNotDefined:
++                assert cid in (10, 173)
++                text.append(chr(cid).decode("cp1252"))
++            assert isinstance(text[-1], unicode), text
++        text = u"".join(text)
 +        x, y = apply_matrix_pt(matrix, pos)
-+        #print "FUCK", self.chase_filename, self.chase_page, x, y, text
 +        x = dec2int(x)
 +        y = dec2int(y)
 +        self.chase_out.append((
 +            self.chase_page, -y, x, self.chase_ord, text
 +        ))
-+        return PDFTextDevice.render_string_horizontal(self, seq, matrix, pos, *args)
++        return PDFTextDevice.render_string_horizontal(self, seq, matrix, pos, font, *args)
 +
 +    def close(self):
 +        self.chase_out.sort()
@@ -58,7 +67,7 @@ index 5eb24bf..f2845f8 100755
  
  # main
  def main(argv):
-@@ -85,7 +125,9 @@ def main(argv):
+@@ -85,7 +134,9 @@ def main(argv):
          outfp = file(outfile, 'w')
      else:
          outfp = sys.stdout
@@ -69,7 +78,7 @@ index 5eb24bf..f2845f8 100755
          device = TextConverter(rsrcmgr, outfp, codec=codec, laparams=laparams,
                                 imagewriter=imagewriter)
      elif outtype == 'xml':
-@@ -103,6 +145,8 @@ def main(argv):
+@@ -103,6 +154,8 @@ def main(argv):
      for fname in args:
          fp = file(fname, 'rb')
          interpreter = PDFPageInterpreter(rsrcmgr, device)
