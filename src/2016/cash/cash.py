@@ -140,11 +140,14 @@ def tab(el, docid, table_type):
         if current != "$0.00":
           yield label, details, current
 
-def parse_price(price_str, allow_negative=False):
+def parse_price(price_str, allow_negative=False, allow_minus=False):
     price = 1
     if allow_negative and price_str[0] == "(" and price_str[-1] == ")":
         price *= -1
         price_str = price_str[1:-1]
+    if allow_minus and price_str[0] == "-":
+        price *= -1
+        price_str = price_str[1:]
     if price_str[0] == "$":
         price_str = price_str[1:]
     dollars, cents = re.match(r"^([0-9,]+)\.([0-9]{2})$", price_str).groups()
@@ -370,7 +373,7 @@ def parse_chase_pdftext(json_filename):
 
         txn_balance = None
         if balance:
-            txn_balance = parse_price(balance[-1].text)
+            txn_balance = parse_price(balance[-1].text, allow_minus=True)
             if newstyle:
                 assert len(balance) == 1
             else:
