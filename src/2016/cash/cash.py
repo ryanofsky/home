@@ -299,6 +299,10 @@ def parse_chase_pdftext(json_filename):
             month, day = map(int, re.match(r"^(\d{2})/(\d{2})$",
                                            date[0].text).groups())
             txn_date = datetime.date(statement_date.year, month, day)
+            if txn_date > statement_date:
+                txn_date = txn_date.replace(year=statement_date.year - 1)
+                assert txn_date <= statement_date
+            assert txn_date >= statement_date - datetime.timedelta(35), txn_date
 
         # Detect non-transaction text
         # - Junk barcodes
@@ -432,8 +436,8 @@ def parse_chase_pdftext(json_filename):
         assert txn.amount is not None
         if txn.date is None:
             txn.date = txnit.peek(-1).date
-        if txnit.prev_elems > 2:
-            assert txn.peek(-1).date <= txn.date
+        if txnit.prev_elems > 1:
+            assert txnit.peek(-1).date <= txn.date
         if txn.balance is None:
             txn.balance = cur_balance + txn.amount
         else:
