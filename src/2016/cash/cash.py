@@ -344,8 +344,7 @@ def parse_chase_pdftext(json_filename):
             if (len(desc) > 1 and desc[0].text == 'Ending'
                 and desc[1].text == 'Balance'):
                 assert len(desc) == 2
-                assert date # FIXME: could match
-                closing_date = month, day # unused for now
+                assert txn_date == statement_date
                 assert not add
                 assert not ded
                 assert not junk
@@ -423,6 +422,7 @@ def parse_chase_pdftext(json_filename):
                     txn.amount = txn_amount
                 if txn_balance is not None and txn.balance is None:
                     txn.balance = txn_balance
+            assert desc
             txns[-1].descs.append(desc)
 
     fragments_discard_until(it, discarded_text, None)
@@ -432,7 +432,7 @@ def parse_chase_pdftext(json_filename):
     cur_balance = opening_balance
     txnit = PeekIterator(txns, lookahead=1, lookbehind=2)
     for txn in txnit:
-        assert txn.descs[0] # FIXME: add more checking here
+        assert all(txn.descs)
         assert txn.amount is not None
         if txn.date is None:
             txn.date = txnit.peek(-1).date
