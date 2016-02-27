@@ -1,4 +1,5 @@
 import bisect
+import datetime
 import io
 import json
 import re
@@ -159,7 +160,17 @@ def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
         fp.write(discarded_text)
 
 def parse_chase_pdftext(json_filename):
-    version = pdf_version(json_filename)
+    statement_date = datetime.date(*[int(g) for g in re.match(
+        r"^.*?/([0-9]{4})-([0-9]{2})-([0-9]{2}).json$",
+        json_filename).groups()])
+    version = pdf_version(statement_date)
+    newstyle = version >= Pdf.V2006_09
+
+    # (date, description, additions, deductions, balance)
+    if newstyle:
+        columns = (700, 3500, None, 4500, 6000)
+    else:
+        columns = (700, 4100, 4800, 5400, 6000)
 
     with open(json_filename) as fp:
         fragments = [TextFragment(*fragment) for fragment in json.load(fp)]
@@ -174,6 +185,7 @@ def parse_chase_pdftext(json_filename):
     #   - Fragments are now groups of words with spaces, instead of individual words
     #   - Transactions grouped by dates and only include daily balances, only way to distinguish them is by slightly larger vertical spacing
     #   - Dates no longer included on beginning/ending balance transaction lines
+    #   - Has junk vertical barcode on side of statement that interferes with parsing
     #   - ALL CAPS transations with lots of extra wrapping, and multilevel indent
     # 2006-10-19 thru 2007-01-19
     #   - can't parse because transactions grouped by date
@@ -199,7 +211,7 @@ def parse_chase_pdftext(json_filename):
     found_begin, found_open = fragments_discard_until(
         it, discarded_text,
         re.compile(r"(^Beginning Balance$)|(^Opening$)")).groups()
-    if version >= Pdf.V2006_09:
+    if newstyle:
         assert found_begin
         assert not found_open
         line = fragments_read_line(it)
@@ -214,12 +226,11 @@ def parse_chase_pdftext(json_filename):
         def discard_header(it):
             fragments_discard_until(it, discarded_text, "TRANSACTION DETAIL")
             it.__next__()
+            if it.peek(1).text == " DATE":
+                line = fragments_read_line(it)
+                assert line == [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"]
 
         discard_header(it)
-
-        if it.peek(1).text == " DATE":
-            line = fragments_read_line(it)
-            assert line == [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"], line
 
         line = fragments_read_line(it)
         assert line == ["Beginning Balance", opening_balance_str], line
@@ -260,68 +271,163 @@ def parse_chase_pdftext(json_filename):
     while True:
         if it.peek(1).pageno != it.peek(0).pageno:
             # drop garbage from end of previous transaction
-            if version >= Pdf.V2006_09:
-                assert re.match(r"Page +\d+ +of +\d+",
-                                " ".join(txns[-1].info[-1]).strip()), \
-                    txns[-1].info[-1]
-                txns[-1].info.pop()
-
             fragments_discard_until(it, discarded_text, '(continued)')
             line = fragments_read_line(it)
             assert line == ["(continued)"], line
             discard_header(it)
             continue
 
-        line = fragments_read_line(it)
-        #print("  -- line -- {}".format(line))
-        if version >= Pdf.V2006_09:
-            if line[0] == "Ending Balance":
-                assert line[1:] == [closing_balance_str]
-                break
+        line_fragments = fragments_read_line_fragments(it)
+        date, desc, add, ded, balance, junk = \
+            fragments_split_columns(line_fragments, *columns)
 
-        if not re.match(r"\d{2}/\d{2}", line[0]):
-            txns[-1].info.append(line)
+        if 0:
+            print("  -- line --")
+            if date: print("     date {}".format(date))
+            if desc: print("     desc {}".format(desc))
+            if add: print("     add {}".format(add))
+            if ded: print("     ded {}".format(ded))
+            if balance: print("     balance {}".format(balance))
+            if junk: print("     junk {}".format(junk))
+
+        txn_date = None
+        if date:
+            assert len(date) == 1
+            month, day = map(int, re.match(r"^(\d{2})/(\d{2})$",
+                                           date[0].text).groups())
+            txn_date = datetime.date(statement_date.year, month, day)
+
+        # Detect non-transaction text
+        # - Junk barcodes
+        # - Page # of # footers
+        # - Ending balance lines
+
+        if junk:
+            assert len(junk) == 1
+            assert re.match("^[0-9]{20}$", junk[0].text)
+            assert not date
+            assert not desc
+            assert not add
+            assert not ded
+            assert not balance
             continue
 
-        if version < Pdf.V2006_09:
-            if line[1:] == ['Ending', 'Balance', '$', closing_balance_str]:
-                closing_date = line[0] # unused for now
+        if newstyle:
+            if balance and balance[0].text == "Page":
+                assert len(balance) == 4
+                assert re.match(r" *\d+ *", balance[1].text)
+                assert balance[2].text == "of"
+                assert re.match(r" *\d+ *", balance[3].text)
+                assert not date
+                assert not desc
+                assert not add
+                assert not ded
+                assert not junk
+                continue
+
+            assert len(desc) == 1
+            if desc[0].text == "Ending Balance":
+                assert not date
+                assert not add
+                assert not ded
+                assert not junk
+                assert len(balance) == 1
+                assert balance[0].text == closing_balance_str
+                break
+        else:
+            if (len(desc) > 1 and desc[0].text == 'Ending'
+                and desc[1].text == 'Balance'):
+                assert len(desc) == 2
+                assert date # FIXME: could match
+                closing_date = month, day # unused for now
+                assert not add
+                assert not ded
+                assert not junk
+                assert len(balance) == 2
+                assert balance[0].text == "$"
+                assert balance[1].text == closing_balance_str
                 break
 
-        txn = Txn()
-        #print("newtxn {}".format(line))
-        txn.info = [line]
-        txns.append(txn)
+        # Parse transaction amount and balance
+
+        txn_amount = None
+        if add:
+            assert not newstyle
+            txn_amount = parse_price(add[-1].text)
+            assert len(add) == 2
+            assert add[0].text == "$"
+        if ded:
+            assert txn_amount is None
+            txn_amount = parse_price(ded[-1].text)
+            if newstyle:
+                if len(ded) != 1:
+                    assert len(ded) == 2
+                    assert ded[0].text == "-"
+                    txn_amount *= -1
+            else:
+                assert len(ded) == 2
+                assert ded[0].text == "$"
+                txn_amount *= -1
+
+        txn_balance = None
+        if balance:
+            txn_balance = parse_price(balance[-1].text)
+            if newstyle:
+                assert len(balance) == 1
+            else:
+                assert len(balance) == 2
+                assert balance[0].text == "$"
+
+        if txn_date is not None or (newstyle and txn_amount is not None):
+            txn = Txn()
+            txn.date = txn_date
+            txn.amount = txn_amount
+            txn.balance = txn_balance
+            txn.descs = [desc]
+            txns.append(txn)
+        else:
+            assert txn_date is None
+            if newstyle:
+                assert txn_amount is None
+                assert txn_balance is None
+            else:
+                if txn_amount is not None and txn.amount is None:
+                    txn.amount = txn_amount
+                if txn_balance is not None and txn.balance is None:
+                    txn.balance = txn_balance
+            txns[-1].descs.append(desc)
 
     fragments_discard_until(it, discarded_text, None)
 
     opening_balance = parse_price(opening_balance_str)
     closing_balance = parse_price(closing_balance_str)
     cur_balance = opening_balance
-    for txn in txns:
-        #print("looptxn {}".format(txn.info))
-        txn.old_balance = cur_balance
-        words = txn.info[0 if version >= Pdf.V2006_09 else -1]
-        txn.new_balance = parse_price(words.pop())
-        if version < Pdf.V2006_09: assert words.pop() == "$"
-        txn.amount = parse_price(words.pop())
-        if version < Pdf.V2006_09: assert words.pop() == "$"
-        if version >= Pdf.V2006_09:
-          if words[-1] == "-":
-            words.pop()
-            txn.amount *= -1
-        if version < Pdf.V2006_09:
-          if txn.new_balance != txn.old_balance + txn.amount:
-              txn.amount *= -1
-
-        assert txn.new_balance == txn.old_balance + txn.amount, \
-            (txn.new_balance, txn.old_balance, txn.amount)
-        cur_balance = txn.new_balance
+    txnit = PeekIterator(txns, lookahead=1, lookbehind=2)
+    for txn in txnit:
+        assert txn.descs[0] # true when amount precedes date, wrong date
+        assert txn.amount is not None
+        if txn.date is None:
+            txn.date = txnit.peek(-1).date
+        if txnit.prev_elems > 2:
+            assert txn.peek(-1).date <= txn.date
+        if txn.balance is None:
+            txn.balance = cur_balance + txn.amount
+        else:
+            assert txn.balance == cur_balance + txn.amount
+        txn.prev_balance = cur_balance
+        cur_balance = txn.balance
+        if 0: print("txn {} {} {}\n    {}".format(
+                txn.date, txn.amount, txn.balance, "\n    ".join(
+                    "||".join(frag.text for frag in desc)
+                    for desc in txn.descs)))
+        continue
 
     assert cur_balance == closing_balance
 
-    return [(txn.old_balance, txn.new_balance, txn.amount,
-             [" ".join(line) for line in txn.info])
+    return [(txn.prev_balance, txn.balance, txn.amount,
+             [(("{:%m/%d} ".format(txn.date) if i==0 else "")
+               +   " ".join(frag.text for frag in desc))
+              for i, desc in enumerate(txn.descs)])
             for txn in txns], discarded_text.getvalue()
 
 
@@ -345,14 +451,27 @@ def fragments_discard_until(it, discarded_text, pattern):
     if pattern is not None:
         raise Exception("unexpected end of file")
 
-def fragments_read_line(it):
+def fragments_read_line_fragments(it):
     words = []
     for fragment in it:
-        words.append(fragment.text)
+        words.append(fragment)
         if it.at_end() or it.peek(1).y != fragment.y:
             break
     return words
 
+def fragments_read_line(it):
+    return [fragment.text for fragment in fragments_read_line_fragments(it)]
+
+def fragments_split_columns(fragments, *columns):
+    ret = [[] for _ in range(len(columns)+1)]
+    col_idx = 0
+    for f in fragments:
+        while (col_idx < len(columns)
+               and (columns[col_idx] is None
+                    or f.x > columns[col_idx])):
+            col_idx += 1
+        ret[col_idx].append(f)
+    return ret
 
 TextFragment = namedtuple("TextFragment", "pageno y x ord text")
 
@@ -361,8 +480,8 @@ Pdf = IntEnum("Pdf", "V2005_10 V2006_09 V2006_10 V2007_02 V2007_07 V2007_08 "
               "V2007_09 V2008_04 V2011_09")
 
 
-def pdf_version(json_filename):
-    vstr = "V{}_{}".format(*re.match(r"^.*?/([0-9]{4})-([0-9]{2})-[0-9]{2}.json$", json_filename).groups())
+def pdf_version(statement_date):
+    vstr = "V{:%Y_%m}".format(statement_date)
     return Pdf(bisect.bisect(list(Pdf.__members__.keys()), vstr))
 
 
