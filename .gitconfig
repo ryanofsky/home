@@ -9,3 +9,5 @@
 	refLogExpire = never
 	reflogexpireunreachable = never
 	auto = 0
+[core]
+	pager = less -F -X
