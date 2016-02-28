@@ -737,7 +737,7 @@ class GnuCash:
                 assert not split_memo or split_memo in ('Checking',), split_memo
                 txn_date = self.date(txn_date_str)
                 offset = abs((txn_date - date).days)
-                if (closest_offset is None or offset < closest_offset):
+                if offset < 10 and (closest_offset is None or offset < closest_offset):
                     closest_offset = offset
                     closest_split = split_guid
 
