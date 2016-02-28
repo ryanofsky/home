@@ -710,31 +710,6 @@ class GnuCash:
     def new_txn(self, reconcile_date, date, amount, src_acct, dst_acct, action, memo, description):
         txn_guid = self.guid()
 
-        # FIXME: get rid of these variables
-        src_split_guid = self.guid()
-        src_action = ""
-        src_memo = ""
-        src_reconcile_state = "n"
-        src_reconcile_date = None
-        src_amount = -amount
-
-        dst_split_guid = self.guid()
-        dst_action = action
-        dst_memo = memo
-        dst_reconcile_state = "y" if reconcile_date else "n"
-        dst_reconcile_date = self.date_str(reconcile_date) if reconcile_date else None
-        dst_amount = amount
-
-        if amount < 0:
-            # FIXME: do swap in one place
-            src_acct, dst_acct = dst_acct, src_acct
-            src_split_guid, dst_split_guid = dst_split_guid, src_split_guid
-            src_action, dst_action = dst_action, src_action
-            src_memo, dst_memo = dst_memo, src_memo
-            src_reconcile_state, dst_reconcile_state = dst_reconcile_state, src_reconcile_state
-            src_reconcile_date, dst_reconcile_date = dst_reconcile_date, src_reconcile_date
-            src_amount, dst_amount = dst_amount, src_amount
-
         self.insert("transactions",
                     (("guid", txn_guid),
                      ("currency_guid", self.commodity_usd),
@@ -742,32 +717,37 @@ class GnuCash:
                      ("post_date", self.date_str(date)),
                      ("enter_date", self.date_str(date)),
                      ("description", description)))
-        self.insert("splits",
-                    (("guid", src_split_guid),
+
+        src_split = (("guid", self.guid()),
                      ("tx_guid", txn_guid),
                      ("account_guid", src_acct),
-                     ("memo", src_memo),
-                     ("action", src_action),
-                     ("reconcile_state", src_reconcile_state),
-                     ("reconcile_date", src_reconcile_date),
-                     ("value_num", src_amount),
+                     ("memo", ""),
+                     ("action", ""),
+                     ("reconcile_state", "n"),
+                     ("reconcile_date", None),
+                     ("value_num", -amount),
                      ("value_denom", 100),
-                     ("quantity_num", src_amount),
+                     ("quantity_num", -amount),
                      ("quantity_denom", 100),
-                     ("lot_guid", None)))
-        self.insert("splits",
-                    (("guid", dst_split_guid),
+                     ("lot_guid", None))
+
+        dst_split = (("guid", self.guid()),
                      ("tx_guid", txn_guid),
                      ("account_guid", dst_acct),
-                     ("memo", dst_memo),
-                     ("action", dst_action),
-                     ("reconcile_state", dst_reconcile_state),
-                     ("reconcile_date", dst_reconcile_date),
-                     ("value_num", dst_amount),
+                     ("memo", memo),
+                     ("action", action),
+                     ("reconcile_state", "y" if reconcile_date else "n"),
+                     ("reconcile_date", self.date_str(reconcile_date) if reconcile_date else None),
+                     ("value_num", amount),
                      ("value_denom", 100),
-                     ("quantity_num", dst_amount),
+                     ("quantity_num", amount),
                      ("quantity_denom", 100),
-                     ("lot_guid", None)))
+                     ("lot_guid", None))
+
+        if amount < 0:
+            src_split, dst_split = dst_split, src_split
+        self.insert("splits", src_split)
+        self.insert("splits", dst_split)
 
 def import_chase_txns(chase_dir, cash_db):
     with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
