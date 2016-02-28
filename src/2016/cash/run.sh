@@ -4,6 +4,7 @@ set -e
 set -x
 
 IN_CHASE=~/store/statements/chase-7165
+CASH_DB=~/russ/cash/russ.db
 
 test-eq() {
     if ! cmp "$1" "$2"; then
@@ -57,4 +58,11 @@ cash.parse_mypay_html("mypay.html")
 ' > 9-mypay-data/txt
 
   test-eq 9-mypay-data/txt expected-9-mypay-data.txt
+fi
+
+if true; then
+    python3.5 -c "
+import cash
+cash.import_chase_txns('1-chase-data', '$CASH_DB')
+"
 fi
