@@ -1,9 +1,13 @@
+import random
 import bisect
 import datetime
 import io
 import json
+import os
 import re
 import sys
+import time
+import sqlite3
 from collections import namedtuple, deque
 from enum import IntEnum
 from lxml import etree
@@ -162,10 +166,13 @@ def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
     with open(discarded_text_output_filename, "w") as fp:
         fp.write(discarded_text)
 
-def parse_chase_pdftext(json_filename):
-    statement_date = datetime.date(*[int(g) for g in re.match(
-        r"^.*?/([0-9]{4})-([0-9]{2})-([0-9]{2}).json$",
+def parse_statement_date(json_filename):
+    return datetime.date(*[int(g) for g in re.match(
+        r"^(?:.*?/)?([0-9]{4})-([0-9]{2})-([0-9]{2}).json$",
         json_filename).groups()])
+
+def parse_chase_pdftext(json_filename):
+    statement_date = parse_statement_date(json_filename)
     version = pdf_version(statement_date)
     newstyle = version >= Pdf.V2006_09
 
@@ -620,3 +627,179 @@ class PeekIterator:
         assert self.lookbehind > 0, \
             "at_start method only available with lookbehind > 0"
         return self.prev_elems == 0
+
+class GnuCash:
+    def __init__(self, db_file, seed):
+        self.db_file = db_file
+        self.random = random.Random()
+        self.random.seed(seed)
+
+    def __enter__(self):
+        self.conn = sqlite3.connect(self.db_file)
+        self.conn.isolation_level = None
+        self.conn.cursor().execute("BEGIN")
+        self.commodity_usd = self.currency("USD")
+        self.current_assets = self.acct(None, "Assets", "Current Assets")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if 1: self.conn.cursor().execute("COMMIT")
+        self.conn.close()
+
+    def insert(self, table, vals):
+        c = self.conn.cursor()
+        s = "INSERT INTO {} ({}) VALUES ({})".format(table, ",".join(k for k, v in vals), ",".join("?" for k, v, in vals))
+        c.execute(s, tuple(v for k, v in vals))
+
+    def guid(self):
+        return '%032x' % self.random.randrange(16**32)
+
+    def acct(self, parent=None, *names):
+        c = self.conn.cursor()
+        if parent is None:
+            c.execute("SELECT guid FROM accounts WHERE name = ? AND parent_guid IS NULL", ("Root Account",))
+            rows = c.fetchall()
+            assert len(rows) == 1
+            guid, = rows[0]
+        else:
+            guid = parent
+
+        for name in names:
+            c.execute("SELECT guid FROM accounts WHERE name = ? AND parent_guid = ?", (name, guid))
+            rows = c.fetchall()
+            assert len(rows) == 1
+            guid, = rows[0]
+        return guid
+
+    def currency(self, mnemonic):
+        c = self.conn.cursor()
+        c.execute("SELECT guid FROM commodities WHERE mnemonic = ?", (mnemonic,))
+        rows = c.fetchall()
+        assert len(rows) == 1
+        guid, = rows[0]
+        return guid
+
+    def new_acct(self, parent_guid, name):
+        guid = self.guid()
+        self.insert("accounts",
+                    (("guid", guid),
+                     ("name", name),
+                     ("account_type", 'ASSET'),
+                     ("commodity_guid", self.commodity_usd),
+                     ("commodity_scu", 100),
+                     ("non_std_scu", 0),
+                     ("parent_guid", parent_guid),
+                     ("code", ""),
+                     ("description", ""),
+                     ("hidden", 0),
+                     ("placeholder", 0)))
+        return guid
+
+    def date(self, date_str):
+        # date_str comment below explains this madness.
+        return datetime.datetime.fromtimestamp(datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc).timestamp()).date()
+
+    def date_str(self, date):
+        # Have to add local time zone offset to string, because
+        # gnucash idiotically extracts date from the string after
+        # doing unnecessary utc->local timestamp conversion which
+        # subtracts 4 or 5 hours and results in yesterday's date being
+        # shown in the UI.
+        return datetime.datetime.utcfromtimestamp(time.mktime(date.timetuple())).strftime("%Y%m%d%H%M%S")
+
+    def new_txn(self, reconcile_date, date, amount, src_acct, dst_acct, action, memo, description):
+        txn_guid = self.guid()
+
+        # FIXME: get rid of these variables
+        src_split_guid = self.guid()
+        src_action = ""
+        src_memo = ""
+        src_reconcile_state = "n"
+        src_reconcile_date = None
+        src_amount = -amount
+
+        dst_split_guid = self.guid()
+        dst_action = action
+        dst_memo = memo
+        dst_reconcile_state = "y" if reconcile_date else "n"
+        dst_reconcile_date = self.date_str(reconcile_date) if reconcile_date else None
+        dst_amount = amount
+
+        if amount < 0:
+            # FIXME: do swap in one place
+            src_acct, dst_acct = dst_acct, src_acct
+            src_split_guid, dst_split_guid = dst_split_guid, src_split_guid
+            src_action, dst_action = dst_action, src_action
+            src_memo, dst_memo = dst_memo, src_memo
+            src_reconcile_state, dst_reconcile_state = dst_reconcile_state, src_reconcile_state
+            src_reconcile_date, dst_reconcile_date = dst_reconcile_date, src_reconcile_date
+            src_amount, dst_amount = dst_amount, src_amount
+
+        self.insert("transactions",
+                    (("guid", txn_guid),
+                     ("currency_guid", self.commodity_usd),
+                     ("num", ""),
+                     ("post_date", self.date_str(date)),
+                     ("enter_date", self.date_str(date)),
+                     ("description", description)))
+        self.insert("splits",
+                    (("guid", src_split_guid),
+                     ("tx_guid", txn_guid),
+                     ("account_guid", src_acct),
+                     ("memo", src_memo),
+                     ("action", src_action),
+                     ("reconcile_state", src_reconcile_state),
+                     ("reconcile_date", src_reconcile_date),
+                     ("value_num", src_amount),
+                     ("value_denom", 100),
+                     ("quantity_num", src_amount),
+                     ("quantity_denom", 100),
+                     ("lot_guid", None)))
+        self.insert("splits",
+                    (("guid", dst_split_guid),
+                     ("tx_guid", txn_guid),
+                     ("account_guid", dst_acct),
+                     ("memo", dst_memo),
+                     ("action", dst_action),
+                     ("reconcile_state", dst_reconcile_state),
+                     ("reconcile_date", dst_reconcile_date),
+                     ("value_num", dst_amount),
+                     ("value_denom", 100),
+                     ("quantity_num", dst_amount),
+                     ("quantity_denom", 100),
+                     ("lot_guid", None)))
+
+def import_chase_txns(chase_dir, cash_db):
+    with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
+        opening_acct = gnu.acct(None, 'Equity', 'Opening Balances')
+        imbalance_acct = gnu.acct(None, 'Imbalance-USD')
+        expense_acct = gnu.acct(None, 'Expenses')
+        income_acct = gnu.acct(None, 'Income')
+        checking_acct = gnu.acct(gnu.current_assets, "Checking Account")
+        checking_acct = gnu.new_acct(gnu.current_assets, "tmp")
+
+        first = True
+        acct_balance = 0
+        for filename in sorted(os.listdir(chase_dir)):
+            if not filename.endswith(".json"):
+                continue
+
+            statement_date = parse_statement_date(filename)
+
+            with open(os.path.join(chase_dir, filename)) as fp:
+                txns = json.load(fp)
+                for date_str, prev_balance, balance, amount, desc in txns:
+                    date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                    action = date.strftime("%m/%d")
+                    memo = " || ".join(desc)
+                    if first:
+                        first = False
+                        gnu.new_txn(statement_date, date, prev_balance, opening_acct, checking_acct, action, "", "Opening Balance")
+                    elif prev_balance != acct_balance:
+                        print (statement_date, date, prev_balance, acct_balance)
+                        gnu.new_txn(statement_date, date, prev_balance - acct_balance, imbalance_acct, checking_acct, action, "", "Missing transactions")
+                    if amount < 0:
+                        gnu.new_txn(statement_date, date, amount, expense_acct, checking_acct, action, memo, "Withdrawal")
+                    else:
+                        gnu.new_txn(statement_date, date, amount, income_acct, checking_acct, action, memo, "Deposit")
+                    acct_balance = balance
