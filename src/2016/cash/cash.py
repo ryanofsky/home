@@ -24,12 +24,19 @@ def parse_mypay_html(filename):
         tbody = check[0]
         assert tbody.tag == "tbody"
 
+        if len(tbody) == 10:
+            # delete extra company logo column in newer html file
+            assert len(tbody[1]) == 1 # logo
+            assert tbody[1][0].attrib["colspan"] == "5"
+            assert tbody[1][0][0].tag == "img"
+            del tbody[1:2]
+
         assert len(tbody) == 9
         assert len(tbody[0]) == 5 # blank columns
 
         assert len(tbody[1]) == 1 # logo
         assert tbody[1][0].attrib["colspan"] == "5"
-        assert tbody[1][0][1].attrib["id"] == "companyLogo"
+        assert tbody[1][0][-1].attrib["id"] == "companyLogo"
 
         assert len(tbody[2]) == 2 # address, summary table
         assert len(tbody[2][1]) == 1
@@ -81,6 +88,9 @@ def parse_mypay_html(filename):
         assert total == netpay
         assert len(tbody[8]) == 1
         assert tbody[8][0][0][0].text == "Pay summary"
+
+def s(elem):
+    return etree.tostring(cash.check, pretty_print=True).decode()
 
 def tab(el, docid, table_type):
     if table_type == PAY:
