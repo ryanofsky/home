@@ -60,7 +60,7 @@ cash.parse_mypay_html("mypay.html")
   test-eq 9-mypay-data/txt expected-9-mypay-data.txt
 fi
 
-if true; then
+if false; then
     python3.5 -c "
 import cash
 cash.import_chase_txns('1-chase-data', '$CASH_DB')
