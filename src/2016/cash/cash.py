@@ -774,7 +774,6 @@ def import_chase_txns(chase_dir, cash_db):
         expense_acct = gnu.acct(None, 'Expenses')
         income_acct = gnu.acct(None, 'Income')
         checking_acct = gnu.acct(gnu.current_assets, "Checking Account")
-        checking_acct = gnu.new_acct(gnu.current_assets, "tmp")
 
         first = True
         acct_balance = 0
@@ -811,3 +810,29 @@ def import_chase_txns(chase_dir, cash_db):
                                     income_acct, checking_acct, action, memo,
                                     "Deposit: {}".format(memo))
                     acct_balance = balance
+
+        acct_map = {}
+        c = gnu.conn.cursor()
+        c.execute("SELECT guid, name FROM accounts")
+        for guid, name in c.fetchall():
+            acct_map[guid] = name
+
+        c = gnu.conn.cursor()
+        c.execute("SELECT guid, post_date, description FROM transactions "
+                  "ORDER BY post_date, rowid")
+        for guid, post_date, description in c.fetchall():
+            d = gnu.conn.cursor()
+            d.execute("SELECT account_guid, memo, action, value_num "
+                      "FROM splits WHERE tx_guid = ? ORDER BY rowid", (guid,))
+
+            found_new = False
+            splits = []
+            for account, memo, action, value in d.fetchall():
+                splits.append((account, memo, action, value))
+                if action:
+                    found_new = True
+
+            if not found_new:
+                print(gnu.date(post_date), description)
+                for account, memo, action, value in splits:
+                  print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
