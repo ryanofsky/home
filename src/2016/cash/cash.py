@@ -190,13 +190,18 @@ def parse_chase_pdftext(json_filename):
     #   - parses successfully
     # 2006-09-21
     #   - can't parse because transactions grouped by date
-    #   - Switch to signed "AMOUNT" column instead of positive "Additions" and "Deductions" columns
+    #   - Switch to signed "AMOUNT" column instead of positive "Additions" and
+    #     "Deductions" columns
     #   - Switch to "Beginning Balance" instead of "Opening Balance"
-    #   - Fragments are now groups of words with spaces, instead of individual words
-    #   - Transactions grouped by dates and only include daily balances, only way to distinguish them is by slightly larger vertical spacing
+    #   - Fragments are now groups of words with spaces, instead of individual
+    #     words
+    #   - Transactions grouped by dates and only include daily balances, only
+    #     way to distinguish them is by slightly larger vertical spacing
     #   - Dates no longer included on beginning/ending balance transaction lines
-    #   - Has junk vertical barcode on side of statement that interferes with parsing
-    #   - ALL CAPS transations with lots of extra wrapping, and multilevel indent
+    #   - Has junk vertical barcode on side of statement that interferes with
+    #     parsing
+    #   - ALL CAPS transations with lots of extra wrapping, and multilevel
+    #     indent
     # 2006-10-19 thru 2007-01-19
     #   - can't parse because transactions grouped by date
     #   - No more ALL CAPS transactions, no more multilevel indent
@@ -216,7 +221,8 @@ def parse_chase_pdftext(json_filename):
     #   - slightly wider column
     # 2011-09-20 thru 2015-11-19
     #   - parses successfully
-    #   - [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"] header is now image instead of text
+    #   - [" DATE", "DESCRIPTION", "AMOUNT", "BALANCE"] header is now image
+    #     instead of text
     #   - Begin and ending header dates are no longer available
     found_begin, found_open = fragments_discard_until(
         it, discarded_text,
@@ -615,7 +621,7 @@ class PeekIterator:
                 self.lookbehind, self.offset, 1 - self.offset)
         pos = self.prev_elems - 1 + offset
         assert pos >= 0, "Can't peek before first element in sequence."
-        assert pos < len(self.cache), "Can't peek beyond last element in sequence."
+        assert pos < len(self.cache), "Can't peek after last sequence element."
         return self.cache[pos]
 
     def at_end(self):
@@ -648,7 +654,10 @@ class GnuCash:
 
     def insert(self, table, vals):
         c = self.conn.cursor()
-        s = "INSERT INTO {} ({}) VALUES ({})".format(table, ",".join(k for k, v in vals), ",".join("?" for k, v, in vals))
+        s = "INSERT INTO {} ({}) VALUES ({})".format(
+            table,
+            ",".join(k for k, v in vals),
+            ",".join("?" for k, v, in vals))
         c.execute(s, tuple(v for k, v in vals))
 
     def guid(self):
@@ -657,7 +666,9 @@ class GnuCash:
     def acct(self, parent=None, *names):
         c = self.conn.cursor()
         if parent is None:
-            c.execute("SELECT guid FROM accounts WHERE name = ? AND parent_guid IS NULL", ("Root Account",))
+            c.execute("SELECT guid FROM accounts "
+                      "WHERE name = ? AND parent_guid IS NULL",
+                      ("Root Account",))
             rows = c.fetchall()
             assert len(rows) == 1
             guid, = rows[0]
@@ -665,7 +676,8 @@ class GnuCash:
             guid = parent
 
         for name in names:
-            c.execute("SELECT guid FROM accounts WHERE name = ? AND parent_guid = ?", (name, guid))
+            c.execute("SELECT guid FROM accounts "
+                      "WHERE name = ? AND parent_guid = ?", (name, guid))
             rows = c.fetchall()
             assert len(rows) == 1
             guid, = rows[0]
@@ -673,7 +685,8 @@ class GnuCash:
 
     def currency(self, mnemonic):
         c = self.conn.cursor()
-        c.execute("SELECT guid FROM commodities WHERE mnemonic = ?", (mnemonic,))
+        c.execute("SELECT guid FROM commodities WHERE mnemonic = ?",
+                  (mnemonic,))
         rows = c.fetchall()
         assert len(rows) == 1
         guid, = rows[0]
@@ -697,7 +710,9 @@ class GnuCash:
 
     def date(self, date_str):
         # date_str comment below explains this madness.
-        return datetime.datetime.fromtimestamp(datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc).timestamp()).date()
+        return datetime.datetime.fromtimestamp(
+            datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S")
+            .replace(tzinfo=datetime.timezone.utc).timestamp()).date()
 
     def date_str(self, date):
         # Have to add local time zone offset to string, because
@@ -705,9 +720,11 @@ class GnuCash:
         # doing unnecessary utc->local timestamp conversion which
         # subtracts 4 or 5 hours and results in yesterday's date being
         # shown in the UI.
-        return datetime.datetime.utcfromtimestamp(time.mktime(date.timetuple())).strftime("%Y%m%d%H%M%S")
+        return datetime.datetime.utcfromtimestamp(
+            time.mktime(date.timetuple())).strftime("%Y%m%d%H%M%S")
 
-    def new_txn(self, reconcile_date, date, amount, src_acct, dst_acct, action, memo, description):
+    def new_txn(self, reconcile_date, date, amount, src_acct, dst_acct,
+                action, memo, description):
         txn_guid = self.guid()
 
         self.insert("transactions",
@@ -737,7 +754,8 @@ class GnuCash:
                      ("memo", memo),
                      ("action", action),
                      ("reconcile_state", "y" if reconcile_date else "n"),
-                     ("reconcile_date", self.date_str(reconcile_date) if reconcile_date else None),
+                     ("reconcile_date", self.date_str(reconcile_date)
+                      if reconcile_date else None),
                      ("value_num", amount),
                      ("value_denom", 100),
                      ("quantity_num", amount),
@@ -769,17 +787,27 @@ def import_chase_txns(chase_dir, cash_db):
             with open(os.path.join(chase_dir, filename)) as fp:
                 txns = json.load(fp)
                 for date_str, prev_balance, balance, amount, desc in txns:
-                    date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                    date = (datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                            .date())
                     action = date.strftime("%m/%d")
                     memo = " || ".join(desc)
                     if first:
                         first = False
-                        gnu.new_txn(statement_date, date, prev_balance, opening_acct, checking_acct, action, "", "Opening Balance")
+                        gnu.new_txn(statement_date, date, prev_balance,
+                                    opening_acct, checking_acct, action, "",
+                                    "Opening Balance")
                     elif prev_balance != acct_balance:
                         print (statement_date, date, prev_balance, acct_balance)
-                        gnu.new_txn(statement_date, date, prev_balance - acct_balance, imbalance_acct, checking_acct, action, "", "Missing transactions")
+                        gnu.new_txn(statement_date, date,
+                                    prev_balance - acct_balance,
+                                    imbalance_acct, checking_acct, action, "",
+                                    "Missing transactions")
                     if amount < 0:
-                        gnu.new_txn(statement_date, date, amount, expense_acct, checking_acct, action, memo, "Withdrawal: {}".format(memo))
+                        gnu.new_txn(statement_date, date, amount,
+                                    expense_acct, checking_acct, action, memo,
+                                    "Withdrawal: {}".format(memo))
                     else:
-                        gnu.new_txn(statement_date, date, amount, income_acct, checking_acct, action, memo, "Deposit: {}".format(memo))
+                        gnu.new_txn(statement_date, date, amount,
+                                    income_acct, checking_acct, action, memo,
+                                    "Deposit: {}".format(memo))
                     acct_balance = balance
