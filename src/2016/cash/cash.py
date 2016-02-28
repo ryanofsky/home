@@ -779,7 +779,7 @@ def import_chase_txns(chase_dir, cash_db):
                         print (statement_date, date, prev_balance, acct_balance)
                         gnu.new_txn(statement_date, date, prev_balance - acct_balance, imbalance_acct, checking_acct, action, "", "Missing transactions")
                     if amount < 0:
-                        gnu.new_txn(statement_date, date, amount, expense_acct, checking_acct, action, memo, "Withdrawal")
+                        gnu.new_txn(statement_date, date, amount, expense_acct, checking_acct, action, memo, "Withdrawal: {}".format(memo))
                     else:
-                        gnu.new_txn(statement_date, date, amount, income_acct, checking_acct, action, memo, "Deposit")
+                        gnu.new_txn(statement_date, date, amount, income_acct, checking_acct, action, memo, "Deposit: {}".format(memo))
                     acct_balance = balance
