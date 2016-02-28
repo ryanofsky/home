@@ -725,6 +725,31 @@ class GnuCash:
 
     def new_txn(self, reconcile_date, date, amount, src_acct, dst_acct,
                 action, memo, description):
+        if action and memo:
+            c = self.conn.cursor()
+            c.execute("SELECT s.guid, t.guid, t.post_date, s.memo FROM splits AS s "
+                      "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                      "WHERE s.account_guid = ? AND s.value_num = ? AND s.action = ''",
+                      (dst_acct, amount))
+
+            closest_offset = closest_split = None
+            for split_guid, txn_guid, txn_date_str, split_memo in c.fetchall():
+                assert not split_memo or split_memo in ('Checking',), split_memo
+                txn_date = self.date(txn_date_str)
+                offset = abs((txn_date - date).days)
+                if (closest_offset is None or offset < closest_offset):
+                    closest_offset = offset
+                    closest_split = split_guid
+
+            if closest_split is not None:
+                c = self.conn.cursor()
+                c.execute("UPDATE splits SET memo=?, action=?, reconcile_state=?, "
+                          "reconcile_date=? WHERE guid = ?",
+                          (memo, action, "y" if reconcile_date else "n",
+                          self.date_str(reconcile_date), closest_split))
+                assert c.rowcount == 1
+                return
+
         txn_guid = self.guid()
 
         self.insert("transactions",
@@ -822,17 +847,17 @@ def import_chase_txns(chase_dir, cash_db):
                   "ORDER BY post_date, rowid")
         for guid, post_date, description in c.fetchall():
             d = gnu.conn.cursor()
-            d.execute("SELECT account_guid, memo, action, value_num "
+            d.execute("SELECT account_guid, memo, action, value_num, reconcile_state "
                       "FROM splits WHERE tx_guid = ? ORDER BY rowid", (guid,))
 
             found_new = False
             splits = []
-            for account, memo, action, value in d.fetchall():
+            for account, memo, action, value, reconcile_state in d.fetchall():
                 splits.append((account, memo, action, value))
-                if action:
+                if account == checking_acct and not action and reconcile_state == 'y':
                     found_new = True
 
-            if not found_new:
+            if found_new:
                 print(gnu.date(post_date), description)
                 for account, memo, action, value in splits:
                   print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
