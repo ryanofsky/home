@@ -991,20 +991,20 @@ def import_pay_txns(html_filename, cash_db):
          ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"), NONNEG),
 
         (DED, 'Medical', "<p>Employee contribution towards Medical Insurance plan</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/medical-benefits' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Medical Insurance"), None, NONNEG),
+         ("Expenses", "Subsidized", "Google Medical Insurance"), None, NONNEG),
 
         (DED, 'Gym Deduction', "<p>Employee contribution towards Gym Membership</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/gyms-and-fitness-g-fit' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Gym Membership"), None, NONNEG),
+         ("Expenses", "Subsidized", "Google Gym Membership"), None, NONNEG),
 
         (DED, 'Pretax 401 Flat', '<p>Pre-tax 401k contribution defined as a dollar amount per pay cycle</p>\n<p><a href="https://support-content-draft.corp.google.com/mygoogle/topic/6205846?hl=en&ref_topic=6206133" target="_blank">Click here to learn more</a></p>',
          ("Assets", "Investments", "401K"),
          ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"), NONNEG),
 
         (DED, 'Dental', "<p>Employee contribution towards Dental Insurance premiums</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/dental-insurance' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Dental Insurance"), None, NONNEG),
+         ("Expenses", "Subsidized", "Google Dental Insurance"), None, NONNEG),
 
         (DED, 'Vision', "<p>Employee contribution towards Vision Insurance premiums</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/vision-insurance' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Vision Insurance"), None, NONNEG),
+         ("Expenses", "Subsidized", "Google Vision Insurance"), None, NONNEG),
 
         (DED, 'Prize Gross Up', '<p>Offset deduction; see matching earning code for more info</p>',
          ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
@@ -1021,7 +1021,7 @@ def import_pay_txns(html_filename, cash_db):
         # https://www.irs.gov/Affordable-Care-Act/Form-W-2-Reporting-of-Employer-Sponsored-Health-Coverage
         # W2 Box 12, Code DD
         (DED, 'ER Benefit Cost', '<p>Total contributions by Employer towards benefits for W-2 reporting</p>',
-         ("Expenses", "Subsidized", "Medical Insurance"),
+         ("Expenses", "Subsidized", "Google Medical Insurance"),
          ("Income", "Untaxed Benefits", "Google Employer Medical Insurance Contribution"), NONNEG | GOOG_ONLY),
 
         # FIXME: notmuch search for 14.95 charge on 9/2014 to see what this was, then add expense transaction to 0 out liability balance
@@ -1044,10 +1044,13 @@ def import_pay_txns(html_filename, cash_db):
          ("Expenses", "Taxes", "NY State Income"), None, NONNEG),
 
         (TAX, 'Social Security Employee Tax', '',
-         ("Expenses", "Taxes"), None, NONNEG),
+         ("Expenses", "Taxes", "Social Security"), None, NONNEG),
     )
 
     def acct_type(names):
+        assert (names[-1].startswith("Google")
+                or names[:2] == ("Expenses", "Taxes")
+                or names == ("Assets", "Investments", "401K")) # should rename later
         if names[0] == "Expenses":
             return "EXPENSE"
         if names[0] == "Income":
