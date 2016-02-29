@@ -51,3 +51,35 @@ class PrevNextIterator(NextIterator):
     @property
     def at_start(self):
         return self.it.at_start
+###############################################################################
+sqlite query listing user accounts
+###############################################################################
+WITH RECURSIVE
+    r(guid, name) AS (
+        SELECT guid, name
+            FROM accounts
+            WHERE name = 'Root Account'
+        UNION ALL
+        SELECT accounts.guid, r.name || ' > ' || accounts.name
+            FROM r
+            JOIN accounts ON (accounts.parent_guid = r.guid)
+    )
+SELECT accounts.guid, r.name, accounts.account_type
+    FROM r
+    JOIN accounts USING (guid)
+    ORDER BY r.name;
+###############################################################################
+sqlite query listing all accounts including weird parent chain with no names
+###############################################################################
+WITH RECURSIVE
+    fmt_name(guid, name_str) AS (
+        SELECT guid, CASE WHEN name <> '' THEN name ELSE substr(guid, 0, 8) END FROM accounts
+    ),
+    r(guid, name, next_parent) AS (
+        SELECT guid, name_str, parent_guid FROM accounts JOIN fmt_name USING(guid)
+        UNION ALL SELECT r.guid, name_str || ' > ' || r.name, accounts.parent_guid
+                  FROM r
+                  JOIN accounts ON accounts.guid = r.next_parent
+                  JOIN fmt_name ON (fmt_name.guid = accounts.guid)
+    )
+SELECT accounts.guid, accounts.account_type, r.name FROM r JOIN accounts USING (guid) WHERE r.next_parent is NULL ORDER BY r.name;

@@ -72,36 +72,39 @@ def parse_mypay_html(filename):
         assert tbody[5][0][0][0].text == "Earnings"
         total = 0
         splits = []
-        for label, details, current in tab(tbody[5][0], docid, PAY):
+        for label, details, current, goog_current in tab(tbody[5][0], docid, PAY):
             current = parse_price(current, True)
+            goog_current = parse_price(goog_current, True)
             total += current
-            splits.append((PAY, label, details, current))
+            splits.append((PAY, label, details, current, goog_current))
 
         assert tbody[5][1].attrib["colspan"] == "3"
         assert tbody[5][1][0][0].text == "Deductions"
-        for label, details, current in tab(tbody[5][1], docid, DED):
+        for label, details, current, goog_current in tab(tbody[5][1], docid, DED):
             current = parse_price(current, True)
+            goog_current = parse_price(goog_current, True)
             total -= current
-            splits.append((DED, label, details, current))
+            splits.append((DED, label, details, current, goog_current))
 
         assert len(tbody[6]) == 1
         assert tbody[6][0].attrib["colspan"] == "3"
         assert tbody[6][0][0][0].text == "Taxes"
-        for label, details, current in tab(tbody[6][0], docid, TAX):
+        for label, details, current, goog_current in tab(tbody[6][0], docid, TAX):
             current = parse_price(current, True)
+            goog_current = parse_price(goog_current, True)
             total -= current
-            splits.append((TAX, label, details, current))
+            splits.append((TAX, label, details, current, goog_current))
 
         stubs.append((paydate, docid, netpay, splits))
 
-        assert total == netpay
+        assert total == netpay, (total, netpay)
         assert len(tbody[8]) == 1
         assert tbody[8][0][0][0].text == "Pay summary"
 
     return stubs
 
 def s(elem):
-    return etree.tostring(cash.check, pretty_print=True).decode()
+    return etree.tostring(elem, pretty_print=True).decode()
 
 def tab(el, docid, table_type):
     if table_type == PAY:
@@ -134,11 +137,16 @@ def tab(el, docid, table_type):
         bodycols = []
         for colno, bodycol in enumerate(bodyrow):
             if colno == 0:
-                bodycols.append(bodycol[0].attrib["data-title"])
+                title = bodycol[0].attrib["data-title"]
+                title2 = bodycol[0].text.strip()
+                assert title == title2
+                desc = bodycol[0].attrib["data-content"]
+                bodycols.append((title, desc))
             else:
                 assert len(bodycol) == 0
                 bodycols.append(bodycol.text)
         details = ""
+        goog_current = "$0.00"
         if table_type == PAY:
             if docid.startswith("RSU"):
                 label, hours, rate, piece_units, piece_rate, current, ytd = \
@@ -151,19 +159,19 @@ def tab(el, docid, table_type):
                 details += " ({} hours, {}/hour)".format(hours, rate)
         elif table_type == DED:
             label, current, ytd, goog_current, goog_ytd, garbage = bodycols
-            if goog_current != "$0.00":
-                if label in ("401K Pretax", "Pretax 401 Flat",
-                             "ER Benefit Cost"):
-                    goog_401k = goog_current
-                else:
-                   assert False
             assert garbage == "\xa0"
         else:
             assert table_type == TAX
             label, income, current, ytd, garbage = bodycols
+            income_val = parse_price(income)
+            current_val = parse_price(current)
+            if income_val == 0:
+                details += " (based on {})".format(income)
+            else:
+                details += " ({:.3f}% × {})".format(current_val / income_val * 100.0, income)
             assert garbage == "\xa0"
-        if current != "$0.00":
-          yield label, details, current
+        if current != "$0.00" or goog_current != "$0.00":
+          yield label, details, current, goog_current
 
 def parse_price(price_str, allow_negative=False, allow_minus=False):
     price = 1
@@ -666,7 +674,7 @@ class GnuCash:
         self.conn.isolation_level = None
         self.conn.cursor().execute("BEGIN")
         self.commodity_usd = self.currency("USD")
-        self.current_assets = self.acct(None, "Assets", "Current Assets")
+        self.current_assets = self.get_acct(None, "Assets", "Current Assets")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -684,7 +692,7 @@ class GnuCash:
     def guid(self):
         return '%032x' % self.random.randrange(16**32)
 
-    def acct(self, parent=None, *names):
+    def acct(self, names, parent=None, acct_type=None, create_parents=False):
         c = self.conn.cursor()
         if parent is None:
             c.execute("SELECT guid FROM accounts "
@@ -696,13 +704,25 @@ class GnuCash:
         else:
             guid = parent
 
-        for name in names:
+        it = PeekIterator(names, lookahead=1)
+        for name in it:
             c.execute("SELECT guid FROM accounts "
                       "WHERE name = ? AND parent_guid = ?", (name, guid))
             rows = c.fetchall()
-            assert len(rows) == 1
-            guid, = rows[0]
+            if len(rows) == 1:
+                guid, = rows[0]
+                continue
+
+            assert len(rows) == 0
+            assert acct_type is not None
+            assert it.at_end() or create_parents, names
+            guid = self.new_acct(guid, name, acct_type)
+
         return guid
+
+
+    def get_acct(self, parent=None, *names):
+        return self.acct(names, parent=parent)
 
     def currency(self, mnemonic):
         c = self.conn.cursor()
@@ -713,12 +733,12 @@ class GnuCash:
         guid, = rows[0]
         return guid
 
-    def new_acct(self, parent_guid, name):
+    def new_acct(self, parent_guid, name, acct_type="ASSET"):
         guid = self.guid()
         self.insert("accounts",
                     (("guid", guid),
                      ("name", name),
-                     ("account_type", 'ASSET'),
+                     ("account_type", acct_type),
                      ("commodity_guid", self.commodity_usd),
                      ("commodity_scu", 100),
                      ("non_std_scu", 0),
@@ -781,6 +801,7 @@ class GnuCash:
                      ("enter_date", self.date_str(date)),
                      ("description", description)))
 
+        # Could merge this boilerplate with new_split code below.
         src_split = (("guid", self.guid()),
                      ("tx_guid", txn_guid),
                      ("account_guid", src_acct),
@@ -813,13 +834,30 @@ class GnuCash:
         self.insert("splits", src_split)
         self.insert("splits", dst_split)
 
+    def new_split(self, txn_guid, acct, amount, memo):
+        guid = self.guid()
+        self.insert("splits",
+                    (("guid", guid),
+                      ("tx_guid", txn_guid),
+                      ("account_guid", acct),
+                      ("memo", memo),
+                      ("action", ""),
+                      ("reconcile_state", "n"),
+                      ("reconcile_date", None),
+                      ("value_num", amount),
+                      ("value_denom", 100),
+                      ("quantity_num", amount),
+                      ("quantity_denom", 100),
+                      ("lot_guid", None)))
+        return guid
+
 def import_chase_txns(chase_dir, cash_db):
     with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
-        opening_acct = gnu.acct(None, 'Equity', 'Opening Balances')
-        imbalance_acct = gnu.acct(None, 'Imbalance-USD')
-        expense_acct = gnu.acct(None, 'Expenses')
-        income_acct = gnu.acct(None, 'Income')
-        checking_acct = gnu.acct(gnu.current_assets, "Checking Account")
+        opening_acct = gnu.get_acct(None, 'Equity', 'Opening Balances')
+        imbalance_acct = gnu.get_acct(None, 'Imbalance-USD')
+        expense_acct = gnu.get_acct(None, 'Expenses')
+        income_acct = gnu.get_acct(None, 'Income')
+        checking_acct = gnu.get_acct(gnu.current_assets, "Checking Account")
 
         first = True
         acct_balance = 0
@@ -884,12 +922,161 @@ def import_chase_txns(chase_dir, cash_db):
                   print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
 
 def import_pay_txns(html_filename, cash_db):
+    NONNEG = 1
+    NONPOS = 2
+    GOOG_ONLY = 4
+
+    SPLITS = (
+        (PAY, 'Group Term Life', "<p>Value of Life Insurance (as defined by IRS) for tax calculation. <div style=font-style:italic;>This has a matching deduction offset and is not paid out through Payroll.</div></p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/life-insurance-1' target='_blank'>Click here to learn more</a>",
+         ("Income", "Taxable Benefits", "Google Life Insurance"), None, NONNEG),
+
+        (PAY, 'Regular Pay', '<p>Regular wages for time worked at base salary / hourly rate</p>',
+         ("Income", "Salary", "Google Regular Pay"), None, NONNEG),
+
+        (PAY, 'Vacation Pay', '<p>Vacation time taken against balance.</p>',
+         ("Income", "Salary", "Google Vacation Pay"), None, NONNEG),
+
+        # Taxable benefits folder tracks cost to google of non-cash benefits that google pays for and i receive as goods or services, and also owe taxes on
+        # Untaxed benefits folder tracks cost to google of non-cash benefits that google pays for and i receive as good or service, and do not owe any taxes on
+        # Actual benefits received are tracked in Expenses -> Subsidized Hierarchy and show value of benefit that i receive.
+        # Downside of this arrangement, is that neither account shows money i personally pay for benefit. have to manually subtract gym expense balance from gym benenfit balance to see how much my decision to join gym actually costs me.
+        # An alternative to this arrangement would use one account instead of two for each benefit, and balance would reflect my actual cash expenditure. But then there would be no account showing my tax liability, and also the gnucash ui sucks when multiple lines in same account.
+        (PAY, 'Gym Reim Txbl', '<p>Taxable Gym Reimbursement</p>',
+         ("Income", "Taxable Benefits", "Google Gym Membership"), None, NONNEG),
+
+        (PAY, 'Annual Bonus', "<p>Annual Bonus plan</p><br><a href='https://support.google.com/mygoogle/answer/4596076' target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Annual Bonus"), None, NONNEG),
+
+        (PAY, 'Prize/ Gift', '<p>Value of Prizes and Gifts for tax calculation. <div style=font-style:italic;>This has a matching deduction offset and is not paid out through Payroll.</div></p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift"), None, NONNEG),
+
+        (PAY, 'Prize/ Gift', '<p>Company-paid tax offset for Prizes and Gifts.</p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift Tax Offset"), None, NONNEG),
+
+        (PAY, 'Holiday Gift', '<p>Company-paid tax offset for Holiday Gift.</p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift Tax Offset"), None, NONNEG),
+
+        (PAY, 'Holiday Gift', '<p>Value of Holiday Gift for tax calculation. <div style=font-style:italic;>This has a matching deduction offset and is not paid out through Payroll.</div></p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift"), None, NONNEG),
+
+        (PAY, 'Peer Bonus', "<p>Peer Bonus payment. Thank you!</p><br><a href='https://support.google.com/mygoogle/answer/6003818?hl=en&ref_topic=3415454' target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Peer Bonus"), None, NONNEG),
+
+        (PAY, 'Patent Bonus', "<p>Patent Bonus payment</p><br><a href='https://sites.google.com/a/google.com/patents/patents/awards/monetary-awards' target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Patent Bonus"), None, NONNEG),
+
+        (PAY, 'Goog Stock Unit', "<p>Value of Google Stock Units (GSU) for tax calculation. <div style=font-style:italic;>This is not paid out through Payroll.</div></p><br><a href='https://sites.google.com/a/google.com/stock-admin-landing-page/' target='_blank'>Click here to learn more</a>",
+         ("Income", "Taxable Benefits", "Google Stock Units"), None, NONNEG),
+
+        (PAY, 'Retroactive Pay', '<p>Adjustment to wages from a previous pay period.</p>',
+         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
+
+        (PAY, 'Refund Report', '<p>Non-pay-impacting code for metadata tracking</p>',
+         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
+
+        (PAY, 'Placeholder', '<p>Non-pay-impacting code for metadata tracking</p>',
+         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
+
+        (PAY, 'Spot Bonus', "<p>Spot Bonus payment</p><br><a href='https://support.google.com/mygoogle/answer/6003815?hl=en&ref_topic=3415454' target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Spot Bonus"), None, NONNEG),
+
+        (PAY, 'Vacation Payout', '<p>Liquidation of Vacation balance.</p>',
+         ("Income", "Salary", "Google Vacation Payout"), None, NONNEG),
+
+        (DED, 'Group Term Life', '<p>Offset deduction; see matching earning code for more info</p>',
+         ("Expenses", "Subsidized", "Google Life Insurance"), None, NONNEG),
+
+        (DED, '401K Pretax', '<p>Pre-tax 401k contribution defined as a percentage or dollar election of eligible earnings</p>\n<p><a href="https://support-content-draft.corp.google.com/mygoogle/topic/6205846?hl=en&ref_topic=6206133" target="_blank">Click here to learn more</a></p>',
+         ("Assets", "Investments", "401K"),
+         ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"), NONNEG),
+
+        (DED, 'Medical', "<p>Employee contribution towards Medical Insurance plan</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/medical-benefits' target='_blank'>Click here to learn more</a>",
+         ("Expenses", "Subsidized", "Medical Insurance"), None, NONNEG),
+
+        (DED, 'Gym Deduction', "<p>Employee contribution towards Gym Membership</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/gyms-and-fitness-g-fit' target='_blank'>Click here to learn more</a>",
+         ("Expenses", "Subsidized", "Gym Membership"), None, NONNEG),
+
+        (DED, 'Pretax 401 Flat', '<p>Pre-tax 401k contribution defined as a dollar amount per pay cycle</p>\n<p><a href="https://support-content-draft.corp.google.com/mygoogle/topic/6205846?hl=en&ref_topic=6206133" target="_blank">Click here to learn more</a></p>',
+         ("Assets", "Investments", "401K"),
+         ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"), NONNEG),
+
+        (DED, 'Dental', "<p>Employee contribution towards Dental Insurance premiums</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/dental-insurance' target='_blank'>Click here to learn more</a>",
+         ("Expenses", "Subsidized", "Dental Insurance"), None, NONNEG),
+
+        (DED, 'Vision', "<p>Employee contribution towards Vision Insurance premiums</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/vision-insurance' target='_blank'>Click here to learn more</a>",
+         ("Expenses", "Subsidized", "Vision Insurance"), None, NONNEG),
+
+        (DED, 'Prize Gross Up', '<p>Offset deduction; see matching earning code for more info</p>',
+         ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
+
+        (DED, 'Holiday Gift', '<p>Offset deduction; see matching earning code for more info</p>',
+         ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
+
+        (DED, 'RSU Stock Offst', '<p>Offset deduction; see matching earning code for more info</p>',
+         ("Assets", "Investments", "Google Stock Units"), None, NONNEG),
+
+        (DED, 'GSU Refund', '<p>Refund for overage of stock withholding.<bt ></bt>When your stock vests, Google is required to recognize its value for taxes and executes enough units of stock to cover these taxes. Since Google can only execute stock in whole units, there is often a remainder amount from the sale which is returned to you through this deduction code.</p>',
+         ("Assets", "Investments", "Google Stock Units"), None, NONPOS),
+
+        # https://www.irs.gov/Affordable-Care-Act/Form-W-2-Reporting-of-Employer-Sponsored-Health-Coverage
+        # W2 Box 12, Code DD
+        (DED, 'ER Benefit Cost', '<p>Total contributions by Employer towards benefits for W-2 reporting</p>',
+         ("Expenses", "Subsidized", "Medical Insurance"),
+         ("Income", "Untaxed Benefits", "Google Employer Medical Insurance Contribution"), NONNEG | GOOG_ONLY),
+
+        # FIXME: notmuch search for 14.95 charge on 9/2014 to see what this was, then add expense transaction to 0 out liability balance
+        (DED, 'GCard Repayment', '<p>Collection for personal charges on a GCard</p>',
+         ("Liabilities", "Google GCard"), None, NONNEG),
+
+        (TAX, 'Employee Medicare', '',
+         ("Expenses", "Taxes", "Medicare"), None, NONNEG),
+
+        (TAX, 'Federal Income Tax', '',
+         ("Expenses", "Taxes", "Federal"), None, NONNEG),
+
+        (TAX, 'New York R', '<p>New York R City Tax</p>',
+         ("Expenses", "Taxes", "NYC Resident"), None, NONNEG),
+
+        (TAX, 'NY Disability Employee', '<p>New York Disability</p>',
+         ("Expenses", "Taxes", "NY State Disability Insurance (SDI)"), None, NONNEG),
+
+        (TAX, 'NY State Income Tax', '<p>New York State Income Tax</p>',
+         ("Expenses", "Taxes", "NY State Income"), None, NONNEG),
+
+        (TAX, 'Social Security Employee Tax', '',
+         ("Expenses", "Taxes"), None, NONNEG),
+    )
+
+    def acct_type(names):
+        if names[0] == "Expenses":
+            return "EXPENSE"
+        if names[0] == "Income":
+            return "INCOME"
+        if names[0] == "Assets":
+            return "BANK"
+        if names[0] == "Liabilities":
+            return "CREDIT"
+        assert False, names
+
     stubs = parse_mypay_html(html_filename)
 
     with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
-        expense_acct = gnu.acct(None, 'Expenses')
-        income_acct = gnu.acct(None, 'Income')
-        checking_acct = gnu.acct(gnu.current_assets, "Checking Account")
+        # Create placeholder accts
+        gnu.acct(("Expenses", "Subsidized"), acct_type="EXPENSE")
+        gnu.acct(("Income", "Untaxed Benefits"), acct_type="INCOME")
+
+        # Get checking
+        checking_acct = gnu.get_acct(gnu.current_assets, "Checking Account")
+
+        # (cat, title, desc) -> account guid, goog_account_guid, flags
+        accts = {}
+
+        for cat, title, desc, acct, goog_acct, flags in SPLITS:
+            assert (cat, title, desc) not in accts
+            acct = gnu.acct(acct, acct_type=acct_type(acct))
+            if goog_acct:
+              goog_acct = gnu.acct(goog_acct, acct_type=acct_type(goog_acct))
+            accts[(cat, title, desc)] = acct, goog_acct, flags
 
         for paydate_str, docid, netpay, splits in stubs:
             paydate = datetime.datetime.strptime(paydate_str, "%m/%d/%Y").date()
@@ -943,37 +1130,26 @@ def import_pay_txns(html_filename, cash_db):
                 c.execute("DELETE FROM splits WHERE guid IN ({})".format(",".join("?" for _ in delete_splits)), (delete_splits))
                 assert c.rowcount == len(delete_splits)
 
-            for cat, label, details, amount in splits:
-                memo = "{}: {}{}".format(cat, label, details)
+            for cat, (title, desc), details, amount, goog_amount in splits:
+                acct, goog_acct, flags = accts[cat, title, desc]
+                assert flags & NONNEG == 0 or amount >= 0
+                assert flags & NONPOS == 0 or amount <= 0
+                assert flags & GOOG_ONLY == 0 or amount == 0
+                assert flags & NONNEG == 0 or goog_amount >= 0
+                assert flags & NONPOS == 0 or goog_amount <= 0
+                assert goog_acct or goog_amount == 0
+                assert amount or goog_amount
+
                 if cat == PAY:
-                    acct = income_acct
                     amount *= -1
-                else:
-                    assert cat in (DED, TAX)
-                    acct = expense_acct
 
-                gnu.insert("splits",
-                           (("guid", gnu.guid()),
-                            ("tx_guid", txn_guid),
-                            ("account_guid", acct),
-                            ("memo", memo),
-                            ("action", ""),
-                            ("reconcile_state", "n"),
-                            ("reconcile_date", None),
-                            ("value_num", amount),
-                            ("value_denom", 100),
-                            ("quantity_num", amount),
-                            ("quantity_denom", 100),
-                            ("lot_guid", None)))
+                if amount:
+                    memo = "{}: {}{}".format(cat, title, details)
+                    gnu.new_split(txn_guid, acct, amount, memo)
 
-    # dump histogram of split types
-    ts = {}
-    for paydate, docid, netpay, splits in stubs:
-        for cat, label, details, current in splits:
-            key = cat, label
-            if key in ts:
-                ts[key] = ts[key][0] + 1, ts[key][1] + current
-            else:
-                ts[key] = 1, current
-
-    print( "\n".join("{} {}".format(*r) for r in sorted([(c,k) for k, c in ts.items()], reverse=True)   ))
+                if goog_amount:
+                    assert cat == DED
+                    memo = "Employer contribution: {}{}".format(title, details)
+                    gnu.new_split(txn_guid, goog_acct, -goog_amount, memo)
+                    memo = "Employer deduction: {}{}".format(title, details)
+                    gnu.new_split(txn_guid, acct, goog_amount, memo)
