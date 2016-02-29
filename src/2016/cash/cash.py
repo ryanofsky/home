@@ -17,8 +17,15 @@ PAY = "Pay"
 DED = "Deduction"
 TAX = "Tax"
 
+def print_mypay_html(html_filename):
+    for paydate_str, docid, netpay, splits in parse_mypay_html(html_filename):
+        print(paydate_str, docid, netpay)
+        for cat, label, details, amount in splits:
+            print("  {}: {}{} -- {}".format(cat, label, details, amount))
+
 def parse_mypay_html(filename):
     pay = etree.parse(filename, etree.HTMLParser())
+    stubs = []
     for check in CSSSelector('.payStatement')(pay):
         assert len(check) == 1
         tbody = check[0]
@@ -58,24 +65,24 @@ def parse_mypay_html(filename):
         assert len(tbody[4]) == 5
 
         netpay = parse_price(netpay)
-        print(paydate, docid, netpay)
 
         assert len(tbody[5]) == 2
         assert tbody[5][0].attrib["colspan"] == "2"
         assert tbody[5][0].attrib["rowspan"] == "2"
         assert tbody[5][0][0][0].text == "Earnings"
         total = 0
+        splits = []
         for label, details, current in tab(tbody[5][0], docid, PAY):
             current = parse_price(current, True)
             total += current
-            print("  {}: {}{} -- {}".format(PAY, label, details, current))
+            splits.append((PAY, label, details, current))
 
         assert tbody[5][1].attrib["colspan"] == "3"
         assert tbody[5][1][0][0].text == "Deductions"
         for label, details, current in tab(tbody[5][1], docid, DED):
             current = parse_price(current, True)
             total -= current
-            print("  {}: {}{} -- {}".format(DED, label, details, current))
+            splits.append((DED, label, details, current))
 
         assert len(tbody[6]) == 1
         assert tbody[6][0].attrib["colspan"] == "3"
@@ -83,11 +90,15 @@ def parse_mypay_html(filename):
         for label, details, current in tab(tbody[6][0], docid, TAX):
             current = parse_price(current, True)
             total -= current
-            print("  {}: {}{} -- {}".format(TAX, label, details, current))
+            splits.append((TAX, label, details, current))
+
+        stubs.append((paydate, docid, netpay, splits))
 
         assert total == netpay
         assert len(tbody[8]) == 1
         assert tbody[8][0][0][0].text == "Pay summary"
+
+    return stubs
 
 def s(elem):
     return etree.tostring(cash.check, pretty_print=True).decode()
@@ -871,3 +882,98 @@ def import_chase_txns(chase_dir, cash_db):
                 print(gnu.date(post_date), description)
                 for account, memo, action, value in splits:
                   print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
+
+def import_pay_txns(html_filename, cash_db):
+    stubs = parse_mypay_html(html_filename)
+
+    with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
+        expense_acct = gnu.acct(None, 'Expenses')
+        income_acct = gnu.acct(None, 'Income')
+        checking_acct = gnu.acct(gnu.current_assets, "Checking Account")
+
+        for paydate_str, docid, netpay, splits in stubs:
+            paydate = datetime.datetime.strptime(paydate_str, "%m/%d/%Y").date()
+            description = "Google Document {} Net Pay ${:,}.{:02}".format(docid, netpay // 100, netpay % 100)
+
+            closest_offset = None
+            if netpay:
+                c = gnu.conn.cursor()
+                c.execute("SELECT s.guid, t.guid, t.post_date, t.description FROM splits AS s "
+                          "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                          "WHERE s.account_guid = ? AND s.value_num = ?",
+                          (checking_acct, netpay))
+                for sguid, tguid, post_date_str, desc in c.fetchall():
+                    post_date = gnu.date(post_date_str)
+                    offset = abs((post_date - paydate).days)
+                    if (closest_offset is None or offset < closest_offset):
+                        closest_offset = offset
+                        closest_split = sguid
+                        closest_txn = tguid
+                        closest_desc = desc
+
+            if closest_offset is None:
+                assert not netpay
+                txn_guid = gnu.guid()
+                gnu.insert("transactions",
+                            (("guid", txn_guid),
+                            ("currency_guid", gnu.commodity_usd),
+                            ("num", ""),
+                            ("post_date", gnu.date_str(paydate)),
+                            ("enter_date", gnu.date_str(paydate)),
+                            ("description", description)))
+            else:
+                assert closest_desc in ("Google 0", "Google 1", "Google Bonus", "Google") or closest_desc.startswith("Deposit: Google Inc       Payroll                    PPD ID: "), repr(closest_desc)
+                assert closest_offset < 7
+                txn_guid = closest_txn
+                c.execute("UPDATE transactions SET post_date = ?, enter_date = ?, description = ? WHERE guid = ?", (gnu.date_str(paydate), gnu.date_str(paydate), description, txn_guid))
+                assert c.rowcount == 1
+
+                delete_splits = []
+                c.execute("SELECT guid, tx_guid, account_guid, memo, action, reconcile_state, reconcile_date, value_num, value_denom, quantity_num, quantity_denom, lot_guid FROM splits WHERE tx_guid = ?", (txn_guid,))
+                for guid, tx_guid, account_guid, memo, action, reconcile_state, reconcile_date, value_num, value_denom, quantity_num, quantity_denom, lot_guid in c.fetchall():
+                    if guid == closest_split:
+                        continue
+                    assert action == ""
+                    assert memo in ("", 'Federal Income Tax','Employee Medicare','Social Security E','NY State Income T','New York R','NY Disability Emp','Dental','Medical','Pretax 401 Flat','Vision','Group Term Life','Regular','Gym Deduction','Taxable Gym Reim', 'Annual Bonus', 'Med Dent Vis', 'Vacation Pay', '401K Pretax', 'Social Security', 'NY State Income'), repr(memo)
+                    assert reconcile_state == "n", repr((memo, action, account_guid, guid))
+                    assert reconcile_date is None
+                    assert lot_guid is None
+                    delete_splits.append(guid)
+
+                c.execute("DELETE FROM splits WHERE guid IN ({})".format(",".join("?" for _ in delete_splits)), (delete_splits))
+                assert c.rowcount == len(delete_splits)
+
+            for cat, label, details, amount in splits:
+                memo = "{}: {}{}".format(cat, label, details)
+                if cat == PAY:
+                    acct = income_acct
+                    amount *= -1
+                else:
+                    assert cat in (DED, TAX)
+                    acct = expense_acct
+
+                gnu.insert("splits",
+                           (("guid", gnu.guid()),
+                            ("tx_guid", txn_guid),
+                            ("account_guid", acct),
+                            ("memo", memo),
+                            ("action", ""),
+                            ("reconcile_state", "n"),
+                            ("reconcile_date", None),
+                            ("value_num", amount),
+                            ("value_denom", 100),
+                            ("quantity_num", amount),
+                            ("quantity_denom", 100),
+                            ("lot_guid", None)))
+
+    # dump histogram of split types
+    ts = {}
+    for paydate, docid, netpay, splits in stubs:
+        for cat, label, details, current in splits:
+            key = cat, label
+            if key in ts:
+                ts[key] = ts[key][0] + 1, ts[key][1] + current
+            else:
+                ts[key] = 1, current
+
+    print( "\n".join("{} {}".format(*r) for r in sorted([(c,k) for k, c in ts.items()], reverse=True)   ))

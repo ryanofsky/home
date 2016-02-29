@@ -4,7 +4,7 @@ set -e
 set -x
 
 IN_CHASE=~/store/statements/chase-7165
-IN_PAY=~/store/statements/income/2015-08-05-google.html
+IN_PAY=~/store/statements/income/2015-12-31-google.html
 CASH_DB=~/russ/cash/russ.db
 
 test-eq() {
@@ -49,19 +49,19 @@ for filename in os.listdir("0-chase-txt"):
   test-eq 1-chase-data/2014-07-18.discard expected-1-chase-data-2014-07-18.discard
 fi
 
-rm -rf 9-mypay-data
+# rm -rf 9-mypay-data
 if [ ! -e 9-mypay-data ]; then
     mkdir 9-mypay-data
 
     python3.5 -c "
 import cash
-cash.parse_mypay_html('$IN_PAY')
+cash.print_mypay_html('/home/russ/store/statements/income/2015-08-05-google.html')
 " > 9-mypay-data/txt
 
     test-eq 9-mypay-data/txt expected-9-mypay-data.txt
     python3.5 -c "
 import cash
-cash.parse_mypay_html('/home/russ/store/statements/income/2015-12-31-google.html')
+cash.print_mypay_html('$IN_PAY')
 " > 9-mypay-data/1
 fi
 
@@ -69,5 +69,12 @@ if false; then
     python3.5 -c "
 import cash
 cash.import_chase_txns('1-chase-data', '$CASH_DB')
+"
+fi
+
+if true; then
+    python3.5 -c "
+import cash
+cash.import_pay_txns('$IN_PAY', '$CASH_DB')
 "
 fi
