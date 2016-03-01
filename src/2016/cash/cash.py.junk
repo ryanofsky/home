@@ -83,3 +83,49 @@ WITH RECURSIVE
                   JOIN fmt_name ON (fmt_name.guid = accounts.guid)
     )
 SELECT accounts.guid, accounts.account_type, r.name FROM r JOIN accounts USING (guid) WHERE r.next_parent is NULL ORDER BY r.name;
+###############################################################################
+chase qfx parsing code. not needed because csv has all same
+information except fitid (unique identifier field) and doesn't have
+problem of splitting description string mid-word across name and memo
+lines
+###############################################################################
+def parse_ofx(filename):
+    with open(filename, "r") as fp:
+        while True:
+            line = fp.readline()
+            if not line:
+                break
+            if line.rstrip() != "<STMTTRN>":
+                continue
+
+            trntype = read_line(fp, "<TRNTYPE>")
+            dtposted = read_line(fp, "<DTPOSTED>")
+            trnamt = read_line(fp, "<TRNAMT>")
+            fitid = read_line(fp, "<FITID>")
+            name = read_line(fp, "<NAME>")
+
+            memo = None
+            prefix = "<MEMO>"
+            line = read_line(fp)
+            if line.startswith(prefix):
+                memo = line[len(prefix):]
+                line = read_line(fp)
+
+            suffix = "120000[0:GMT]"
+            assert dtposted.endswith(suffix)
+            date = datetime.datetime.strptime(dtposted[:-len(suffix)], "%Y%m%d").date()
+
+            neg, dollars, cents = re.match(r"^(-?)(\d+)\.(\d{2})$", trnamt).groups()
+            amount = (int(dollars)*100 + int(cents)) * (-1 if neg else 1)
+            print("{} {:10} {!r} {!r} {!r}".format(date, amount, fitid, name, memo))
+
+            assert line == "</STMTTRN>", line
+
+def read_line(fp, prefix=None):
+    line = fp.readline()
+    if prefix is not None:
+        assert line.startswith(prefix), (prefix, line)
+        line = line[len(prefix):]
+    if line[-1] == "\n":
+        line = line[:-1]
+    return line
