@@ -674,7 +674,11 @@ class GnuCash:
         self.conn.isolation_level = None
         self.conn.cursor().execute("BEGIN")
         self.commodity_usd = self.currency("USD")
-        self.current_assets = self.get_acct(None, "Assets", "Current Assets")
+        self.opening_acct = self.acct(("Equity", "Opening Balances"))
+        self.imbalance_acct = self.acct(("Imbalance-USD",))
+        self.expense_acct = self.acct(("Expenses",))
+        self.income_acct = self.acct(("Income",))
+        self.checking_acct = self.acct(( "Assets", "Current Assets", "Checking Account"))
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -692,17 +696,14 @@ class GnuCash:
     def guid(self):
         return '%032x' % self.random.randrange(16**32)
 
-    def acct(self, names, parent=None, acct_type=None, create_parents=False):
+    def acct(self, names, acct_type=None, create_parents=False):
         c = self.conn.cursor()
-        if parent is None:
-            c.execute("SELECT guid FROM accounts "
-                      "WHERE name = ? AND parent_guid IS NULL",
-                      ("Root Account",))
-            rows = c.fetchall()
-            assert len(rows) == 1
-            guid, = rows[0]
-        else:
-            guid = parent
+        c.execute("SELECT guid FROM accounts "
+                  "WHERE name = ? AND parent_guid IS NULL",
+                  ("Root Account",))
+        rows = c.fetchall()
+        assert len(rows) == 1
+        guid, = rows[0]
 
         it = PeekIterator(names, lookahead=1)
         for name in it:
@@ -719,10 +720,6 @@ class GnuCash:
             guid = self.new_acct(guid, name, acct_type)
 
         return guid
-
-
-    def get_acct(self, parent=None, *names):
-        return self.acct(names, parent=parent)
 
     def currency(self, mnemonic):
         c = self.conn.cursor()
@@ -853,12 +850,6 @@ class GnuCash:
 
 def import_chase_txns(chase_dir, cash_db):
     with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
-        opening_acct = gnu.get_acct(None, 'Equity', 'Opening Balances')
-        imbalance_acct = gnu.get_acct(None, 'Imbalance-USD')
-        expense_acct = gnu.get_acct(None, 'Expenses')
-        income_acct = gnu.get_acct(None, 'Income')
-        checking_acct = gnu.get_acct(gnu.current_assets, "Checking Account")
-
         first = True
         acct_balance = 0
         for filename in sorted(os.listdir(chase_dir)):
@@ -877,21 +868,21 @@ def import_chase_txns(chase_dir, cash_db):
                     if first:
                         first = False
                         gnu.new_txn(statement_date, date, prev_balance,
-                                    opening_acct, checking_acct, action, "",
+                                    gnu.opening_acct, gnu.checking_acct, action, "",
                                     "Opening Balance")
                     elif prev_balance != acct_balance:
                         print (statement_date, date, prev_balance, acct_balance)
                         gnu.new_txn(statement_date, date,
                                     prev_balance - acct_balance,
-                                    imbalance_acct, checking_acct, action, "",
+                                    gnu.imbalance_acct, gnu.checking_acct, action, "",
                                     "Missing transactions")
                     if amount < 0:
                         gnu.new_txn(statement_date, date, amount,
-                                    expense_acct, checking_acct, action, memo,
+                                    gnu.expense_acct, gnu.checking_acct, action, memo,
                                     "Withdrawal: {}".format(memo))
                     else:
                         gnu.new_txn(statement_date, date, amount,
-                                    income_acct, checking_acct, action, memo,
+                                    gnu.income_acct, gnu.checking_acct, action, memo,
                                     "Deposit: {}".format(memo))
                     acct_balance = balance
 
@@ -913,7 +904,7 @@ def import_chase_txns(chase_dir, cash_db):
             splits = []
             for account, memo, action, value, reconcile_state in d.fetchall():
                 splits.append((account, memo, action, value))
-                if account == checking_acct and not action and reconcile_state == 'y':
+                if account == gnu.checking_acct and not action and reconcile_state == 'y':
                     found_new = True
 
             if found_new:
@@ -1068,9 +1059,6 @@ def import_pay_txns(html_filename, cash_db):
         gnu.acct(("Expenses", "Subsidized"), acct_type="EXPENSE")
         gnu.acct(("Income", "Untaxed Benefits"), acct_type="INCOME")
 
-        # Get checking
-        checking_acct = gnu.get_acct(gnu.current_assets, "Checking Account")
-
         # (cat, title, desc) -> account guid, goog_account_guid, flags
         accts = {}
 
@@ -1091,7 +1079,7 @@ def import_pay_txns(html_filename, cash_db):
                 c.execute("SELECT s.guid, t.guid, t.post_date, t.description FROM splits AS s "
                           "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
                           "WHERE s.account_guid = ? AND s.value_num = ?",
-                          (checking_acct, netpay))
+                          (gnu.checking_acct, netpay))
                 for sguid, tguid, post_date_str, desc in c.fetchall():
                     post_date = gnu.date(post_date_str)
                     offset = abs((post_date - paydate).days)
