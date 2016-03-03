@@ -544,6 +544,10 @@ def fragments_split_columns(fragments, *columns):
 
 
 def create_mypay_accts(gnu):
+    """Create mypay accounts, return mapping:
+
+        (cat, title, desc) -> (account guid, goog_account_guid, flags)
+    """
     splits = (
         (PAY, 'Group Term Life', "<p>Value of Life Insurance (as defined by "
          "IRS) for tax calculation. <div style=font-style:italic;>This has a "
@@ -778,6 +782,106 @@ def create_mypay_accts(gnu):
         accts[(cat, title, desc)] = acct, goog_acct, flags
 
     return accts
+
+
+def import_mypay_stubs(gnu, accts, stubs):
+    for paydate_str, docid, netpay, splits in stubs:
+        paydate = datetime.datetime.strptime(paydate_str, "%m/%d/%Y").date()
+        description = "Google Document {} Net Pay ${:,}.{:02}".format(
+            docid, netpay // 100, netpay % 100)
+
+        closest_offset = None
+        if netpay:
+            c = gnu.conn.cursor()
+            c.execute("SELECT s.guid, t.guid, t.post_date, t.description "
+                      "FROM splits AS s "
+                      "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                      "WHERE s.account_guid = ? AND s.value_num = ?",
+                      (gnu.checking_acct, netpay))
+            for sguid, tguid, post_date_str, desc in c.fetchall():
+                post_date = gnu.date(post_date_str)
+                offset = abs((post_date - paydate).days)
+                if (closest_offset is None or offset < closest_offset):
+                    closest_offset = offset
+                    closest_split = sguid
+                    closest_txn = tguid
+                    closest_desc = desc
+
+        if closest_offset is None:
+            assert not netpay
+            txn_guid = gnu.guid()
+            gnu.insert("transactions",
+                        (("guid", txn_guid),
+                        ("currency_guid", gnu.commodity_usd),
+                        ("num", ""),
+                        ("post_date", gnu.date_str(paydate)),
+                        ("enter_date", gnu.date_str(paydate)),
+                        ("description", description)))
+        else:
+            assert (closest_desc in ("Google 0", "Google 1",
+                                     "Google Bonus", "Google")
+                    or closest_desc.startswith("Deposit: Google Inc       "
+                                               "Payroll                    "
+                                               "PPD ID: "))
+            assert closest_offset < 7
+            txn_guid = closest_txn
+            c.execute("UPDATE transactions SET post_date = ?, enter_date = ?, "
+                      "    description = ? WHERE guid = ?",
+                      (gnu.date_str(paydate), gnu.date_str(paydate),
+                       description, txn_guid))
+            assert c.rowcount == 1
+
+            delete_splits = []
+            c.execute("SELECT guid, tx_guid, account_guid, memo, action, "
+                      "    reconcile_state, reconcile_date, value_num, "
+                      "    value_denom, quantity_num, quantity_denom, lot_guid "
+                      "FROM splits WHERE tx_guid = ?", (txn_guid,))
+            for (guid, tx_guid, account_guid, memo, action, reconcile_state,
+                 reconcile_date, value_num, value_denom, quantity_num,
+                 quantity_denom, lot_guid) in c.fetchall():
+                if guid == closest_split:
+                    continue
+                assert action == ""
+                assert memo in ("", 'Federal Income Tax', 'Employee Medicare',
+                                'Social Security E', 'NY State Income T',
+                                'New York R', 'NY Disability Emp', 'Dental',
+                                'Medical', 'Pretax 401 Flat', 'Vision',
+                                'Group Term Life', 'Regular', 'Gym Deduction',
+                                'Taxable Gym Reim', 'Annual Bonus',
+                                'Med Dent Vis', 'Vacation Pay', '401K Pretax',
+                                'Social Security', 'NY State Income'), memo
+                assert reconcile_state == "n"
+                assert reconcile_date is None
+                assert lot_guid is None
+                delete_splits.append(guid)
+
+            c.execute("DELETE FROM splits WHERE guid IN ({})".format(
+                ",".join("?" for _ in delete_splits)), (delete_splits))
+            assert c.rowcount == len(delete_splits)
+
+        for cat, (title, desc), details, amount, goog_amount in splits:
+            acct, goog_acct, flags = accts[cat, title, desc]
+            assert flags & NONNEG == 0 or amount >= 0
+            assert flags & NONPOS == 0 or amount <= 0
+            assert flags & GOOG_ONLY == 0 or amount == 0
+            assert flags & NONNEG == 0 or goog_amount >= 0
+            assert flags & NONPOS == 0 or goog_amount <= 0
+            assert goog_acct or goog_amount == 0
+            assert amount or goog_amount
+
+            if cat == PAY:
+                amount *= -1
+
+            if amount:
+                memo = "{}: {}{}".format(cat, title, details)
+                gnu.new_split(txn_guid, acct, amount, memo)
+
+            if goog_amount:
+                assert cat == DED
+                memo = "Employer contribution: {}{}".format(title, details)
+                gnu.new_split(txn_guid, goog_acct, -goog_amount, memo)
+                memo = "Employer deduction: {}{}".format(title, details)
+                gnu.new_split(txn_guid, acct, goog_amount, memo)
 
 
 # Mypay account flags.
@@ -1157,83 +1261,6 @@ def import_chase_txns(chase_dir, cash_db):
 
 def import_pay_txns(html_filename, cash_db):
     stubs = parse_mypay_html(html_filename)
-
     with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
-        # (cat, title, desc) -> account guid, goog_account_guid, flags
         accts = create_mypay_accts(gnu)
-
-        for paydate_str, docid, netpay, splits in stubs:
-            paydate = datetime.datetime.strptime(paydate_str, "%m/%d/%Y").date()
-            description = "Google Document {} Net Pay ${:,}.{:02}".format(docid, netpay // 100, netpay % 100)
-
-            closest_offset = None
-            if netpay:
-                c = gnu.conn.cursor()
-                c.execute("SELECT s.guid, t.guid, t.post_date, t.description FROM splits AS s "
-                          "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
-                          "WHERE s.account_guid = ? AND s.value_num = ?",
-                          (gnu.checking_acct, netpay))
-                for sguid, tguid, post_date_str, desc in c.fetchall():
-                    post_date = gnu.date(post_date_str)
-                    offset = abs((post_date - paydate).days)
-                    if (closest_offset is None or offset < closest_offset):
-                        closest_offset = offset
-                        closest_split = sguid
-                        closest_txn = tguid
-                        closest_desc = desc
-
-            if closest_offset is None:
-                assert not netpay
-                txn_guid = gnu.guid()
-                gnu.insert("transactions",
-                            (("guid", txn_guid),
-                            ("currency_guid", gnu.commodity_usd),
-                            ("num", ""),
-                            ("post_date", gnu.date_str(paydate)),
-                            ("enter_date", gnu.date_str(paydate)),
-                            ("description", description)))
-            else:
-                assert closest_desc in ("Google 0", "Google 1", "Google Bonus", "Google") or closest_desc.startswith("Deposit: Google Inc       Payroll                    PPD ID: "), repr(closest_desc)
-                assert closest_offset < 7
-                txn_guid = closest_txn
-                c.execute("UPDATE transactions SET post_date = ?, enter_date = ?, description = ? WHERE guid = ?", (gnu.date_str(paydate), gnu.date_str(paydate), description, txn_guid))
-                assert c.rowcount == 1
-
-                delete_splits = []
-                c.execute("SELECT guid, tx_guid, account_guid, memo, action, reconcile_state, reconcile_date, value_num, value_denom, quantity_num, quantity_denom, lot_guid FROM splits WHERE tx_guid = ?", (txn_guid,))
-                for guid, tx_guid, account_guid, memo, action, reconcile_state, reconcile_date, value_num, value_denom, quantity_num, quantity_denom, lot_guid in c.fetchall():
-                    if guid == closest_split:
-                        continue
-                    assert action == ""
-                    assert memo in ("", 'Federal Income Tax','Employee Medicare','Social Security E','NY State Income T','New York R','NY Disability Emp','Dental','Medical','Pretax 401 Flat','Vision','Group Term Life','Regular','Gym Deduction','Taxable Gym Reim', 'Annual Bonus', 'Med Dent Vis', 'Vacation Pay', '401K Pretax', 'Social Security', 'NY State Income'), repr(memo)
-                    assert reconcile_state == "n", repr((memo, action, account_guid, guid))
-                    assert reconcile_date is None
-                    assert lot_guid is None
-                    delete_splits.append(guid)
-
-                c.execute("DELETE FROM splits WHERE guid IN ({})".format(",".join("?" for _ in delete_splits)), (delete_splits))
-                assert c.rowcount == len(delete_splits)
-
-            for cat, (title, desc), details, amount, goog_amount in splits:
-                acct, goog_acct, flags = accts[cat, title, desc]
-                assert flags & NONNEG == 0 or amount >= 0
-                assert flags & NONPOS == 0 or amount <= 0
-                assert flags & GOOG_ONLY == 0 or amount == 0
-                assert flags & NONNEG == 0 or goog_amount >= 0
-                assert flags & NONPOS == 0 or goog_amount <= 0
-                assert goog_acct or goog_amount == 0
-                assert amount or goog_amount
-
-                if cat == PAY:
-                    amount *= -1
-
-                if amount:
-                    memo = "{}: {}{}".format(cat, title, details)
-                    gnu.new_split(txn_guid, acct, amount, memo)
-
-                if goog_amount:
-                    assert cat == DED
-                    memo = "Employer contribution: {}{}".format(title, details)
-                    gnu.new_split(txn_guid, goog_acct, -goog_amount, memo)
-                    memo = "Employer deduction: {}{}".format(title, details)
-                    gnu.new_split(txn_guid, acct, goog_amount, memo)
+        import_mypay_stubs(gnu, accts, stubs)
