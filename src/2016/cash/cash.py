@@ -542,12 +542,255 @@ def fragments_split_columns(fragments, *columns):
         ret[col_idx].append(f)
     return ret
 
+
+def create_mypay_accts(gnu):
+    splits = (
+        (PAY, 'Group Term Life', "<p>Value of Life Insurance (as defined by "
+         "IRS) for tax calculation. <div style=font-style:italic;>This has a "
+         "matching deduction offset and is not paid out through Payroll.</div>"
+         "</p><br><a href='https://sites.google.com/a/google.com/us-benefits/"
+         "health-wellness/life-insurance-1' target='_blank'>Click here to "
+         "learn more</a>",
+         ("Income", "Taxable Benefits", "Google Life Insurance"), None, NONNEG),
+
+        (PAY, 'Regular Pay', '<p>Regular wages for time worked at base salary '
+         '/ hourly rate</p>',
+         ("Income", "Salary", "Google Regular Pay"), None, NONNEG),
+
+        (PAY, 'Vacation Pay', '<p>Vacation time taken against balance.</p>',
+         ("Income", "Salary", "Google Vacation Pay"), None, NONNEG),
+
+        # Taxable benefits folder tracks cost to google of non-cash
+        # benefits that google pays for and i receive as goods or
+        # services, and also owe taxes on
+        #
+        # Untaxed benefits folder tracks cost to google of non-cash
+        # benefits that google pays for and i receive as good or
+        # service, and do not owe any taxes on
+        #
+        # Actual benefits received are tracked in Expenses ->
+        # Subsidized Hierarchy and show value of benefit that i
+        # receive.
+        #
+        # Downside of this arrangement, is that neither account shows
+        # money i personally pay for benefit. have to manually
+        # subtract gym expense balance from gym benenfit balance to
+        # see how much my decision to join gym actually costs me.
+        #
+        # An alternative to this arrangement would use one account
+        # instead of two for each benefit, and balance would reflect
+        # my actual cash expenditure. But then there would be no
+        # account showing my tax liability, and also the gnucash ui
+        # sucks when multiple lines in same account.
+        (PAY, 'Gym Reim Txbl', '<p>Taxable Gym Reimbursement</p>',
+         ("Income", "Taxable Benefits", "Google Gym Membership"), None, NONNEG),
+
+        (PAY, 'Annual Bonus', "<p>Annual Bonus plan</p><br><a href='https://"
+         "support.google.com/mygoogle/answer/4596076' target='_blank'>Click "
+         "here to learn more</a>",
+         ("Income", "Salary", "Google Annual Bonus"), None, NONNEG),
+
+        (PAY, 'Prize/ Gift', '<p>Value of Prizes and Gifts for tax '
+         'calculation. <div style=font-style:italic;>This has a matching '
+         'deduction offset and is not paid out through Payroll.</div></p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift"), None, NONNEG),
+
+        (PAY, 'Prize/ Gift', '<p>Company-paid tax offset for Prizes and '
+         'Gifts.</p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift Tax Offset"),
+         None, NONNEG),
+
+        (PAY, 'Holiday Gift', '<p>Company-paid tax offset for Holiday '
+         'Gift.</p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift Tax Offset"),
+         None, NONNEG),
+
+        (PAY, 'Holiday Gift', '<p>Value of Holiday Gift for tax calculation. '
+         '<div style=font-style:italic;>This has a matching deduction offset '
+         'and is not paid out through Payroll.</div></p>',
+         ("Income", "Taxable Benefits", "Google Holiday Gift"), None, NONNEG),
+
+        (PAY, 'Peer Bonus', "<p>Peer Bonus payment. Thank you!</p><br><a "
+         "href='https://support.google.com/mygoogle/answer/6003818?hl=en&"
+         "ref_topic=3415454' target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Peer Bonus"), None, NONNEG),
+
+        (PAY, 'Patent Bonus', "<p>Patent Bonus payment</p><br><a href='https://"
+         "sites.google.com/a/google.com/patents/patents/awards/monetary-"
+         "awards' target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Patent Bonus"), None, NONNEG),
+
+        (PAY, 'Goog Stock Unit', "<p>Value of Google Stock Units (GSU) for tax "
+         "calculation. <div style=font-style:italic;>This is not paid out "
+         "through Payroll.</div></p><br><a href='https://sites.google.com/a/"
+         "google.com/stock-admin-landing-page/' target='_blank'>Click here to "
+         "learn more</a>",
+         ("Income", "Taxable Benefits", "Google Stock Units"), None, NONNEG),
+
+        (PAY, 'Retroactive Pay', '<p>Adjustment to wages from a previous pay '
+         'period.</p>',
+         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
+
+        (PAY, 'Refund Report', '<p>Non-pay-impacting code for metadata '
+         'tracking</p>',
+         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
+
+        (PAY, 'Placeholder', '<p>Non-pay-impacting code for metadata '
+         'tracking</p>',
+         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
+
+        (PAY, 'Spot Bonus', "<p>Spot Bonus payment</p><br><a href='https://"
+         "support.google.com/mygoogle/answer/6003815?hl=en&ref_topic=3415454' "
+         "target='_blank'>Click here to learn more</a>",
+         ("Income", "Salary", "Google Spot Bonus"), None, NONNEG),
+
+        (PAY, 'Vacation Payout', '<p>Liquidation of Vacation balance.</p>',
+         ("Income", "Salary", "Google Vacation Payout"), None, NONNEG),
+
+        (DED, 'Group Term Life', '<p>Offset deduction; see matching earning '
+         'code for more info</p>',
+         ("Expenses", "Subsidized", "Google Life Insurance"), None, NONNEG),
+
+        (DED, '401K Pretax', '<p>Pre-tax 401k contribution defined as a '
+         'percentage or dollar election of eligible earnings</p>\n<p><a href='
+         '"https://support-content-draft.corp.google.com/mygoogle/topic/'
+         '6205846?hl=en&ref_topic=6206133" target="_blank">Click here to learn '
+         'more</a></p>',
+         ("Assets", "Investments", "401K"),
+         ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"),
+         NONNEG),
+
+        (DED, 'Medical', "<p>Employee contribution towards Medical Insurance "
+         "plan</p><br><a href='https://sites.google.com/a/google.com/us-"
+         "benefits/health-wellness/medical-benefits' target='_blank'>Click "
+         "here to learn more</a>",
+         ("Expenses", "Subsidized", "Google Medical Insurance"), None, NONNEG),
+
+        (DED, 'Gym Deduction', "<p>Employee contribution towards Gym "
+         "Membership</p><br><a href='https://sites.google.com/a/google.com/"
+         "us-benefits/health-wellness/gyms-and-fitness-g-fit' target='_blank'>"
+         "Click here to learn more</a>",
+         ("Expenses", "Subsidized", "Google Gym Membership"), None, NONNEG),
+
+        (DED, 'Pretax 401 Flat', '<p>Pre-tax 401k contribution defined as a '
+         'dollar amount per pay cycle</p>\n<p><a href="https://support-content-'
+         'draft.corp.google.com/mygoogle/topic/6205846?hl=en&ref_topic='
+         '6206133" target="_blank">Click here to learn more</a></p>',
+         ("Assets", "Investments", "401K"),
+         ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"),
+         NONNEG),
+
+        (DED, 'Dental', "<p>Employee contribution towards Dental Insurance "
+         "premiums</p><br><a href='https://sites.google.com/a/google.com/"
+         "us-benefits/health-wellness/dental-insurance' target='_blank'>Click "
+         "here to learn more</a>",
+         ("Expenses", "Subsidized", "Google Dental Insurance"), None, NONNEG),
+
+        (DED, 'Vision', "<p>Employee contribution towards Vision Insurance "
+         "premiums</p><br><a href='https://sites.google.com/a/google.com/us-"
+         "benefits/health-wellness/vision-insurance' target='_blank'>Click "
+         "here to learn more</a>",
+         ("Expenses", "Subsidized", "Google Vision Insurance"), None, NONNEG),
+
+        (DED, 'Prize Gross Up', '<p>Offset deduction; see matching earning '
+        'code for more info</p>',
+         ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
+
+        (DED, 'Holiday Gift', '<p>Offset deduction; see matching earning code '
+        'for more info</p>',
+         ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
+
+        (DED, 'RSU Stock Offst', '<p>Offset deduction; see matching earning '
+        'code for more info</p>',
+         ("Assets", "Investments", "Google Stock Units"), None, NONNEG),
+
+        (DED, 'GSU Refund', '<p>Refund for overage of stock withholding.<bt >'
+        '</bt>When your stock vests, Google is required to recognize its value '
+        'for taxes and executes enough units of stock to cover these taxes. '
+        'Since Google can only execute stock in whole units, there is often a '
+        'remainder amount from the sale which is returned to you through this '
+        'deduction code.</p>',
+         ("Assets", "Investments", "Google Stock Units"), None, NONPOS),
+
+        # https://www.irs.gov/Affordable-Care-Act/Form-W-2-Reporting-of-Employer-Sponsored-Health-Coverage
+        # W2 Box 12, Code DD
+        (DED, 'ER Benefit Cost', '<p>Total contributions by Employer towards '
+         'benefits for W-2 reporting</p>',
+         ("Expenses", "Subsidized", "Google Medical Insurance"),
+         ("Income", "Untaxed Benefits", "Google Employer Medical Insurance "
+          "Contribution"), NONNEG | GOOG_ONLY),
+
+        # FIXME: notmuch search for 14.95 charge on 9/2014 to see what
+        # this was, then add expense transaction to 0 out liability
+        # balance
+        (DED, 'GCard Repayment', '<p>Collection for personal charges on a '
+         'GCard</p>',
+         ("Liabilities", "Google GCard"), None, NONNEG),
+
+        (TAX, 'Employee Medicare', '',
+         ("Expenses", "Taxes", "Medicare"), None, NONNEG),
+
+        (TAX, 'Federal Income Tax', '',
+         ("Expenses", "Taxes", "Federal"), None, NONNEG),
+
+        (TAX, 'New York R', '<p>New York R City Tax</p>',
+         ("Expenses", "Taxes", "NYC Resident"), None, NONNEG),
+
+        (TAX, 'NY Disability Employee', '<p>New York Disability</p>',
+         ("Expenses", "Taxes", "NY State Disability Insurance (SDI)"), None,
+         NONNEG),
+
+        (TAX, 'NY State Income Tax', '<p>New York State Income Tax</p>',
+         ("Expenses", "Taxes", "NY State Income"), None, NONNEG),
+
+        (TAX, 'Social Security Employee Tax', '',
+         ("Expenses", "Taxes", "Social Security"), None, NONNEG),
+    )
+
+    def acct_type(names):
+        # Verify account names begin with Google, with exceptions for
+        # taxes and 401k.
+        assert (names[-1].startswith("Google")
+                or names[:2] == ("Expenses", "Taxes")
+                or names == ("Assets", "Investments", "401K"))
+
+        # Do the actual work.
+        if names[0] == "Expenses":
+            return "EXPENSE"
+        if names[0] == "Income":
+            return "INCOME"
+        if names[0] == "Assets":
+            return "BANK"
+        if names[0] == "Liabilities":
+            return "CREDIT"
+        assert False, names
+
+    # Create placeholder accts
+    gnu.acct(("Expenses", "Subsidized"), acct_type="EXPENSE")
+    gnu.acct(("Income", "Untaxed Benefits"), acct_type="INCOME")
+
+    accts = {}
+    for cat, title, desc, acct, goog_acct, flags in splits:
+        assert (cat, title, desc) not in accts
+        acct = gnu.acct(acct, acct_type=acct_type(acct))
+        if goog_acct:
+          goog_acct = gnu.acct(goog_acct, acct_type=acct_type(goog_acct))
+        accts[(cat, title, desc)] = acct, goog_acct, flags
+
+    return accts
+
+
+# Mypay account flags.
+NONNEG = 1
+NONPOS = 2
+GOOG_ONLY = 4
+
+
 TextFragment = namedtuple("TextFragment", "pageno y x ord text")
 
 
 Pdf = IntEnum("Pdf", "V2005_10 V2006_09 V2006_10 V2007_02 V2007_07 V2007_08 "
               "V2007_09 V2008_04 V2011_09")
-
 
 def pdf_version(statement_date):
     vstr = "V{:%Y_%m}".format(statement_date)
@@ -913,161 +1156,11 @@ def import_chase_txns(chase_dir, cash_db):
                   print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
 
 def import_pay_txns(html_filename, cash_db):
-    NONNEG = 1
-    NONPOS = 2
-    GOOG_ONLY = 4
-
-    SPLITS = (
-        (PAY, 'Group Term Life', "<p>Value of Life Insurance (as defined by IRS) for tax calculation. <div style=font-style:italic;>This has a matching deduction offset and is not paid out through Payroll.</div></p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/life-insurance-1' target='_blank'>Click here to learn more</a>",
-         ("Income", "Taxable Benefits", "Google Life Insurance"), None, NONNEG),
-
-        (PAY, 'Regular Pay', '<p>Regular wages for time worked at base salary / hourly rate</p>',
-         ("Income", "Salary", "Google Regular Pay"), None, NONNEG),
-
-        (PAY, 'Vacation Pay', '<p>Vacation time taken against balance.</p>',
-         ("Income", "Salary", "Google Vacation Pay"), None, NONNEG),
-
-        # Taxable benefits folder tracks cost to google of non-cash benefits that google pays for and i receive as goods or services, and also owe taxes on
-        # Untaxed benefits folder tracks cost to google of non-cash benefits that google pays for and i receive as good or service, and do not owe any taxes on
-        # Actual benefits received are tracked in Expenses -> Subsidized Hierarchy and show value of benefit that i receive.
-        # Downside of this arrangement, is that neither account shows money i personally pay for benefit. have to manually subtract gym expense balance from gym benenfit balance to see how much my decision to join gym actually costs me.
-        # An alternative to this arrangement would use one account instead of two for each benefit, and balance would reflect my actual cash expenditure. But then there would be no account showing my tax liability, and also the gnucash ui sucks when multiple lines in same account.
-        (PAY, 'Gym Reim Txbl', '<p>Taxable Gym Reimbursement</p>',
-         ("Income", "Taxable Benefits", "Google Gym Membership"), None, NONNEG),
-
-        (PAY, 'Annual Bonus', "<p>Annual Bonus plan</p><br><a href='https://support.google.com/mygoogle/answer/4596076' target='_blank'>Click here to learn more</a>",
-         ("Income", "Salary", "Google Annual Bonus"), None, NONNEG),
-
-        (PAY, 'Prize/ Gift', '<p>Value of Prizes and Gifts for tax calculation. <div style=font-style:italic;>This has a matching deduction offset and is not paid out through Payroll.</div></p>',
-         ("Income", "Taxable Benefits", "Google Holiday Gift"), None, NONNEG),
-
-        (PAY, 'Prize/ Gift', '<p>Company-paid tax offset for Prizes and Gifts.</p>',
-         ("Income", "Taxable Benefits", "Google Holiday Gift Tax Offset"), None, NONNEG),
-
-        (PAY, 'Holiday Gift', '<p>Company-paid tax offset for Holiday Gift.</p>',
-         ("Income", "Taxable Benefits", "Google Holiday Gift Tax Offset"), None, NONNEG),
-
-        (PAY, 'Holiday Gift', '<p>Value of Holiday Gift for tax calculation. <div style=font-style:italic;>This has a matching deduction offset and is not paid out through Payroll.</div></p>',
-         ("Income", "Taxable Benefits", "Google Holiday Gift"), None, NONNEG),
-
-        (PAY, 'Peer Bonus', "<p>Peer Bonus payment. Thank you!</p><br><a href='https://support.google.com/mygoogle/answer/6003818?hl=en&ref_topic=3415454' target='_blank'>Click here to learn more</a>",
-         ("Income", "Salary", "Google Peer Bonus"), None, NONNEG),
-
-        (PAY, 'Patent Bonus', "<p>Patent Bonus payment</p><br><a href='https://sites.google.com/a/google.com/patents/patents/awards/monetary-awards' target='_blank'>Click here to learn more</a>",
-         ("Income", "Salary", "Google Patent Bonus"), None, NONNEG),
-
-        (PAY, 'Goog Stock Unit', "<p>Value of Google Stock Units (GSU) for tax calculation. <div style=font-style:italic;>This is not paid out through Payroll.</div></p><br><a href='https://sites.google.com/a/google.com/stock-admin-landing-page/' target='_blank'>Click here to learn more</a>",
-         ("Income", "Taxable Benefits", "Google Stock Units"), None, NONNEG),
-
-        (PAY, 'Retroactive Pay', '<p>Adjustment to wages from a previous pay period.</p>',
-         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
-
-        (PAY, 'Refund Report', '<p>Non-pay-impacting code for metadata tracking</p>',
-         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
-
-        (PAY, 'Placeholder', '<p>Non-pay-impacting code for metadata tracking</p>',
-         ("Income", "Salary", "Google Wage Adjustment"), None, 0),
-
-        (PAY, 'Spot Bonus', "<p>Spot Bonus payment</p><br><a href='https://support.google.com/mygoogle/answer/6003815?hl=en&ref_topic=3415454' target='_blank'>Click here to learn more</a>",
-         ("Income", "Salary", "Google Spot Bonus"), None, NONNEG),
-
-        (PAY, 'Vacation Payout', '<p>Liquidation of Vacation balance.</p>',
-         ("Income", "Salary", "Google Vacation Payout"), None, NONNEG),
-
-        (DED, 'Group Term Life', '<p>Offset deduction; see matching earning code for more info</p>',
-         ("Expenses", "Subsidized", "Google Life Insurance"), None, NONNEG),
-
-        (DED, '401K Pretax', '<p>Pre-tax 401k contribution defined as a percentage or dollar election of eligible earnings</p>\n<p><a href="https://support-content-draft.corp.google.com/mygoogle/topic/6205846?hl=en&ref_topic=6206133" target="_blank">Click here to learn more</a></p>',
-         ("Assets", "Investments", "401K"),
-         ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"), NONNEG),
-
-        (DED, 'Medical', "<p>Employee contribution towards Medical Insurance plan</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/medical-benefits' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Google Medical Insurance"), None, NONNEG),
-
-        (DED, 'Gym Deduction', "<p>Employee contribution towards Gym Membership</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/gyms-and-fitness-g-fit' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Google Gym Membership"), None, NONNEG),
-
-        (DED, 'Pretax 401 Flat', '<p>Pre-tax 401k contribution defined as a dollar amount per pay cycle</p>\n<p><a href="https://support-content-draft.corp.google.com/mygoogle/topic/6205846?hl=en&ref_topic=6206133" target="_blank">Click here to learn more</a></p>',
-         ("Assets", "Investments", "401K"),
-         ("Income", "Untaxed Benefits", "Google Employer 401K Contribution"), NONNEG),
-
-        (DED, 'Dental', "<p>Employee contribution towards Dental Insurance premiums</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/dental-insurance' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Google Dental Insurance"), None, NONNEG),
-
-        (DED, 'Vision', "<p>Employee contribution towards Vision Insurance premiums</p><br><a href='https://sites.google.com/a/google.com/us-benefits/health-wellness/vision-insurance' target='_blank'>Click here to learn more</a>",
-         ("Expenses", "Subsidized", "Google Vision Insurance"), None, NONNEG),
-
-        (DED, 'Prize Gross Up', '<p>Offset deduction; see matching earning code for more info</p>',
-         ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
-
-        (DED, 'Holiday Gift', '<p>Offset deduction; see matching earning code for more info</p>',
-         ("Expenses", "Subsidized", "Google Holiday Gift"), None, NONNEG),
-
-        (DED, 'RSU Stock Offst', '<p>Offset deduction; see matching earning code for more info</p>',
-         ("Assets", "Investments", "Google Stock Units"), None, NONNEG),
-
-        (DED, 'GSU Refund', '<p>Refund for overage of stock withholding.<bt ></bt>When your stock vests, Google is required to recognize its value for taxes and executes enough units of stock to cover these taxes. Since Google can only execute stock in whole units, there is often a remainder amount from the sale which is returned to you through this deduction code.</p>',
-         ("Assets", "Investments", "Google Stock Units"), None, NONPOS),
-
-        # https://www.irs.gov/Affordable-Care-Act/Form-W-2-Reporting-of-Employer-Sponsored-Health-Coverage
-        # W2 Box 12, Code DD
-        (DED, 'ER Benefit Cost', '<p>Total contributions by Employer towards benefits for W-2 reporting</p>',
-         ("Expenses", "Subsidized", "Google Medical Insurance"),
-         ("Income", "Untaxed Benefits", "Google Employer Medical Insurance Contribution"), NONNEG | GOOG_ONLY),
-
-        # FIXME: notmuch search for 14.95 charge on 9/2014 to see what this was, then add expense transaction to 0 out liability balance
-        (DED, 'GCard Repayment', '<p>Collection for personal charges on a GCard</p>',
-         ("Liabilities", "Google GCard"), None, NONNEG),
-
-        (TAX, 'Employee Medicare', '',
-         ("Expenses", "Taxes", "Medicare"), None, NONNEG),
-
-        (TAX, 'Federal Income Tax', '',
-         ("Expenses", "Taxes", "Federal"), None, NONNEG),
-
-        (TAX, 'New York R', '<p>New York R City Tax</p>',
-         ("Expenses", "Taxes", "NYC Resident"), None, NONNEG),
-
-        (TAX, 'NY Disability Employee', '<p>New York Disability</p>',
-         ("Expenses", "Taxes", "NY State Disability Insurance (SDI)"), None, NONNEG),
-
-        (TAX, 'NY State Income Tax', '<p>New York State Income Tax</p>',
-         ("Expenses", "Taxes", "NY State Income"), None, NONNEG),
-
-        (TAX, 'Social Security Employee Tax', '',
-         ("Expenses", "Taxes", "Social Security"), None, NONNEG),
-    )
-
-    def acct_type(names):
-        assert (names[-1].startswith("Google")
-                or names[:2] == ("Expenses", "Taxes")
-                or names == ("Assets", "Investments", "401K")) # should rename later
-        if names[0] == "Expenses":
-            return "EXPENSE"
-        if names[0] == "Income":
-            return "INCOME"
-        if names[0] == "Assets":
-            return "BANK"
-        if names[0] == "Liabilities":
-            return "CREDIT"
-        assert False, names
-
     stubs = parse_mypay_html(html_filename)
 
     with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
-        # Create placeholder accts
-        gnu.acct(("Expenses", "Subsidized"), acct_type="EXPENSE")
-        gnu.acct(("Income", "Untaxed Benefits"), acct_type="INCOME")
-
         # (cat, title, desc) -> account guid, goog_account_guid, flags
-        accts = {}
-
-        for cat, title, desc, acct, goog_acct, flags in SPLITS:
-            assert (cat, title, desc) not in accts
-            acct = gnu.acct(acct, acct_type=acct_type(acct))
-            if goog_acct:
-              goog_acct = gnu.acct(goog_acct, acct_type=acct_type(goog_acct))
-            accts[(cat, title, desc)] = acct, goog_acct, flags
+        accts = create_mypay_accts(gnu)
 
         for paydate_str, docid, netpay, splits in stubs:
             paydate = datetime.datetime.strptime(paydate_str, "%m/%d/%Y").date()
