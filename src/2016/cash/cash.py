@@ -14,6 +14,46 @@ from lxml import etree
 from lxml.cssselect import CSSSelector
 
 
+#
+# Top-level functions called from shell.
+#
+
+def import_chase_txns(chase_dir, cash_db):
+    with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
+        acct_balance = None
+        for filename in sorted(os.listdir(chase_dir)):
+            if not filename.endswith(".json"):
+                continue
+            json_filename = os.path.join(chase_dir, filename)
+            acct_balance = import_chase_statement(gnu, json_filename,
+                                                  acct_balance)
+
+        gnu.print_txns(lambda account, action, reconcile_state, **_:
+                       account == gnu.checking_acct
+                       and not action
+                       and reconcile_state == 'y')
+
+
+def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
+                    discarded_text_output_filename):
+    txns, discarded_text = parse_chase_pdftext(pdftext_input_json_filename)
+    with open(txns_output_json_filename, "w") as fp:
+        json.dump(txns, fp, sort_keys=True, indent=4)
+    with open(discarded_text_output_filename, "w") as fp:
+        fp.write(discarded_text)
+
+
+def import_pay_txns(html_filename, cash_db):
+    stubs = parse_mypay_html(html_filename)
+    with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
+        accts = create_mypay_accts(gnu)
+        import_mypay_stubs(gnu, accts, stubs)
+
+
+#
+# Chase gnucash import functions.
+#
+
 def import_chase_statement(gnu, json_filename, acct_balance):
     statement_date = parse_statement_date(json_filename)
 
@@ -46,192 +86,9 @@ def import_chase_statement(gnu, json_filename, acct_balance):
     return acct_balance
 
 
-PAY = "Pay"
-DED = "Deduction"
-TAX = "Tax"
-
-def print_mypay_html(html_filename):
-    for paydate_str, docid, netpay, splits in parse_mypay_html(html_filename):
-        print(paydate_str, docid, netpay)
-        for cat, label, details, amount in splits:
-            print("  {}: {}{} -- {}".format(cat, label, details, amount))
-
-def parse_mypay_html(filename):
-    pay = etree.parse(filename, etree.HTMLParser())
-    stubs = []
-    for check in CSSSelector('.payStatement')(pay):
-        assert len(check) == 1
-        tbody = check[0]
-        assert tbody.tag == "tbody"
-
-        if len(tbody) == 10:
-            # delete extra company logo column in newer html file
-            assert len(tbody[1]) == 1 # logo
-            assert tbody[1][0].attrib["colspan"] == "5"
-            assert tbody[1][0][0].tag == "img"
-            del tbody[1:2]
-
-        assert len(tbody) == 9
-        assert len(tbody[0]) == 5 # blank columns
-
-        assert len(tbody[1]) == 1 # logo
-        assert tbody[1][0].attrib["colspan"] == "5"
-        assert tbody[1][0][-1].attrib["id"] == "companyLogo"
-
-        assert len(tbody[2]) == 2 # address, summary table
-        assert len(tbody[2][1]) == 1
-        assert tbody[2][1][0].tag == "table"
-        assert len(tbody[2][1][0]) == 1
-        inf = tbody[2][1][0][0]
-        assert inf.tag == "tbody"
-        assert len(inf) == 6
-        assert inf[3][0][0].text == "Pay date"
-        paydate = inf[3][1][0].text
-        assert inf[4][0][0].text == "Document"
-        docid = inf[4][1][0].text
-        assert inf[5][0][0].text == "Net pay"
-        netpay = inf[5][1][0].text
-
-        assert len(tbody[3]) == 1
-        assert tbody[3][0].attrib["colspan"] == "5"
-        assert tbody[3][0][0][0].text == "Pay details"
-        assert len(tbody[4]) == 5
-
-        netpay = parse_price(netpay)
-
-        assert len(tbody[5]) == 2
-        assert tbody[5][0].attrib["colspan"] == "2"
-        assert tbody[5][0].attrib["rowspan"] == "2"
-        assert tbody[5][0][0][0].text == "Earnings"
-        total = 0
-        splits = []
-        for label, details, current, goog_current in tab(tbody[5][0], docid, PAY):
-            current = parse_price(current, True)
-            goog_current = parse_price(goog_current, True)
-            total += current
-            splits.append((PAY, label, details, current, goog_current))
-
-        assert tbody[5][1].attrib["colspan"] == "3"
-        assert tbody[5][1][0][0].text == "Deductions"
-        for label, details, current, goog_current in tab(tbody[5][1], docid, DED):
-            current = parse_price(current, True)
-            goog_current = parse_price(goog_current, True)
-            total -= current
-            splits.append((DED, label, details, current, goog_current))
-
-        assert len(tbody[6]) == 1
-        assert tbody[6][0].attrib["colspan"] == "3"
-        assert tbody[6][0][0][0].text == "Taxes"
-        for label, details, current, goog_current in tab(tbody[6][0], docid, TAX):
-            current = parse_price(current, True)
-            goog_current = parse_price(goog_current, True)
-            total -= current
-            splits.append((TAX, label, details, current, goog_current))
-
-        stubs.append((paydate, docid, netpay, splits))
-
-        assert total == netpay, (total, netpay)
-        assert len(tbody[8]) == 1
-        assert tbody[8][0][0][0].text == "Pay summary"
-
-    return stubs
-
-def s(elem):
-    return etree.tostring(elem, pretty_print=True).decode()
-
-def tab(el, docid, table_type):
-    if table_type == PAY:
-        if docid.startswith("RSU"):
-            expected_cols = ['Pay type', 'Hours', 'Pay rate', 'Piece units',
-                             'Piece Rate', 'current', 'YTD']
-        else:
-            expected_cols = ['Pay type', 'Hours', 'Pay rate', 'current', 'YTD']
-    elif table_type == DED:
-        expected_cols = ['Employee', 'Employer', 'Deduction', 'current', 'YTD',
-                         'current', 'YTD']
-    else:
-        assert table_type == TAX
-        expected_cols = ['Taxes', 'Based on', 'current', 'YTD']
-
-    grids = CSSSelector("table.grid")(el)
-    assert len(grids) == 1
-    grid = grids[0]
-    assert len(grid) == 2
-    assert grid[0].tag == "thead"
-    headcols = []
-    for headrow in grid[0]:
-        for headcol in headrow:
-            if len(headcol) and headcol[0].tag != "img":
-                headcols.append(headcol[0].text)
-    assert expected_cols == headcols
-
-    assert grid[1].tag == "tbody"
-    for bodyrow in grid[1]:
-        bodycols = []
-        for colno, bodycol in enumerate(bodyrow):
-            if colno == 0:
-                title = bodycol[0].attrib["data-title"]
-                title2 = bodycol[0].text.strip()
-                assert title == title2
-                desc = bodycol[0].attrib["data-content"]
-                bodycols.append((title, desc))
-            else:
-                assert len(bodycol) == 0
-                bodycols.append(bodycol.text)
-        details = ""
-        goog_current = "$0.00"
-        if table_type == PAY:
-            if docid.startswith("RSU"):
-                label, hours, rate, piece_units, piece_rate, current, ytd = \
-                    bodycols
-                assert piece_units == "0.000000"
-                assert piece_rate == "$0.00"
-            else:
-                label, hours, rate, current, ytd = bodycols
-            if hours != "0.0000" or rate != "$0.0000":
-                details += " ({} hours, {}/hour)".format(hours, rate)
-        elif table_type == DED:
-            label, current, ytd, goog_current, goog_ytd, garbage = bodycols
-            assert garbage == "\xa0"
-        else:
-            assert table_type == TAX
-            label, income, current, ytd, garbage = bodycols
-            income_val = parse_price(income)
-            current_val = parse_price(current)
-            if income_val == 0:
-                details += " (based on {})".format(income)
-            else:
-                details += " ({:.3f}% × {})".format(current_val / income_val * 100.0, income)
-            assert garbage == "\xa0"
-        if current != "$0.00" or goog_current != "$0.00":
-          yield label, details, current, goog_current
-
-def parse_price(price_str, allow_negative=False, allow_minus=False):
-    price = 1
-    if allow_negative and price_str[0] == "(" and price_str[-1] == ")":
-        price *= -1
-        price_str = price_str[1:-1]
-    if allow_minus and price_str[0] == "-":
-        price *= -1
-        price_str = price_str[1:]
-    if price_str[0] == "$":
-        price_str = price_str[1:]
-    dollars, cents = re.match(r"^([0-9,]+)\.([0-9]{2})$", price_str).groups()
-    price *= int(cents) + 100 * int(dollars.replace(",", ""))
-    return price
-
-def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
-                    discarded_text_output_filename):
-    txns, discarded_text = parse_chase_pdftext(pdftext_input_json_filename)
-    with open(txns_output_json_filename, "w") as fp:
-        json.dump(txns, fp, sort_keys=True, indent=4)
-    with open(discarded_text_output_filename, "w") as fp:
-        fp.write(discarded_text)
-
-def parse_statement_date(json_filename):
-    return datetime.date(*[int(g) for g in re.match(
-        r"^(?:.*?/)?([0-9]{4})-([0-9]{2})-([0-9]{2}).json$",
-        json_filename).groups()])
+#
+# Chase pdf parsing functions.
+#
 
 def parse_chase_pdftext(json_filename):
     statement_date = parse_statement_date(json_filename)
@@ -533,6 +390,17 @@ def parse_chase_pdftext(json_filename):
             for txn in txns], discarded_text.getvalue()
 
 
+def parse_statement_date(json_filename):
+    return datetime.date(*[int(g) for g in re.match(
+        r"^(?:.*?/)?([0-9]{4})-([0-9]{2})-([0-9]{2}).json$",
+        json_filename).groups()])
+
+
+def pdf_version(statement_date):
+    vstr = "V{:%Y_%m}".format(statement_date)
+    return Pdf(bisect.bisect(list(Pdf.__members__.keys()), vstr))
+
+
 def fragments_discard_until(it, discarded_text, pattern):
     pattern_is_str = isinstance(pattern, str)
     while not it.at_end():
@@ -553,6 +421,7 @@ def fragments_discard_until(it, discarded_text, pattern):
     if pattern is not None:
         raise Exception("unexpected end of file")
 
+
 def fragments_read_line_fragments(it):
     words = []
     for fragment in it:
@@ -561,8 +430,10 @@ def fragments_read_line_fragments(it):
             break
     return words
 
+
 def fragments_read_line(it):
     return [fragment.text for fragment in fragments_read_line_fragments(it)]
+
 
 def fragments_split_columns(fragments, *columns):
     ret = [[] for _ in range(len(columns)+1)]
@@ -575,6 +446,10 @@ def fragments_split_columns(fragments, *columns):
         ret[col_idx].append(f)
     return ret
 
+
+#
+# Mypay gnucash import functions.
+#
 
 def create_mypay_accts(gnu):
     """Create mypay accounts, return mapping:
@@ -917,22 +792,212 @@ def import_mypay_stubs(gnu, accts, stubs):
                 gnu.new_split(txn_guid, acct, goog_amount, memo)
 
 
+#
+# Mypay html parsing functions.
+#
+
+def print_mypay_html(html_filename):
+    for paydate_str, docid, netpay, splits in parse_mypay_html(html_filename):
+        print(paydate_str, docid, netpay)
+        for cat, label, details, amount in splits:
+            print("  {}: {}{} -- {}".format(cat, label, details, amount))
+
+
+def parse_mypay_html(filename):
+    pay = etree.parse(filename, etree.HTMLParser())
+    stubs = []
+    for check in CSSSelector('.payStatement')(pay):
+        assert len(check) == 1
+        tbody = check[0]
+        assert tbody.tag == "tbody"
+
+        if len(tbody) == 10:
+            # delete extra company logo column in newer html file
+            assert len(tbody[1]) == 1 # logo
+            assert tbody[1][0].attrib["colspan"] == "5"
+            assert tbody[1][0][0].tag == "img"
+            del tbody[1:2]
+
+        assert len(tbody) == 9
+        assert len(tbody[0]) == 5 # blank columns
+
+        assert len(tbody[1]) == 1 # logo
+        assert tbody[1][0].attrib["colspan"] == "5"
+        assert tbody[1][0][-1].attrib["id"] == "companyLogo"
+
+        assert len(tbody[2]) == 2 # address, summary table
+        assert len(tbody[2][1]) == 1
+        assert tbody[2][1][0].tag == "table"
+        assert len(tbody[2][1][0]) == 1
+        inf = tbody[2][1][0][0]
+        assert inf.tag == "tbody"
+        assert len(inf) == 6
+        assert inf[3][0][0].text == "Pay date"
+        paydate = inf[3][1][0].text
+        assert inf[4][0][0].text == "Document"
+        docid = inf[4][1][0].text
+        assert inf[5][0][0].text == "Net pay"
+        netpay = inf[5][1][0].text
+
+        assert len(tbody[3]) == 1
+        assert tbody[3][0].attrib["colspan"] == "5"
+        assert tbody[3][0][0][0].text == "Pay details"
+        assert len(tbody[4]) == 5
+
+        netpay = parse_price(netpay)
+
+        assert len(tbody[5]) == 2
+        assert tbody[5][0].attrib["colspan"] == "2"
+        assert tbody[5][0].attrib["rowspan"] == "2"
+        assert tbody[5][0][0][0].text == "Earnings"
+        total = 0
+        splits = []
+        for label, details, current, goog_current in tab(tbody[5][0], docid, PAY):
+            current = parse_price(current, True)
+            goog_current = parse_price(goog_current, True)
+            total += current
+            splits.append((PAY, label, details, current, goog_current))
+
+        assert tbody[5][1].attrib["colspan"] == "3"
+        assert tbody[5][1][0][0].text == "Deductions"
+        for label, details, current, goog_current in tab(tbody[5][1], docid, DED):
+            current = parse_price(current, True)
+            goog_current = parse_price(goog_current, True)
+            total -= current
+            splits.append((DED, label, details, current, goog_current))
+
+        assert len(tbody[6]) == 1
+        assert tbody[6][0].attrib["colspan"] == "3"
+        assert tbody[6][0][0][0].text == "Taxes"
+        for label, details, current, goog_current in tab(tbody[6][0], docid, TAX):
+            current = parse_price(current, True)
+            goog_current = parse_price(goog_current, True)
+            total -= current
+            splits.append((TAX, label, details, current, goog_current))
+
+        stubs.append((paydate, docid, netpay, splits))
+
+        assert total == netpay, (total, netpay)
+        assert len(tbody[8]) == 1
+        assert tbody[8][0][0][0].text == "Pay summary"
+
+    return stubs
+
+def tab(el, docid, table_type):
+    if table_type == PAY:
+        if docid.startswith("RSU"):
+            expected_cols = ['Pay type', 'Hours', 'Pay rate', 'Piece units',
+                             'Piece Rate', 'current', 'YTD']
+        else:
+            expected_cols = ['Pay type', 'Hours', 'Pay rate', 'current', 'YTD']
+    elif table_type == DED:
+        expected_cols = ['Employee', 'Employer', 'Deduction', 'current', 'YTD',
+                         'current', 'YTD']
+    else:
+        assert table_type == TAX
+        expected_cols = ['Taxes', 'Based on', 'current', 'YTD']
+
+    grids = CSSSelector("table.grid")(el)
+    assert len(grids) == 1
+    grid = grids[0]
+    assert len(grid) == 2
+    assert grid[0].tag == "thead"
+    headcols = []
+    for headrow in grid[0]:
+        for headcol in headrow:
+            if len(headcol) and headcol[0].tag != "img":
+                headcols.append(headcol[0].text)
+    assert expected_cols == headcols
+
+    assert grid[1].tag == "tbody"
+    for bodyrow in grid[1]:
+        bodycols = []
+        for colno, bodycol in enumerate(bodyrow):
+            if colno == 0:
+                title = bodycol[0].attrib["data-title"]
+                title2 = bodycol[0].text.strip()
+                assert title == title2
+                desc = bodycol[0].attrib["data-content"]
+                bodycols.append((title, desc))
+            else:
+                assert len(bodycol) == 0
+                bodycols.append(bodycol.text)
+        details = ""
+        goog_current = "$0.00"
+        if table_type == PAY:
+            if docid.startswith("RSU"):
+                label, hours, rate, piece_units, piece_rate, current, ytd = \
+                    bodycols
+                assert piece_units == "0.000000"
+                assert piece_rate == "$0.00"
+            else:
+                label, hours, rate, current, ytd = bodycols
+            if hours != "0.0000" or rate != "$0.0000":
+                details += " ({} hours, {}/hour)".format(hours, rate)
+        elif table_type == DED:
+            label, current, ytd, goog_current, goog_ytd, garbage = bodycols
+            assert garbage == "\xa0"
+        else:
+            assert table_type == TAX
+            label, income, current, ytd, garbage = bodycols
+            income_val = parse_price(income)
+            current_val = parse_price(current)
+            if income_val == 0:
+                details += " (based on {})".format(income)
+            else:
+                details += " ({:.3f}% × {})".format(current_val / income_val * 100.0, income)
+            assert garbage == "\xa0"
+        if current != "$0.00" or goog_current != "$0.00":
+          yield label, details, current, goog_current
+
+
+#
+# General utility functions.
+#
+
+def parse_price(price_str, allow_negative=False, allow_minus=False):
+    price = 1
+    if allow_negative and price_str[0] == "(" and price_str[-1] == ")":
+        price *= -1
+        price_str = price_str[1:-1]
+    if allow_minus and price_str[0] == "-":
+        price *= -1
+        price_str = price_str[1:]
+    if price_str[0] == "$":
+        price_str = price_str[1:]
+    dollars, cents = re.match(r"^([0-9,]+)\.([0-9]{2})$", price_str).groups()
+    price *= int(cents) + 100 * int(dollars.replace(",", ""))
+    return price
+
+
+def s(elem):
+    return etree.tostring(elem, pretty_print=True).decode()
+
+
+#
+# Enums and constants.
+#
+
 # Mypay account flags.
 NONNEG = 1
 NONPOS = 2
 GOOG_ONLY = 4
 
+# Mypay split types.
+PAY = "Pay"
+DED = "Deduction"
+TAX = "Tax"
 
-TextFragment = namedtuple("TextFragment", "pageno y x ord text")
-
-
+# Pdf versions.
 Pdf = IntEnum("Pdf", "V2005_10 V2006_09 V2006_10 V2007_02 V2007_07 V2007_08 "
               "V2007_09 V2008_04 V2011_09")
 
-def pdf_version(statement_date):
-    vstr = "V{:%Y_%m}".format(statement_date)
-    return Pdf(bisect.bisect(list(Pdf.__members__.keys()), vstr))
 
+#
+# Class types.
+#
+
+TextFragment = namedtuple("TextFragment", "pageno y x ord text")
 
 class Txn:
     pass
@@ -1042,6 +1107,7 @@ class PeekIterator:
         assert self.lookbehind > 0, \
             "at_start method only available with lookbehind > 0"
         return self.prev_elems == 0
+
 
 class GnuCash:
     def __init__(self, db_file, seed):
@@ -1258,23 +1324,3 @@ class GnuCash:
                   print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
 
 
-def import_chase_txns(chase_dir, cash_db):
-    with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
-        acct_balance = None
-        for filename in sorted(os.listdir(chase_dir)):
-            if not filename.endswith(".json"):
-                continue
-            json_filename = os.path.join(chase_dir, filename)
-            acct_balance = import_chase_statement(gnu, json_filename,
-                                                  acct_balance)
-
-        gnu.print_txns(lambda account, action, reconcile_state, **_:
-                       account == gnu.checking_acct
-                       and not action
-                       and reconcile_state == 'y')
-
-def import_pay_txns(html_filename, cash_db):
-    stubs = parse_mypay_html(html_filename)
-    with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
-        accts = create_mypay_accts(gnu)
-        import_mypay_stubs(gnu, accts, stubs)
