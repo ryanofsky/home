@@ -1195,6 +1195,36 @@ class GnuCash:
                       ("lot_guid", None)))
         return guid
 
+    def print_txns(self, split_filter):
+        acct_map = {}
+        c = self.conn.cursor()
+        c.execute("SELECT guid, name FROM accounts")
+        for guid, name in c.fetchall():
+            acct_map[guid] = name
+
+        c = self.conn.cursor()
+        c.execute("SELECT guid, post_date, description FROM transactions "
+                  "ORDER BY post_date, rowid")
+        for guid, post_date, description in c.fetchall():
+            d = self.conn.cursor()
+            d.execute("SELECT account_guid, memo, action, value_num, "
+                      "reconcile_state "
+                      "FROM splits WHERE tx_guid = ? ORDER BY rowid", (guid,))
+
+            found_split = False
+            splits = []
+            for account, memo, action, value, reconcile_state in d.fetchall():
+                splits.append((account, memo, action, value))
+                if split_filter(account=account, memo=memo, action=action,
+                                value=value, reconcile_state=reconcile_state):
+                    found_split = True
+
+            if found_split:
+                print(self.date(post_date), description)
+                for account, memo, action, value in splits:
+                  print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
+
+
 def import_chase_txns(chase_dir, cash_db):
     with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
         first = True
@@ -1233,31 +1263,10 @@ def import_chase_txns(chase_dir, cash_db):
                                     "Deposit: {}".format(memo))
                     acct_balance = balance
 
-        acct_map = {}
-        c = gnu.conn.cursor()
-        c.execute("SELECT guid, name FROM accounts")
-        for guid, name in c.fetchall():
-            acct_map[guid] = name
-
-        c = gnu.conn.cursor()
-        c.execute("SELECT guid, post_date, description FROM transactions "
-                  "ORDER BY post_date, rowid")
-        for guid, post_date, description in c.fetchall():
-            d = gnu.conn.cursor()
-            d.execute("SELECT account_guid, memo, action, value_num, reconcile_state "
-                      "FROM splits WHERE tx_guid = ? ORDER BY rowid", (guid,))
-
-            found_new = False
-            splits = []
-            for account, memo, action, value, reconcile_state in d.fetchall():
-                splits.append((account, memo, action, value))
-                if account == gnu.checking_acct and not action and reconcile_state == 'y':
-                    found_new = True
-
-            if found_new:
-                print(gnu.date(post_date), description)
-                for account, memo, action, value in splits:
-                  print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
+        gnu.print_txns(lambda account, action, reconcile_state, **_:
+                       account == gnu.checking_acct
+                       and not action
+                       and reconcile_state == 'y')
 
 def import_pay_txns(html_filename, cash_db):
     stubs = parse_mypay_html(html_filename)
