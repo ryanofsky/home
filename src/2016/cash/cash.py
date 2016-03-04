@@ -13,6 +13,39 @@ from enum import IntEnum
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
+
+def import_chase_statement(gnu, json_filename, acct_balance):
+    statement_date = parse_statement_date(json_filename)
+
+    with open(json_filename) as fp:
+        txns = json.load(fp)
+        for date_str, prev_balance, balance, amount, desc in txns:
+            date = (datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                    .date())
+            action = date.strftime("%m/%d")
+            memo = " || ".join(desc)
+            if acct_balance is None:
+                gnu.new_txn(statement_date, date, prev_balance,
+                            gnu.opening_acct, gnu.checking_acct, action, "",
+                            "Opening Balance")
+            elif prev_balance != acct_balance:
+                print (statement_date, date, prev_balance, acct_balance)
+                gnu.new_txn(statement_date, date,
+                            prev_balance - acct_balance,
+                            gnu.imbalance_acct, gnu.checking_acct, action, "",
+                            "Missing transactions")
+            if amount < 0:
+                gnu.new_txn(statement_date, date, amount,
+                            gnu.expense_acct, gnu.checking_acct, action, memo,
+                            "Withdrawal: {}".format(memo))
+            else:
+                gnu.new_txn(statement_date, date, amount,
+                            gnu.income_acct, gnu.checking_acct, action, memo,
+                            "Deposit: {}".format(memo))
+            acct_balance = balance
+    return acct_balance
+
+
 PAY = "Pay"
 DED = "Deduction"
 TAX = "Tax"
@@ -1227,41 +1260,13 @@ class GnuCash:
 
 def import_chase_txns(chase_dir, cash_db):
     with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
-        first = True
-        acct_balance = 0
+        acct_balance = None
         for filename in sorted(os.listdir(chase_dir)):
             if not filename.endswith(".json"):
                 continue
-
-            statement_date = parse_statement_date(filename)
-
-            with open(os.path.join(chase_dir, filename)) as fp:
-                txns = json.load(fp)
-                for date_str, prev_balance, balance, amount, desc in txns:
-                    date = (datetime.datetime.strptime(date_str, "%Y-%m-%d")
-                            .date())
-                    action = date.strftime("%m/%d")
-                    memo = " || ".join(desc)
-                    if first:
-                        first = False
-                        gnu.new_txn(statement_date, date, prev_balance,
-                                    gnu.opening_acct, gnu.checking_acct, action, "",
-                                    "Opening Balance")
-                    elif prev_balance != acct_balance:
-                        print (statement_date, date, prev_balance, acct_balance)
-                        gnu.new_txn(statement_date, date,
-                                    prev_balance - acct_balance,
-                                    gnu.imbalance_acct, gnu.checking_acct, action, "",
-                                    "Missing transactions")
-                    if amount < 0:
-                        gnu.new_txn(statement_date, date, amount,
-                                    gnu.expense_acct, gnu.checking_acct, action, memo,
-                                    "Withdrawal: {}".format(memo))
-                    else:
-                        gnu.new_txn(statement_date, date, amount,
-                                    gnu.income_acct, gnu.checking_acct, action, memo,
-                                    "Deposit: {}".format(memo))
-                    acct_balance = balance
+            json_filename = os.path.join(chase_dir, filename)
+            acct_balance = import_chase_statement(gnu, json_filename,
+                                                  acct_balance)
 
         gnu.print_txns(lambda account, action, reconcile_state, **_:
                        account == gnu.checking_acct
