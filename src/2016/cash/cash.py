@@ -8,10 +8,11 @@ import re
 import sys
 import time
 import sqlite3
-from collections import namedtuple, deque
+from collections import namedtuple, deque, OrderedDict
 from enum import IntEnum
 from lxml import etree
 from lxml.cssselect import CSSSelector
+import csv
 
 
 #
@@ -19,19 +20,62 @@ from lxml.cssselect import CSSSelector
 #
 
 def import_chase_txns(chase_dir, cash_db):
-    with GnuCash(cash_db, "2016-02-27-pdfs") as gnu:
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, "2016-02-27-pdfs")
         acct_balance = None
         for filename in sorted(os.listdir(chase_dir)):
             if not filename.endswith(".json"):
                 continue
             json_filename = os.path.join(chase_dir, filename)
             acct_balance = import_chase_statement(gnu, json_filename,
-                                                  acct_balance)
+                                                  acct_balance,
+                                                  mark_reconciled=True)
 
-        gnu.print_txns(lambda account, action, reconcile_state, **_:
+        gnu.print_txns("== Unreconciled transactions ==",
+                       lambda account, action, reconcile_state, **_:
                        account == gnu.checking_acct
                        and not action
                        and reconcile_state == 'y')
+        gnu.commit()
+
+
+def update_chase_memos(cash_db):
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, "update_chase_memos")
+        c = conn.cursor()
+        c.execute("SELECT guid, memo FROM splits "
+                  "WHERE account_guid = ? AND memo <> ''",
+                  (gnu.checking_acct,))
+        for guid, memo in c.fetchall():
+            tstr = ChaseStr.parse_pdf_string(memo.split(" || "))
+            assert tstr
+            gnu.update_split(guid, memo_tstr=tstr, remove_txn_suffix=memo)
+        gnu.commit()
+
+
+def import_chase_update(filename, cash_db):
+    rand_seed = os.path.basename(filename)
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, rand_seed)
+        if filename.endswith(".csv"):
+            first_date, last_date, split_guids = import_chase_csv(gnu, filename)
+        else:
+            assert False
+
+        gnu.print_txns(
+            "== Unreconciled transactions between {} and {} ==".format(
+                first_date, last_date),
+            lambda split_guid, account, action_date, post_date, **_:
+                        account == gnu.checking_acct
+                        and split_guid not in split_guids
+                        and ((action_date
+                              and action_date >= first_date
+                              and action_date <= last_date)
+                             or (not action_date
+                                 and post_date >= first_date
+                                 and post_date <= last_date)))
+
+        gnu.commit()
 
 
 def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
@@ -45,16 +89,28 @@ def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
 
 def import_pay_txns(html_filename, cash_db):
     stubs = parse_mypay_html(html_filename)
-    with GnuCash(cash_db, "2016-02-28-mypay") as gnu:
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, "2016-02-28-mypay")
         accts = create_mypay_accts(gnu)
         import_mypay_stubs(gnu, accts, stubs)
+        gnu.commit()
+
+
+def test_parse_yearless_dates():
+    txn_post_date = datetime.date(2013, 1, 1)
+    while txn_post_date <= datetime.date(2014, 1, 1):
+        for i in range(-179, 180):
+            date = txn_post_date + datetime.timedelta(i)
+            date_str = GnuCash.yearless_date_str(date)
+            assert date == GnuCash.yearless_date(date_str, txn_post_date)
+        txn_post_date += datetime.timedelta(1)
 
 
 #
 # Chase gnucash import functions.
 #
 
-def import_chase_statement(gnu, json_filename, acct_balance):
+def import_chase_statement(gnu, json_filename, acct_balance, mark_reconciled):
     statement_date = parse_statement_date(json_filename)
 
     with open(json_filename) as fp:
@@ -62,29 +118,73 @@ def import_chase_statement(gnu, json_filename, acct_balance):
         for date_str, prev_balance, balance, amount, desc in txns:
             date = (datetime.datetime.strptime(date_str, "%Y-%m-%d")
                     .date())
-            action = date.strftime("%m/%d")
             memo = " || ".join(desc)
             if acct_balance is None:
-                gnu.new_txn(statement_date, date, prev_balance,
-                            gnu.opening_acct, gnu.checking_acct, action, "",
-                            "Opening Balance")
+                gnu.new_txn(gnu.checking_acct, date, prev_balance,
+                            "", statement_date, opening=True)
             elif prev_balance != acct_balance:
-                print (statement_date, date, prev_balance, acct_balance)
-                gnu.new_txn(statement_date, date,
-                            prev_balance - acct_balance,
-                            gnu.imbalance_acct, gnu.checking_acct, action, "",
-                            "Missing transactions")
-            if amount < 0:
-                gnu.new_txn(statement_date, date, amount,
-                            gnu.expense_acct, gnu.checking_acct, action, memo,
-                            "Withdrawal: {}".format(memo))
+                print ("Imbalance:", statement_date, date, prev_balance, acct_balance)
+                gnu.new_txn(gnu.checking_acct, date,
+                            prev_balance - acct_balance, "", statement_date,
+                            imbalance=True)
+
+            m = gnu.find_closest_txn(gnu.checking_acct, date, amount,
+                                     no_action=True)
+            if m:
+                split_guid, split_memo, txn_post_date = m
+                assert not split_memo or split_memo in ('Checking',), split_memo
+                gnu.update_split(split_guid,
+                                 memo=memo,
+                                 action=gnu.yearless_date_str(
+                                     date, txn_post_date),
+                                 reconcile_date=statement_date
+                                     if mark_reconciled else None)
             else:
-                gnu.new_txn(statement_date, date, amount,
-                            gnu.income_acct, gnu.checking_acct, action, memo,
-                            "Deposit: {}".format(memo))
+                gnu.new_txn(gnu.checking_acct, date, amount, memo,
+                            statement_date)
+
             acct_balance = balance
+
     return acct_balance
 
+
+def import_chase_csv(gnu, csv_filename):
+    with open(csv_filename) as fp:
+        rows = list(csv.reader(fp))
+
+    header = ['Type', 'Post Date', 'Description', 'Amount', 'Check or Slip #']
+    assert rows[0] == header
+
+    first_date = last_date = None
+    split_guids = set()
+    for ttype, date_str, desc, amount_str, num in rows[:0:-1]:
+        assert ttype in ('CREDIT', 'DEBIT', 'DSLIP', 'CHECK'), ttype
+        assert not num, num
+        date = datetime.datetime.strptime(date_str, "%m/%d/%Y").date()
+        amount = parse_price(amount_str, allow_minus=True)
+
+        # print("{} {!r} {!r}".format(date, amount, desc))
+        tstr = ChaseStr.parse_csv_string(desc)
+
+        # If a best matching txn was found, update it.
+        m = gnu.find_matching_txn(gnu.checking_acct, date, amount, tstr,
+                                  split_guids)
+        if m:
+            split_guid, merged_tstr = m
+            gnu.update_split(split_guid, memo_tstr=merged_tstr)
+        else:
+            split_guid = gnu.new_txn(gnu.checking_acct, date, amount,
+                                     tstr.as_string())
+        assert split_guid
+        assert split_guid not in split_guids
+        split_guids.add(split_guid)
+
+        if not first_date: first_date = date
+
+        assert last_date is None or date >= last_date
+        last_date = date
+
+    return first_date, last_date, split_guids
 
 #
 # Chase pdf parsing functions.
@@ -733,11 +833,10 @@ def import_mypay_stubs(gnu, accts, stubs):
                                                "PPD ID: "))
             assert closest_offset < 7
             txn_guid = closest_txn
-            c.execute("UPDATE transactions SET post_date = ?, enter_date = ?, "
-                      "    description = ? WHERE guid = ?",
-                      (gnu.date_str(paydate), gnu.date_str(paydate),
-                       description, txn_guid))
-            assert c.rowcount == 1
+            gnu.update("transactions", "guid", txn_guid,
+                       (("post_date", gnu.date_str(paydate)),
+                        ("enter_date", gnu.date_str(paydate)),
+                        ("description", description)))
 
             delete_splits = []
             c.execute("SELECT guid, tx_guid, account_guid, memo, action, "
@@ -1110,13 +1209,12 @@ class PeekIterator:
 
 
 class GnuCash:
-    def __init__(self, db_file, seed):
-        self.db_file = db_file
+    def __init__(self, conn, seed):
         self.random = random.Random()
         self.random.seed(seed)
+        self.force_guids = []
 
-    def __enter__(self):
-        self.conn = sqlite3.connect(self.db_file)
+        self.conn = conn
         self.conn.isolation_level = None
         self.conn.cursor().execute("BEGIN")
         self.commodity_usd = self.currency("USD")
@@ -1125,11 +1223,10 @@ class GnuCash:
         self.expense_acct = self.acct(("Expenses",))
         self.income_acct = self.acct(("Income",))
         self.checking_acct = self.acct(( "Assets", "Current Assets", "Checking Account"))
-        return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if 1: self.conn.cursor().execute("COMMIT")
-        self.conn.close()
+    def commit(self):
+        self.conn.cursor().execute("COMMIT")
+        del self.conn
 
     def insert(self, table, vals):
         c = self.conn.cursor()
@@ -1139,7 +1236,17 @@ class GnuCash:
             ",".join("?" for k, v, in vals))
         c.execute(s, tuple(v for k, v in vals))
 
+    def update(self, table, id_col, id_val, vals):
+        c = self.conn.cursor()
+        s = "UPDATE {} SET {} WHERE {} = ?".format(
+            table,
+            ",".join("{} = ?".format(k) for k, v in vals),
+            id_col)
+        c.execute(s, tuple(v for k, v in vals) + (id_val,))
+        assert c.rowcount == 1
+
     def guid(self):
+        if self.force_guids: return self.force_guids.pop()
         return '%032x' % self.random.randrange(16**32)
 
     def acct(self, names, acct_type=None, create_parents=False):
@@ -1192,47 +1299,20 @@ class GnuCash:
                      ("placeholder", 0)))
         return guid
 
-    def date(self, date_str):
-        # date_str comment below explains this madness.
-        return datetime.datetime.fromtimestamp(
-            datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S")
-            .replace(tzinfo=datetime.timezone.utc).timestamp()).date()
-
-    def date_str(self, date):
-        # Have to add local time zone offset to string, because
-        # gnucash idiotically extracts date from the string after
-        # doing unnecessary utc->local timestamp conversion which
-        # subtracts 4 or 5 hours and results in yesterday's date being
-        # shown in the UI.
-        return datetime.datetime.utcfromtimestamp(
-            time.mktime(date.timetuple())).strftime("%Y%m%d%H%M%S")
-
-    def new_txn(self, reconcile_date, date, amount, src_acct, dst_acct,
-                action, memo, description):
-        if action and memo:
-            c = self.conn.cursor()
-            c.execute("SELECT s.guid, t.guid, t.post_date, s.memo FROM splits AS s "
-                      "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
-                      "WHERE s.account_guid = ? AND s.value_num = ? AND s.action = ''",
-                      (dst_acct, amount))
-
-            closest_offset = closest_split = None
-            for split_guid, txn_guid, txn_date_str, split_memo in c.fetchall():
-                assert not split_memo or split_memo in ('Checking',), split_memo
-                txn_date = self.date(txn_date_str)
-                offset = abs((txn_date - date).days)
-                if offset < 10 and (closest_offset is None or offset < closest_offset):
-                    closest_offset = offset
-                    closest_split = split_guid
-
-            if closest_split is not None:
-                c = self.conn.cursor()
-                c.execute("UPDATE splits SET memo=?, action=?, reconcile_state=?, "
-                          "reconcile_date=? WHERE guid = ?",
-                          (memo, action, "y" if reconcile_date else "n",
-                          self.date_str(reconcile_date), closest_split))
-                assert c.rowcount == 1
-                return
+    def new_txn(self, acct, date, amount, memo, reconcile_date=None,
+                opening=False, imbalance=False):
+        if opening:
+            src_acct = self.opening_acct
+            description = "Opening Balance"
+        elif imbalance:
+            src_acct = self.imbalance_acct
+            description ="Missing transactions"
+        elif amount < 0:
+            src_acct = self.expense_acct
+            description = "Withdrawal: {}".format(memo)
+        else:
+            src_acct = self.income_acct
+            description = "Deposit: {}".format(memo)
 
         txn_guid = self.guid()
 
@@ -1244,57 +1324,180 @@ class GnuCash:
                      ("enter_date", self.date_str(date)),
                      ("description", description)))
 
-        # Could merge this boilerplate with new_split code below.
-        src_split = (("guid", self.guid()),
-                     ("tx_guid", txn_guid),
-                     ("account_guid", src_acct),
-                     ("memo", ""),
-                     ("action", ""),
-                     ("reconcile_state", "n"),
-                     ("reconcile_date", None),
-                     ("value_num", -amount),
-                     ("value_denom", 100),
-                     ("quantity_num", -amount),
-                     ("quantity_denom", 100),
-                     ("lot_guid", None))
+        src_split = dict(txn_guid=txn_guid,
+                         acct=src_acct,
+                         amount=-amount,
+                         memo="")
 
-        dst_split = (("guid", self.guid()),
-                     ("tx_guid", txn_guid),
-                     ("account_guid", dst_acct),
-                     ("memo", memo),
-                     ("action", action),
-                     ("reconcile_state", "y" if reconcile_date else "n"),
-                     ("reconcile_date", self.date_str(reconcile_date)
-                      if reconcile_date else None),
-                     ("value_num", amount),
-                     ("value_denom", 100),
-                     ("quantity_num", amount),
-                     ("quantity_denom", 100),
-                     ("lot_guid", None))
+        dst_split = dict(txn_guid=txn_guid,
+                         acct=acct,
+                         amount=amount,
+                         memo=memo,
+                         action=self.yearless_date_str(date),
+                         reconcile_date=reconcile_date)
 
         if amount < 0:
-            src_split, dst_split = dst_split, src_split
-        self.insert("splits", src_split)
-        self.insert("splits", dst_split)
+            # Reverse next two guids for test.sh backwards compatibility.
+            self.force_guids.extend((self.guid(), self.guid()))
+            dst_guid = self.new_split(**dst_split)
+            src_guid = self.new_split(**src_split)
+        else:
+            src_guid = self.new_split(**src_split)
+            dst_guid = self.new_split(**dst_split)
+        return dst_guid
 
-    def new_split(self, txn_guid, acct, amount, memo):
-        guid = self.guid()
+    def new_split(self, txn_guid, acct, amount, memo, action="",
+                  reconcile_date=None):
+        split_guid = self.guid()
         self.insert("splits",
-                    (("guid", guid),
+                    (("guid", split_guid),
                       ("tx_guid", txn_guid),
                       ("account_guid", acct),
                       ("memo", memo),
-                      ("action", ""),
-                      ("reconcile_state", "n"),
-                      ("reconcile_date", None),
+                      ("action", action),
+                      ("reconcile_state", "y" if reconcile_date else "n"),
+                      ("reconcile_date", self.date_str(reconcile_date)
+                       if reconcile_date else None),
                       ("value_num", amount),
                       ("value_denom", 100),
                       ("quantity_num", amount),
                       ("quantity_denom", 100),
                       ("lot_guid", None)))
-        return guid
+        return split_guid
 
-    def print_txns(self, split_filter):
+    def update_split(self, split_guid, action=None, memo=None, memo_tstr=None,
+                     reconcile_date=None, remove_txn_suffix=None):
+        fields = []
+
+        if action is not None:
+            fields.append(("action", action))
+
+        if memo is not None:
+            assert memo_tstr is None
+            fields.append(("memo", memo))
+
+        if memo_tstr is not None:
+            fields.append(("memo", memo_tstr.as_string()))
+
+            # Update transaction description with new memo, if
+            # previous transaction description contained a copy of the
+            # previous memo.
+            c = self.conn.cursor()
+            c.execute("SELECT s.memo, t.guid, t.description "
+                      "FROM splits AS s "
+                      "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                      "WHERE s.guid = ?", (split_guid,))
+            rows = list(c.fetchall())
+            assert len(rows) == 1
+            prev_memo, txn_guid, txn_desc = rows[0]
+            if prev_memo:
+                if remove_txn_suffix is None:
+                    remove_txn_suffix = memo_tstr.__class__.parse(
+                        prev_memo).as_string(tags=False)
+                if remove_txn_suffix and txn_desc.endswith(remove_txn_suffix):
+                    self.update("transactions", "guid", txn_guid,
+                        (("description", txn_desc[:-len(remove_txn_suffix)]
+                                         + memo_tstr.as_string(tags=False)),))
+        else:
+            assert remove_txn_suffix is None
+
+        if reconcile_date is not None:
+            if reconcile_date:
+                fields.append(("reconcile_state", "y"))
+                fields.append(("reconcile_date", self.date_str(reconcile_date)))
+            else:
+                fields.append(("reconcile_state", "n"))
+                fields.append(("reconcile_date", None))
+
+        self.update("splits", "guid", split_guid, fields)
+
+    def find_matching_txn(self, acct, date, amount, memo_tstr, ignore_splits):
+        """Find transaction with a split having exact or near exact matching
+        account, date, action, and memo information."""
+
+        # Start looking for any splits that have matching dates and
+        # amounts. Both are ambiguous, especially dates since dates
+        # stored in the action column are yearless.
+        action = self.yearless_date_str(date)
+        c = self.conn.cursor()
+        c.execute("SELECT s.guid, s.memo, t.post_date "
+                  "FROM splits AS s "
+                  "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                  "WHERE s.account_guid = ? AND s.value_num = ? "
+                  "    AND s.action = ?", (acct, amount, action))
+
+        # Go through returned splits discarding any that aren't from
+        # the right year or have incompatible memo strings where
+        # merge_from returns false or are in ignored_splits. Save the
+        # best possible match as "match" to be returned later,
+        # generally choosing the first match but prefering later
+        # matches if they don't have the mismatched_date_property.
+        match = None
+        no_exact_date = True
+        debug_matches = []
+        for split_guid, split_memo, txn_post_date_str in c.fetchall():
+            txn_post_date = self.date(txn_post_date_str)
+            if self.yearless_date(action, txn_post_date) != date:
+                continue
+            merged_tstr = memo_tstr.__class__.parse(split_memo)
+            if not merged_tstr.merge_from(memo_tstr):
+                continue
+
+            # It's useful to in see splits in debug_matches even if
+            # they wouldn't actually be returned because their guids
+            # are in ignore_splits.
+            debug_matches.append((split_guid, split_memo, merged_tstr))
+
+            if split_guid not in ignore_splits:
+                has_mismatched_date = merged_tstr.has_mismatched_date()
+                if (match is None
+                    or (no_exact_date and not has_mismatched_date)):
+                    match = split_guid, merged_tstr
+                    no_exact_date = has_mismatched_date
+
+        # Print warnings if this case is ambiguous.
+        if len(debug_matches) > 1:
+            print(80 * "-", file=sys.stderr)
+            print("Warning imported txn matches multiple existing txns: "
+                  "{} {} {!r}".format(date, amount, memo_tstr.as_string()),
+                  file=sys.stderr)
+            for split_guid, split_memo, merged_tstr in debug_matches:
+                tags = []
+                if match and split_guid == match[0]:
+                    tags.append("selected")
+                if merged_tstr.has_mismatched_date():
+                    tags.append("baddate")
+                tag_str = "[{}]".format(",".join(tags)) if tags else ""
+                print("    {} {:10} {!r}".format(
+                    split_guid[:8], tag_str, split_memo, file=sys.stderr))
+
+        return match
+
+    def find_closest_txn(self, acct, date, amount, no_action=False):
+        """Find transaction with a split matching the amount and acct and
+        having a close date."""
+
+        c = self.conn.cursor()
+        c.execute("SELECT s.guid, s.memo, t.guid, t.post_date "
+                  "FROM splits AS s "
+                  "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                  "WHERE s.account_guid = ? AND s.value_num = ?"
+                  + (" AND s.action = ''" if no_action else ""),
+                  (acct, amount))
+
+        match = None
+        closest_offset = None
+        for split_guid, split_memo, txn_guid, txn_post_date_str in c.fetchall():
+            txn_post_date = self.date(txn_post_date_str)
+            offset = abs((txn_post_date - date).days)
+            if offset < 10 and (closest_offset is None
+                                or offset < closest_offset):
+                match = split_guid, split_memo, txn_post_date
+                closest_offset = offset
+
+        return match
+
+    def print_txns(self, header, split_filter):
         acct_map = {}
         c = self.conn.cursor()
         c.execute("SELECT guid, name FROM accounts")
@@ -1304,23 +1507,345 @@ class GnuCash:
         c = self.conn.cursor()
         c.execute("SELECT guid, post_date, description FROM transactions "
                   "ORDER BY post_date, rowid")
-        for guid, post_date, description in c.fetchall():
+        for guid, post_date_str, description in c.fetchall():
+            post_date = self.date(post_date_str)
+
             d = self.conn.cursor()
-            d.execute("SELECT account_guid, memo, action, value_num, "
+            d.execute("SELECT guid, account_guid, memo, action, value_num, "
                       "reconcile_state "
                       "FROM splits WHERE tx_guid = ? ORDER BY rowid", (guid,))
 
             found_split = False
             splits = []
-            for account, memo, action, value, reconcile_state in d.fetchall():
+            for split_guid, account, memo, action, value, reconcile_state in \
+                d.fetchall():
                 splits.append((account, memo, action, value))
-                if split_filter(account=account, memo=memo, action=action,
-                                value=value, reconcile_state=reconcile_state):
+                if split_filter(split_guid=split_guid, account=account,
+                                memo=memo, action=action, value=value,
+                                reconcile_state=reconcile_state,
+                                post_date=post_date,
+                                action_date=self.yearless_date(
+                                    action, post_date)):
                     found_split = True
 
             if found_split:
-                print(self.date(post_date), description)
+                if header:
+                    print(header)
+                    header = None
+                print(post_date, description)
                 for account, memo, action, value in splits:
                   print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
 
+    @staticmethod
+    def date(date_str):
+        """Convert gnucash date string to python date.
 
+        Gnucash date string for a date bizarrely is the UTC timestemp
+        of the moment when it is 00:00:00 in the LOCAL timezone. If
+        you give gnucash the timestamp of the moment when it is
+        00:00:00 in the UTC timezone, gnucash will display the
+        previous day's date in the UI (in any timezone where clocks
+        are set earlier than the current UTC time.)
+
+        GnuCash date strings are used in transactions.post_date,
+        transactions.enter_date, and splits.reconcile_date fields.
+
+        The transaction.post_date field is always preserved and never
+        overrwritten by import code in this file. This way manually
+        entered transaction dates get more prominence over imported
+        electronic dates in the gnucash UI, since elecronic dates can
+        lag behind actual transactions by a day or more.  While the
+        post_date field is not overwritten, post dates are used to
+        help interpret yearless dates in other fields.
+
+        The transactions.entered_date field also is never overwritten by
+        import code in this file. The field isn't displayed in the
+        gnucash either.
+
+        The splits.reconcile_date field may be overrwritten with the
+        statement date when importing statements, depending on
+        mark_reconciled option.
+
+        Aside from the dates above stored in gnucash format, the
+        import code here also records other dates as freeform text in
+        split.action and split.memo fields.
+
+        The split.action field is used to the main upstream date from
+        chase or paypal associated with the transaction.
+
+        The split.memo field can hold various other dates in freeform
+        text format, see ChaseStr and PaypalStr classes for details.
+        """
+        return datetime.datetime.fromtimestamp(
+            datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S")
+            .replace(tzinfo=datetime.timezone.utc).timestamp()).date()
+
+    @staticmethod
+    def date_str(date):
+        """Convert python date to gnucash date string."""
+        if isinstance(date, datetime.datetime):
+            date = date.date()
+        return datetime.datetime.utcfromtimestamp(
+            time.mktime(date.timetuple())).strftime("%Y%m%d%H%M%S")
+
+    @staticmethod
+    def yearless_date(yearless_date_str, txn_post_date):
+        """Convert yearless date string to python date."""
+        m = re.match(r"^(\d{2})/(\d{2})$", yearless_date_str)
+        if not m:
+            return
+        month, day = map(int, m.groups())
+        date = datetime.date(txn_post_date.year, month, day)
+        offset = (txn_post_date - date).days
+        if offset > 180:
+            date = datetime.date(txn_post_date.year + 1, month, day)
+        elif offset < -180:
+            date = datetime.date(txn_post_date.year - 1, month, day)
+        assert abs((txn_post_date - date).days) < 180, (date, txn_post_date)
+        return date
+
+    @staticmethod
+    def yearless_date_str(yearless_date, txn_post_date=None):
+        """Convert python datetime to gnucash date string."""
+        if txn_post_date is not None:
+            assert abs((txn_post_date - yearless_date).days) < 180, (
+                "Yearless date {} is too far away from post date {} to be "
+                "represented in MM/DD format.".format(
+                    yearless_date, txn_post_date))
+        return yearless_date.strftime("%m/%d")
+
+
+class TaggedStr:
+    """Tagged string parser/formatter.
+
+    Hacky but could be improved without affecting other code if ever needed."""
+
+    def __init__(self):
+        self.lines = []
+        self.tags = OrderedDict(self.allowed_tags)
+
+    def tag(self, tag):
+        return self.tags[tag]
+
+    def set_tag(self, tag, value):
+        assert tag in self.tags
+        self.tags[tag] = value
+
+    def merge_tags(self, other):
+        for tag, value in other.tags.items():
+            if value:
+                if not self.tags[tag]:
+                    self.tags[tag] = value
+                elif self.tags[tag] != value:
+                    return False
+        return True
+
+    def as_string(self, tags=True):
+        tag_str = []
+        for tag, value in self.tags.items():
+            assert re.match("^[A-Za-z0-9-]+$", tag), tag
+            if value == True:
+                tag_str.append(tag)
+            elif value != False and value is not None:
+                assert self._allowed_chars(value)
+                line = " || ".join(value)
+                if " " in line or "," in line:
+                    tag_str.append('{}="{}"'.format(tag, line))
+                else:
+                    tag_str.append('{}={}'.format(tag, line))
+
+        assert self._allowed_chars(self.lines)
+        line_str = " || ".join(self.lines)
+
+        if tags:
+            return "{} [{}]".format(line_str, ", ".join(tag_str))
+        else:
+            return line_str.strip()
+
+    @classmethod
+    def parse(cls, string):
+        m = re.match(r"^(.*?) \[(.*?)\]$", string)
+        if not m:
+            return
+        textstr, tagstr = m.groups()
+
+        ret = cls()
+        ret.lines.extend(textstr.split(" || "))
+        if not ret._allowed_chars(ret.lines):
+            return
+
+        pos = 0
+        while pos < len(tagstr):
+            m = re.compile('([A-Za-z0-9-]+)'
+                           '(?:=(?:([^",]*)|"([^"]*)"))?(?:$|, )').match(
+                               tagstr, pos)
+            assert m.end() > pos
+            pos = m.end()
+            tag, value, quoted_value = m.groups()
+            if quoted_value is not None:
+                assert value is None
+                value = quoted_value
+
+            if tag not in ret.tags:
+                return
+            if value is None:
+                ret.set_tag(tag, True)
+            else:
+                value = value.split(" || ")
+                if not cls._allowed_chars(value):
+                    return
+                ret.set_tag(tag, value)
+        return ret
+
+    @staticmethod
+    def _allowed_chars(strings):
+        for string in strings:
+            for char in string:
+                if char in '[]|="':
+                    return False
+        return True
+
+    allowed_tags = ()
+
+class ChaseStr(TaggedStr):
+    """Tagged string class for chase checking memo field"""
+
+    allowed_tags = (
+        # Whether string includes information pdf or csv or both.
+        ("pdf", False),
+        ("csv", False),
+        # Card number from 'Card 9651' or 'Card 8636' pdf boilerplate
+        ("card", None),
+        # Reference number and date from '375369  03/18' csv boilerplate
+        ("ref", None),
+        ("date", None),
+    )
+
+    @classmethod
+    def parse_pdf_string(cls, lines):
+        for line in lines:
+            assert re.match("^[A-Za-z0-9 #$%&'()*+,./:;@_`-]*$", line), line
+        line = "\n".join(lines)
+
+        tstr = cls()
+        tstr.set_tag("pdf", True)
+
+        m = re.compile(r"^(.*?)[ \n]+C(?:ard|ARD)[ \n]+(\d{4}) *(\n.*)?$",
+                       re.DOTALL).match(line)
+        if m:
+            prefix, card, suffix = m.groups()
+            tstr.set_tag("card", [card])
+            line = prefix + (suffix or "")
+
+        # Unused PDF patterns. Could extract if interesting.
+        #     r"^Card Purchase           (\d{2}/\d{2}) "
+        #     r"^Card Purchase With Pin  (\d{2}/\d{2}) "
+        #     r"^Recurring Card Purchase (\d{2}/\d{2}) "
+
+        tstr.lines.extend(line.split("\n"))
+        return tstr
+
+    @classmethod
+    def parse_csv_string(cls, line):
+        assert re.match("^[A-Za-z0-9 #$&'()*+,./:_-]*$", line), line
+
+        tstr = cls()
+        tstr.set_tag("csv", True)
+
+        m = re.match(r"^(.{37})(\d{6})  (\d{2}/\d{2})(.*)$", line)
+        if m:
+            prefix, ref, date, suffix = m.groups()
+            tstr.set_tag("date", [date])
+            tstr.set_tag("ref", [ref])
+            tstr.lines.append(prefix.rstrip())
+            if suffix:
+                tstr.lines.append(suffix)
+        else:
+            m = re.match(r"^(.{45})(\d{2}/\d{2})(.*)$", line)
+            if m:
+                prefix, date, suffix = m.groups()
+                tstr.set_tag("date", [date])
+                tstr.lines.append(prefix.rstrip())
+                if suffix:
+                    tstr.lines.append(suffix)
+            else:
+                m = re.match(r"^(.*?) (\d{2}/\d{2})$", line)
+                if m:
+                    prefix, date = m.groups()
+                    tstr.set_tag("date", [date])
+                    tstr.lines.append(prefix)
+                else:
+                    tstr.lines.append(line)
+
+        return tstr
+
+    def merge_from(self, other):
+        if self.tag("pdf") == other.tag("pdf"):
+            if not self.lines == other.lines:
+                return False
+        else:
+            if self.tag("pdf"):
+                pdf_lines = self.lines
+                csv_lines = other.lines
+            else:
+                pdf_lines = other_lines
+                csv_lines = self.lines
+                # Overwrite csv string with pdf string
+                self.lines = pdf_lines
+
+            # Make sure pdf string is superset of csv string
+            csv_segments = []
+            for csv_line in csv_lines:
+                m = re.compile("^(.*?)(MX Nu Peso)(.*)$", re.I).match(csv_line)
+                if m:
+                    csv_segments.extend(m.groups())
+                    continue
+                m = re.match("^(DEPOSIT)  ID NUMBER (\d+)$", csv_line)
+                if m:
+                    csv_segments.extend(m.groups())
+                    continue
+                csv_segments.append(csv_line)
+
+            pdf_line = re.sub(" +", " ", " ".join(pdf_lines).lower())
+            for csv_segment in csv_segments:
+                csv_segment = re.sub(" +", " ", csv_segment.lower()).strip()
+                if csv_segment not in pdf_line:
+                    return False
+
+        return self.merge_tags(other)
+
+    def has_mismatched_date(self):
+        """Check if CSV date doesn't match PDF date.
+
+        CSV dates are extracted into "date" tag since they show up in
+        a consistent format and are also difficult to read in the
+        original CSV string (sometimes) glommed before subsequent text
+        without even a space separating.
+
+        PDF dates are not extracted because they show up in
+        inconsistent formats (card, card with pin, recurring card, ATM
+        withdrawal, online payment) so extraction is harder, and also
+        not worth anything since original text is already readable.
+
+        Mismatches between the two dates can occur in two cases:
+
+        (1) Apparently very rare case where chase simply returns
+            different dates for the the same transaction. Only saw two
+            case of this: a 2015-07-27 online payment, and an
+            2014-08-11 cash withdrawal (quarters for laundry).
+
+        (2) Transient cases where CSV importing code looking for
+            matching gnucash transactions encounters multiple
+            transactions with exact same descriptions and post dates,
+            but different text dates. The CSV import code calls this
+            function to detect these cases and prefer the matches with
+            identical dates. In this case the ChaseStr objects with
+            mixed dates are only temporary and are never actually
+            stored to the database.
+        """
+        pdf_dates = set(date
+                        for line in self.lines
+                        for date in re.findall(r"\b\d{2}/\d{2}\b", line))
+        csv_dates = self.tag("date")
+        return (pdf_dates and csv_dates
+                and any(csv_date not in pdf_dates for csv_date in csv_dates))
