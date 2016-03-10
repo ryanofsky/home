@@ -26,10 +26,11 @@ def import_chase_txns(chase_dir, cash_db):
         for filename in sorted(os.listdir(chase_dir)):
             if not filename.endswith(".json"):
                 continue
-            json_filename = os.path.join(chase_dir, filename)
-            acct_balance = import_chase_statement(gnu, json_filename,
-                                                  acct_balance,
-                                                  mark_reconciled=True)
+            _, _, _, acct_balance = merge_chase_txns(
+                gnu, read_pdf_txns(gnu, os.path.join(chase_dir, filename)),
+                acct_balance=acct_balance,
+                reconcile_date=parse_statement_date(filename),
+                compat=True)
 
         gnu.print_txns("== Unreconciled transactions ==",
                        lambda account, action, reconcile_state, **_:
@@ -53,14 +54,18 @@ def update_chase_memos(cash_db):
         gnu.commit()
 
 
-def import_chase_update(filename, cash_db):
+def import_chase_update(filename, cash_db, disable_memo_merge=False):
     rand_seed = os.path.basename(filename)
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, rand_seed)
         if filename.endswith(".csv"):
-            first_date, last_date, split_guids = import_chase_csv(gnu, filename)
+            txns = read_csv_txns(gnu, filename)
         else:
-            assert False
+            assert filename.endswith(".json")
+            txns = read_pdf_txns(gnu, filename)
+
+        first_date, last_date, split_guids, _ = merge_chase_txns(
+            gnu, txns, disable_memo_merge=disable_memo_merge)
 
         gnu.print_txns(
             "== Unreconciled transactions between {} and {} ==".format(
@@ -110,71 +115,88 @@ def test_parse_yearless_dates():
 # Chase gnucash import functions.
 #
 
-def import_chase_statement(gnu, json_filename, acct_balance, mark_reconciled):
-    statement_date = parse_statement_date(json_filename)
-
+def read_pdf_txns(gnu, json_filename):
     with open(json_filename) as fp:
         txns = json.load(fp)
-        for date_str, prev_balance, balance, amount, desc in txns:
-            date = (datetime.datetime.strptime(date_str, "%Y-%m-%d")
-                    .date())
-            memo = " || ".join(desc)
-            if acct_balance is None:
-                gnu.new_txn(gnu.checking_acct, date, prev_balance,
-                            "", statement_date, opening=True)
-            elif prev_balance != acct_balance:
-                print ("Imbalance:", statement_date, date, prev_balance, acct_balance)
-                gnu.new_txn(gnu.checking_acct, date,
-                            prev_balance - acct_balance, "", statement_date,
-                            imbalance=True)
 
-            m = gnu.find_closest_txn(gnu.checking_acct, date, amount,
-                                     no_action=True)
-            if m:
-                split_guid, split_memo, txn_post_date = m
-                assert not split_memo or split_memo in ('Checking',), split_memo
-                gnu.update_split(split_guid,
-                                 memo=memo,
-                                 action=gnu.yearless_date_str(
-                                     date, txn_post_date),
-                                 reconcile_date=statement_date
-                                     if mark_reconciled else None)
-            else:
-                gnu.new_txn(gnu.checking_acct, date, amount, memo,
-                            statement_date)
-
-            acct_balance = balance
-
-    return acct_balance
+    for date_str, prev_balance, balance, amount, desc in txns:
+        assert balance == prev_balance + amount
+        date = (datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                .date())
+        tstr = ChaseStr.parse_pdf_string(desc)
+        yield date, amount, balance, desc, tstr
 
 
-def import_chase_csv(gnu, csv_filename):
+def read_csv_txns(gnu, csv_filename):
     with open(csv_filename) as fp:
         rows = list(csv.reader(fp))
 
     header = ['Type', 'Post Date', 'Description', 'Amount', 'Check or Slip #']
     assert rows[0] == header
 
-    first_date = last_date = None
-    split_guids = set()
     for ttype, date_str, desc, amount_str, num in rows[:0:-1]:
         assert ttype in ('CREDIT', 'DEBIT', 'DSLIP', 'CHECK'), ttype
         assert not num, num
         date = datetime.datetime.strptime(date_str, "%m/%d/%Y").date()
         amount = parse_price(amount_str, allow_minus=True)
-
-        # print("{} {!r} {!r}".format(date, amount, desc))
         tstr = ChaseStr.parse_csv_string(desc)
+        yield date, amount, None, desc, tstr
 
-        # If a best matching txn was found, update it.
+
+def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
+                     reconcile_date=None, compat=False):
+    first_date = last_date = None
+    split_guids = set()
+
+    for date, amount, balance, desc, tstr in txns:
+        if reconcile_date is not None:
+            prev_balance = balance - amount
+            if acct_balance is None:
+                gnu.new_txn(gnu.checking_acct, date, prev_balance,
+                            "", reconcile_date, opening=True)
+            elif prev_balance != acct_balance:
+                print ("Imbalance:", reconcile_date, date, prev_balance,
+                       acct_balance)
+                gnu.new_txn(gnu.checking_acct, date,
+                            prev_balance - acct_balance, "", reconcile_date,
+                            imbalance=True)
+
+        # If a pre-existing imported txn was found, update it.
         m = gnu.find_matching_txn(gnu.checking_acct, date, amount, tstr,
-                                  split_guids)
+                                  split_guids) if not compat else None
         if m:
             split_guid, merged_tstr = m
+            if disable_memo_merge: merged_tstr = tstr
             gnu.update_split(split_guid, memo_tstr=merged_tstr)
         else:
-            split_guid = gnu.new_txn(gnu.checking_acct, date, amount,
-                                     tstr.as_string())
+            # Support untagged memo strings for backwards
+            # compatibilitity with test code.
+            if compat:
+                memo = " || ".join(desc)
+                memo_tstr = None
+            else:
+                memo = None
+                memo_tstr = tstr
+
+            # Try to find manually entered transaction that's close in
+            # date with matching amount and merge with it, otherwise
+            # add a new transaction.
+            m = gnu.find_closest_txn(gnu.checking_acct, date, amount,
+                                     no_action=True)
+            if m:
+                split_guid, split_memo, txn_post_date = m
+                assert not split_memo or split_memo in ('Checking',), split_memo
+                gnu.update_split(split_guid,
+                                  memo=memo,
+                                  memo_tstr=memo_tstr,
+                                  action=gnu.yearless_date_str(
+                                      date, txn_post_date),
+                                  reconcile_date=reconcile_date)
+            else:
+                split_guid = gnu.new_txn(gnu.checking_acct, date, amount,
+                                         memo or memo_tstr.as_string(),
+                                         reconcile_date)
+
         assert split_guid
         assert split_guid not in split_guids
         split_guids.add(split_guid)
@@ -184,7 +206,10 @@ def import_chase_csv(gnu, csv_filename):
         assert last_date is None or date >= last_date
         last_date = date
 
-    return first_date, last_date, split_guids
+        acct_balance = balance
+
+    return first_date, last_date, split_guids, acct_balance
+
 
 #
 # Chase pdf parsing functions.
@@ -1562,9 +1587,9 @@ class GnuCash:
         import code in this file. The field isn't displayed in the
         gnucash either.
 
-        The splits.reconcile_date field may be overrwritten with the
-        statement date when importing statements, depending on
-        mark_reconciled option.
+        The splits.reconcile_date field will be overwritten with the
+        statement date when the merge_chase_txns reconcile date option
+        is set.
 
         Aside from the dates above stored in gnucash format, the
         import code here also records other dates as freeform text in
@@ -1788,7 +1813,7 @@ class ChaseStr(TaggedStr):
                 pdf_lines = self.lines
                 csv_lines = other.lines
             else:
-                pdf_lines = other_lines
+                pdf_lines = other.lines
                 csv_lines = self.lines
                 # Overwrite csv string with pdf string
                 self.lines = pdf_lines
