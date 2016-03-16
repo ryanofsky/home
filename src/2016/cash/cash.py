@@ -29,7 +29,7 @@ def import_chase_txns(chase_dir, cash_db):
             if not filename.endswith(".json"):
                 continue
             _, _, _, acct_balance = merge_chase_txns(
-                gnu, read_pdf_txns(gnu, os.path.join(chase_dir, filename)),
+                gnu, read_pdf_txns(os.path.join(chase_dir, filename)),
                 acct_balance=acct_balance,
                 reconcile_date=parse_statement_date(filename),
                 compat=True)
@@ -61,10 +61,10 @@ def import_chase_update(filename, cash_db, disable_memo_merge=False):
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, rand_seed)
         if filename.endswith(".csv"):
-            txns = read_csv_txns(gnu, filename)
+            txns = read_csv_txns(filename)
         else:
             assert filename.endswith(".json")
-            txns = read_pdf_txns(gnu, filename)
+            txns = read_pdf_txns(filename)
 
         first_date, last_date, split_guids, _ = merge_chase_txns(
             gnu, txns, disable_memo_merge=disable_memo_merge)
@@ -143,7 +143,7 @@ def test_parse_yearless_dates():
 # Chase gnucash import functions.
 #
 
-def read_pdf_txns(gnu, json_filename):
+def read_pdf_txns(json_filename):
     with open(json_filename) as fp:
         txns = json.load(fp)
 
@@ -155,7 +155,7 @@ def read_pdf_txns(gnu, json_filename):
         yield date, amount, balance, desc, tstr
 
 
-def read_csv_txns(gnu, csv_filename):
+def read_csv_txns(csv_filename):
     with open(csv_filename) as fp:
         rows = list(csv.reader(fp))
 
