@@ -64,4 +64,12 @@ set -x
 setup file   expected-chase-memos.db.sql
 run   file   expected-chase-csv1.db.sql "$CMD"
 
+setup file   expected-chase-memos.db.sql
+run   file   expected-chase-memos.db.sql "cash.import_paypal_csv('/home/russ/store/statements/paypal','_test.db')" > _test.out.txt
+if ! diff -q  expected-paypal.txt _test.out.txt; then
+   diff -u expected-paypal.txt _test.out.txt | colordiff
+   echo Fail
+   exit 1
+fi
+
 echo Tests pass

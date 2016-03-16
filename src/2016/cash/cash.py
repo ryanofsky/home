@@ -1,3 +1,4 @@
+import weakref
 import random
 import bisect
 import datetime
@@ -8,6 +9,7 @@ import re
 import sys
 import time
 import sqlite3
+from itertools import groupby
 from collections import namedtuple, deque, OrderedDict
 from enum import IntEnum
 from lxml import etree
@@ -90,6 +92,32 @@ def dump_chase_txns(pdftext_input_json_filename, txns_output_json_filename,
         json.dump(txns, fp, sort_keys=True, indent=4)
     with open(discarded_text_output_filename, "w") as fp:
         fp.write(discarded_text)
+
+
+def import_paypal_csv(csv_dir, cash_db):
+    csv_files = [filename for filename in sorted(os.listdir(csv_dir))
+        if filename.endswith(".csv")]
+
+    balance = {"USD": 0, "EUR": 0}
+    csv_fields = []     # List of fields from csv header rows.
+    csv_field_idx = {}  # Map field name -> list position.
+    txns = []           # List of transactions
+    row_idx = {}        # Map transaction_id -> csv row
+    for csv_file in csv_files:
+        txns.extend(read_paypal_txns(os.path.join(csv_dir, csv_file),
+                                     balance, csv_fields, csv_field_idx,
+                                     row_idx))
+    check_paypal_txns(txns)
+    generate_paypal_memos(txns, csv_fields)
+
+    for txn in txns:
+        t = txn.memo
+        s = t.as_string()
+        p = TaggedStr.parse(s, False)
+        check(s == p.as_string())
+        check(p.lines == t.lines)
+        check(p.tags == t.tags)
+        print(t.as_string(), "\n")
 
 
 def import_pay_txns(html_filename, cash_db):
@@ -570,6 +598,360 @@ def fragments_split_columns(fragments, *columns):
             col_idx += 1
         ret[col_idx].append(f)
     return ret
+
+
+#
+# Paypal csv parsing functions.
+#
+
+def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx):
+    ORDER_TYPE = "Order"
+    ITEM_TYPE = "Shopping Cart Item"
+    VOID_TYPES = (ITEM_TYPE, ORDER_TYPE, "eBay Payment Canceled",
+                  "Cancelled Fee", "Authorization")
+    UPDATE_TYPE_PREFIX = "Update to "
+    BANK_NAME = "Bank Account"
+    BANK_TYPES = ("Add Funds from a Bank Account",
+                  "Withdraw Funds to Bank Account",
+                  "Update to Add Funds from a Bank Account")
+    CREDIT_NAME = "Credit Card"
+    CREDIT_TYPES = ("Charge From Credit Card", "Credit to Credit Card")
+    REFUND_TYPE = "Refund"
+
+    with open(csv_filename) as fp:
+        rows = list(csv.reader(fp))
+
+    # Make sure field list is the same in all csv files.
+    f = [csv_field.strip().lower().replace(" ", "_") for csv_field in rows[0]]
+    if csv_fields:
+        check(csv_fields == f)
+    else:
+        check(not csv_field_idx)
+        csv_fields.extend(f)
+        csv_field_idx.update((csv_field, i)
+                             for i, csv_field in enumerate(csv_fields))
+    check(len(csv_fields) == len(csv_field_idx), "Dup fields")
+
+    # Group rows together by date.
+    for date, rows in groupby(CsvRow.wrap(rows[:0:-1], csv_field_idx),
+                              key=paypal_date):
+        txn = Txn()
+        txn.date = date
+        txn.rows = list(rows)
+        txn.updates = None
+        txn.updated_by = None
+        txn.starting_balance = balance.copy()
+        for row in txn.rows:
+            # Parse net, gross, fee, and balance amounts.
+            # Consolidate and check redundant net and gross columns
+            # into single net_amount column.
+            if row.type == ORDER_TYPE:
+                check(row.balance == "...")
+                row.balance_amount = None
+                check(row.net == "...")
+                row.net_amount = parse_price(row.gross, allow_minus=1)
+                check(row.fee == "...")
+                row.fee_amount = None
+            else:
+                row.balance_amount = parse_price(row.balance, allow_minus=1)
+                balance[row.currency] = row.balance_amount
+                if row.type == ITEM_TYPE:
+                    check(not row.net)
+                    row.net_amount = parse_price(row.gross, allow_minus=1)
+                    check(not row.fee)
+                    row.fee_amount = None
+                else:
+                    row.net_amount = parse_price(row.net, allow_minus=1)
+                    row.fee_amount = (parse_price(row.fee, allow_minus=1)
+                                      if row.fee != "..." else None)
+                    check(parse_price(row.gross, allow_minus=1)
+                          == row.net_amount - (row.fee_amount or 0))
+
+            # Add transaction and updates/updated_by pointers.
+            row.txn = weakref.proxy(txn)
+            row.updates = None
+            row.updated_by = None
+            if row.type.startswith(UPDATE_TYPE_PREFIX):
+                row.updates = weakref.proxy(row_idx[row.reference_txn_id])
+                check(row.updates.updated_by is None)
+                row.updates.updated_by = weakref.proxy(row)
+
+                check(txn.updates is None)
+                txn.updates = row.updates.txn
+                check(txn.updates.updated_by is None)
+                txn.updates.updated_by = weakref.proxy(txn)
+
+            # Record whether row affects bank account, credit card, or
+            # paypal balances. Rows with void types are informational
+            # and don't affect the paypal account balance.
+            row.void_type = row.type in VOID_TYPES
+            row.bank_type = False
+            row.credit_type = False
+            if row.type in BANK_TYPES:
+                check(row.name == BANK_NAME)
+                row.bank_type = True
+            elif row.type in CREDIT_TYPES:
+                check(row.name == CREDIT_NAME)
+                row.credit_type = True
+            else:
+                check(BANK_NAME not in row.type)
+                check(CREDIT_NAME not in row.type)
+
+            # Check uniqueness of transaction_ids, except for
+            # shopping cart item rows, which duplicate the
+            # main transaction id they are associated with.
+            check(row.transaction_id not in row_idx
+                  or row_idx[row.transaction_id].type == ITEM_TYPE)
+            row_idx[row.transaction_id] = row
+
+        txn.ending_balance = balance.copy()
+
+        # Main row describing the whole transaction (as opposed to
+        # other rows that describe parts of the transaction like
+        # currency conversions, fees, shopping cart items, bank
+        # transfers) is normally the last row in the transaction,
+        # except apparently in refund transactions, where the first
+        # row is the main row.
+        txn.main_row = (0 if txn.rows[0].type == REFUND_TYPE
+                        else len(txn.rows) - 1)
+
+        yield txn
+
+
+def paypal_date(row):
+    date = datetime.datetime.strptime(row.date, "%m/%d/%Y")
+    time = datetime.datetime.strptime(row.time, "%H:%M:%S")
+    tz = datetime.timezone(datetime.timedelta(
+        hours={"PST":-8, "PDT":-7}[row.time_zone]))
+    return (datetime.datetime(date.year, date.month, date.day, time.hour,
+                              time.minute, time.second, time.microsecond, tz)
+            .astimezone(datetime.timezone.utc))
+
+
+def check_paypal_txns(txns):
+    """Make sure transactions are in order and row balances match amounts."""
+    prev_txn = None
+    for txn in txns:
+        # Initialize calculated balance for the transaction which will
+        # be updated with changes from each row in the transaction,
+        # and then compared for equality against the transaction
+        # ending balance.
+        txn.calc_balance = txn.starting_balance.copy()
+
+        # If this transaction updates a previous transaction, the
+        # previous transaction might have had rows that didn't show up
+        # in its ending balance because the changes described in those
+        # rows were delayed pending the update. Add those changes in
+        # here to verify they now show up in the ending balance for
+        # this transaction.
+        if txn.updates:
+            for currency in txn.updates.calc_balance:
+                txn.calc_balance[currency] += (
+                    txn.updates.calc_balance[currency]
+                    - txn.updates.ending_balance[currency])
+
+        # Update calculated balance with net change from each row in
+        # this transaction.
+        for row in txn.rows:
+            # If the row is updated (replaced) by a later row, or has
+            # a void (cancelled or informational) type, then it will
+            # not affect the paypal account balance.
+            row.void = row.updated_by is not None or row.void_type
+            if not row.void:
+                txn.calc_balance[row.currency] += row.net_amount
+
+            # Verify the row either doesn't list a balance amount, or
+            # that the row balance amount equals the calculated
+            # balance.
+            if (row.balance_amount is not None
+                and row.balance_amount != txn.calc_balance[row.currency]):
+                # Allow unusual case where row balance doesn't match the
+                # calculated balance, but instead equals the ending
+                # balance of the transaction containing the row. This
+                # seems to happen unpredictably, for most but not all
+                # shopping cart item rows and for some very old rows
+                # before 2007.
+                check(row.balance_amount == txn.ending_balance[row.currency])
+
+        # Verify the transaction ending balance equals the calculated
+        # balance, unless a row in this transaction is updated by a
+        # row in a later transaction. In this case, the changes from
+        # rows in this transaction might not show up until the later
+        # transaction. In this case, the changes will be added up and
+        # verified when that transaction is processed (see txn.updates
+        # code above).
+        if txn.updated_by is None:
+            check(txn.ending_balance == txn.calc_balance, txn.date)
+        else:
+            check(txn.updated_by.date > txn.date)
+
+        # Check for increasing transaction dates.
+        check(prev_txn is None or txn.date > prev_txn.date)
+        prev_txn = txn
+
+def generate_paypal_memos(txns, csv_fields):
+    """Add txn.memo fields."""
+
+    # Show fields in this order.
+    field_order = (
+        "void", "amount", "fee", "shipping", "insurance", "tax", "cc", "bank",
+        "name", "type", "time", "updated", "txn", "status", "ref", "from", "to",
+        "counterparty", "shipping_address", "address_status", "item_title",
+        "item_id", "auction_site", "item_url", "closing_date", "buyer_id",
+        "quantity", "receipt_id", "invoice_number", "contact_phone_number",
+        "custom_number", "option_1_name", "option_1_value", "option_2_name",
+        "option_2_value",
+    )
+    field_order_set = set(field_order)
+
+    # Discard these fields after the first row in the transaction if the
+    # values are duplicates of values already showing up in the first row.
+    discard_dups = set(("time", "name", "txn", "from", "to", "counterparty",
+                        "shipping_address", "address_status", "quantity",
+                        "invoice_number", "item_title", "item_id",
+                        "custom_number"))
+
+    # Allow these fields after the first row in the transaction to
+    # duplicate values already showing up in the first row. An error
+    # will be triggered on any field duplicating a value from the
+    # first row, unless the field is listed in either discard_dups, or
+    # allow_dups.
+    allow_dups = set(("void", "amount", "ref"))
+
+    for txn in txns:
+        # Iterate over transaction rows with main row first, so later rows can
+        # set & compare against override values in the main row.
+        rows = txn.rows.copy()
+        rows.insert(0, rows.pop(txn.main_row))
+
+        # First pass over transaction rows, filling row.override
+        # dictionary with field values that replace or hide CSV field
+        # values.
+        # Two passes are needed because later bank account/credit card
+        # rows will make changes to the first row's overrride
+        # dictionary.
+        for row in rows:
+            row.override = {}
+
+            # Mark amounts not added to paypal balance.
+            row.override["void"] = row.void
+
+            # Collapse balance/net/gross fields into amount.
+            row.override["amount"] = "{:.2f}{}".format(
+                row.net_amount/100.0, row.currency)
+            row.override["balance"] = None
+            row.override["net"] = None
+            row.override["gross"] = None
+            row.override["currency"] = None
+
+            # Collapse and abbreviate fee, tax, etc fields.
+            row.override["fee"] = row.fee if row.fee_amount else None
+            row.override["shipping"] = (
+                row.shipping_and_handling_amount
+                if row.shipping_and_handling_amount!="0.00" else None)
+            row.override["shipping_and_handling_amount"] = None
+            row.override["tax"] = (
+                row.sales_tax if row.sales_tax != "0.00" else None)
+            row.override["sales_tax"] = None
+            row.override["insurance"] = (
+                row.insurance_amount if row.insurance_amount!="0.00" else None)
+            row.override["insurance_amount"] = None
+
+            # Collapse seperate date/time fields into one timestamp.
+            row.override["time"] = txn.date.strftime("%Y-%m-%dT%H:%M:%S")
+            row.override["date"] = None
+            row.override["time_zone"] = None
+
+            # Add update date.
+            if row.updated_by:
+              row.override["updated"] = (
+                  row.updated_by.txn.date.strftime("%Y-%m-%dT%H:%M:%S"))
+
+            # Abbreviate transaction_id and status.
+            row.override["txn"] = row.transaction_id
+            row.override["transaction_id"] = None
+            if row.status == "Completed":
+                row.override["status"] = None
+
+            # Abbreviate some other field names.
+            row.override["ref"] = row.reference_txn_id
+            row.override["reference_txn_id"] = None
+            row.override["from"] = row.from_email_address
+            row.override["from_email_address"] = None
+            row.override["to"] = row.to_email_address
+            row.override["to_email_address"] = None
+            row.override["counterparty"] = row.counterparty_status
+            row.override["counterparty_status"] = None
+
+            # Move bank transfer amount into the main row, where it is
+            # more easily visible than in the bank account row. Also
+            # delete redundant ref and name fields in the bank account
+            # row.
+            if row.bank_type:
+                row.override["name"] = None
+                if not row.void:
+                    check("bank" not in rows[0].override)
+                    rows[0].override["bank"] = row.override.pop("amount")
+                if row.reference_txn_id and not row.updates:
+                    check(row.reference_txn_id == rows[0].transaction_id)
+                    row.override["ref"] = None
+
+            # Move credit card amount into the main row, where it is
+            # more easily visible than in the credit card row. Also
+            # delete redundant ref and name fields in the credit card
+            # row.
+            if row.credit_type:
+                row.override["name"] = None
+                if not row.void:
+                    check("cc" not in rows[0].override)
+                    rows[0].override["cc"] = row.override.pop("amount")
+                check(row.reference_txn_id
+                      in (rows[0].transaction_id, row.reference_txn_id))
+                row.override["ref"] = None
+
+            # Check for and delete duplicate field values after the
+            # main row, following discard_dups and allow_dups
+            # variables.
+            if row is not rows[0]:
+                for name in field_order:
+                    new_value = paypal_row_value(row, name)
+                    if (new_value
+                        and new_value == paypal_row_value(rows[0], name)):
+                        if name in discard_dups:
+                            row.override[name] = None
+                        else:
+                            check(name in allow_dups, name)
+
+        # Second pass over transaction rows, using csv field and
+        # override values to fill the transaction memo string.
+        txn.memo = TaggedStr()
+        for i, row in enumerate(rows):
+            for name in field_order:
+                value = paypal_row_value(row, name)
+                if value:
+                    if (i == 0 and not txn.memo.lines
+                        and name in ("name", "type")):
+                        txn.memo.lines.append(value)
+                    else:
+                        tag = name.replace("_", "-")
+                        if i > 0:
+                            tag = "{}-{}".format(i, tag)
+                        txn.memo.tags[tag] = (
+                            [value] if isinstance(value, str) else value)
+
+            for name, value in row.override.items():
+                check(not value or name in field_order_set, name)
+
+            for j, value in enumerate(row.row):
+                check(not value or csv_fields[j] in row.override
+                      or csv_fields[j] in field_order_set, csv_fields[j])
+
+
+def paypal_row_value(row, name):
+  if name in row.override:
+      return row.override[name]
+  elif name in row.field_idx:
+      return row.row[row.field_idx[name]]
 
 
 #
@@ -1098,6 +1480,11 @@ def s(elem):
     return etree.tostring(elem, pretty_print=True).decode()
 
 
+def check(condition, message=""):
+    if not condition:
+        raise Exception(message)
+
+
 #
 # Enums and constants.
 #
@@ -1231,6 +1618,21 @@ class PeekIterator:
         assert self.lookbehind > 0, \
             "at_start method only available with lookbehind > 0"
         return self.prev_elems == 0
+
+
+class CsvRow:
+    """Wrapper for accessing csv rows with many columns."""
+    def __init__(self, row, field_idx):
+        self.row = row
+        self.field_idx = field_idx
+
+    def __getattr__(self, field):
+        return self.row[self.field_idx[field]]
+
+    @classmethod
+    def wrap(cls, row_seq, field_idx):
+        for row in row_seq:
+            yield cls(row, field_idx)
 
 
 class GnuCash:
@@ -1666,44 +2068,40 @@ class TaggedStr:
         return True
 
     def as_string(self, tags=True):
+        line_str = self._lines_str(self.lines)
+        if not tags:
+            return line_str.rstrip()
+
         tag_str = []
         for tag, value in self.tags.items():
-            assert re.match("^[A-Za-z0-9-]+$", tag), tag
+            assert re.match("^[a-z0-9-]+$", tag), tag
             if value == True:
                 tag_str.append(tag)
             elif value != False and value is not None:
-                assert self._allowed_chars(value)
-                line = " || ".join(value)
-                if " " in line or "," in line:
-                    tag_str.append('{}="{}"'.format(tag, line))
+                line = self._lines_str(value)
+                if re.search(r'[ ",\\]', line):
+                    tag_str.append('{}="{}"'.format(
+                        tag, line.replace('"', r'\"')))
                 else:
                     tag_str.append('{}={}'.format(tag, line))
 
-        assert self._allowed_chars(self.lines)
-        line_str = " || ".join(self.lines)
-
-        if tags:
-            return "{} [{}]".format(line_str, ", ".join(tag_str))
-        else:
-            return line_str.strip()
+        return "{} [{}]".format(line_str, ", ".join(tag_str))
 
     @classmethod
-    def parse(cls, string):
+    def parse(cls, string, check_tags=True):
         m = re.match(r"^(.*?) \[(.*?)\]$", string)
         if not m:
             return
         textstr, tagstr = m.groups()
 
         ret = cls()
-        ret.lines.extend(textstr.split(" || "))
-        if not ret._allowed_chars(ret.lines):
-            return
+        ret.lines.extend(cls._parse_lines(textstr))
 
         pos = 0
         while pos < len(tagstr):
-            m = re.compile('([A-Za-z0-9-]+)'
-                           '(?:=(?:([^",]*)|"([^"]*)"))?(?:$|, )').match(
-                               tagstr, pos)
+            m = (re.compile('([A-Za-z0-9-]+)'
+                            '(?:=(?:([^",]*)|"((?:[^"]|\\\\")*)"))?(?:$|, )')
+                 .match(tagstr, pos))
             assert m.end() > pos
             pos = m.end()
             tag, value, quoted_value = m.groups()
@@ -1711,26 +2109,39 @@ class TaggedStr:
                 assert value is None
                 value = quoted_value
 
-            if tag not in ret.tags:
+            if check_tags and tag not in ret.tags:
                 return
             if value is None:
-                ret.set_tag(tag, True)
+                ret.tags[tag] = True
             else:
-                value = value.split(" || ")
-                if not cls._allowed_chars(value):
-                    return
-                ret.set_tag(tag, value)
+                ret.tags[tag] = cls._parse_lines(value)
         return ret
 
     @staticmethod
-    def _allowed_chars(strings):
-        for string in strings:
-            for char in string:
-                if char in '[]|="':
-                    return False
-        return True
+    def _lines_str(lines):
+        return " || ".join(re.sub(r"([[\]\\|])", r"\\\1", line)
+                           for line in lines)
+
+    @staticmethod
+    def _parse_lines(lines_str):
+        lines = [""]
+        pos = 0
+        while pos < len(lines_str):
+            m = re.compile(r"\\(.)| \|\| ").search(lines_str, pos)
+            if m:
+                lines[-1] += lines_str[pos:m.start()]
+                if m.group(1) is not None:
+                    lines[-1] += m.group(1)
+                else:
+                    lines.append("")
+                pos = m.end()
+            else:
+                lines[-1] += lines_str[pos:]
+                pos = len(lines_str)
+        return lines
 
     allowed_tags = ()
+
 
 class ChaseStr(TaggedStr):
     """Tagged string class for chase checking memo field"""
