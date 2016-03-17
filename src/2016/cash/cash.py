@@ -733,7 +733,10 @@ def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx):
                   "Update to Add Funds from a Bank Account")
     CREDIT_NAME = "Credit Card"
     CREDIT_TYPES = ("Charge From Credit Card", "Credit to Credit Card")
-    REFUND_TYPE = "Refund"
+    AVOID_MAIN_TYPES = VOID_TYPES + BANK_TYPES + CREDIT_TYPES + (
+        "Temporary Hold", "Payment Review", "Currency Conversion")
+
+    avoid_main_idx = {t: n for n, t in enumerate(AVOID_MAIN_TYPES)}
 
     with open(csv_filename) as fp:
         rows = list(csv.reader(fp))
@@ -826,11 +829,10 @@ def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx):
         # Main row describing the whole transaction (as opposed to
         # other rows that describe parts of the transaction like
         # currency conversions, fees, shopping cart items, bank
-        # transfers) is normally the last row in the transaction,
-        # except apparently in refund transactions, where the first
-        # row is the main row.
-        txn.main_row = (0 if txn.rows[0].type == REFUND_TYPE
-                        else len(txn.rows) - 1)
+        # transfers) is typically the last row in the transaction that
+        # isn't a void or review or bank transfer type.
+        txn.main_row = min(range(len(txn.rows)), key=lambda n:
+                           (avoid_main_idx.get(txn.rows[n].type, -1), -n))
 
         yield txn
 
