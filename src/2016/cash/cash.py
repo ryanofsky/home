@@ -98,17 +98,8 @@ def import_paypal_csv(csv_dir, cash_db):
     csv_files = [filename for filename in sorted(os.listdir(csv_dir))
         if filename.endswith(".csv")]
 
-    balance = {"USD": 0, "EUR": 0}
-    csv_fields = []     # List of fields from csv header rows.
-    csv_field_idx = {}  # Map field name -> list position.
-    txns = []           # List of transactions
-    row_idx = {}        # Map transaction_id -> csv row
-    for csv_file in csv_files:
-        txns.extend(read_paypal_txns(os.path.join(csv_dir, csv_file),
-                                     balance, csv_fields, csv_field_idx,
-                                     row_idx, txns))
-    check_paypal_txns(txns)
-    generate_paypal_memos(txns, csv_fields)
+    txns = read_paypal_txns(os.path.join(csv_dir, csv_file)
+                            for csv_file in csv_files)
 
     for txn in txns:
         t = txn.memo
@@ -738,8 +729,23 @@ def fragments_split_columns(fragments, *columns):
 # Paypal csv parsing functions.
 #
 
-def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx,
-                     prev_txns):
+def read_paypal_txns(csv_filenames):
+    balance = {"USD": 0, "EUR": 0}
+    csv_fields = []     # List of fields from csv header rows.
+    csv_field_idx = {}  # Map field name -> list position.
+    txns = []           # List of transactions
+    row_idx = {}        # Map transaction_id -> csv row
+    for csv_filename in csv_filenames:
+        txns.extend(read_paypal_csv(csv_filename,
+                                    balance, csv_fields, csv_field_idx,
+                                    row_idx, txns))
+    check_paypal_txns(txns)
+    generate_paypal_memos(txns, csv_fields)
+    return txns
+
+
+def read_paypal_csv(csv_filename, balance, csv_fields, csv_field_idx, row_idx,
+                    prev_txns):
     ORDER_TYPE = "Order"
     ITEM_TYPE = "Shopping Cart Item"
     VOID_TYPES = (ITEM_TYPE, ORDER_TYPE, "eBay Payment Canceled",
