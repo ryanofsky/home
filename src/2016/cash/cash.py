@@ -106,7 +106,7 @@ def import_paypal_csv(csv_dir, cash_db):
     for csv_file in csv_files:
         txns.extend(read_paypal_txns(os.path.join(csv_dir, csv_file),
                                      balance, csv_fields, csv_field_idx,
-                                     row_idx))
+                                     row_idx, txns))
     check_paypal_txns(txns)
     generate_paypal_memos(txns, csv_fields)
 
@@ -721,7 +721,8 @@ def fragments_split_columns(fragments, *columns):
 # Paypal csv parsing functions.
 #
 
-def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx):
+def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx,
+                     prev_txns):
     ORDER_TYPE = "Order"
     ITEM_TYPE = "Shopping Cart Item"
     VOID_TYPES = (ITEM_TYPE, ORDER_TYPE, "eBay Payment Canceled",
@@ -752,6 +753,9 @@ def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx):
                              for i, csv_field in enumerate(csv_fields))
     check(len(csv_fields) == len(csv_field_idx), "Dup fields")
 
+    # Cached position in prev_txns array.
+    prev_txns_pos = None
+
     # Group rows together by date.
     for date, rows in groupby(CsvRow.wrap(rows[:0:-1], csv_field_idx),
                               key=paypal_date):
@@ -761,6 +765,23 @@ def read_paypal_txns(csv_filename, balance, csv_fields, csv_field_idx, row_idx):
         txn.updates = None
         txn.updated_by = None
         txn.starting_balance = balance.copy()
+
+        # Allow multiple CSV files from overlapping date ranges to be
+        # read without error as long as the transactions in the date
+        # ranges match up.
+        if prev_txns:
+            if prev_txns_pos is None:
+                prev_txns_pos = bisect.bisect_left([t.date for t in prev_txns],
+                                                   date)
+            prev_txn = (prev_txns[prev_txns_pos]
+                        if prev_txns_pos < len(prev_txns) else None)
+            prev_txns_pos += 1
+            if prev_txn:
+                check(len(txn.rows) == len(prev_txn.rows))
+                check(all(t.row == p.row
+                          for t, p in zip(txn.rows, prev_txn.rows)))
+                continue
+
         for row in txn.rows:
             # Parse net, gross, fee, and balance amounts.
             # Consolidate and check redundant net and gross columns
