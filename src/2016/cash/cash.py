@@ -119,6 +119,123 @@ def import_paypal_csv(csv_dir, cash_db):
         check(p.tags == t.tags)
         print(t.as_string(), "\n")
 
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, csv_files[-1])
+        acct_map = gnu.acct_map()
+
+        for txn in txns:
+            # Set some useful variables from txn.
+            main_row = txn.rows[txn.main_row]
+            bank_row = None
+            for row in txn.rows:
+                if row.bank_type or row.credit_type:
+                    check(bank_row is None)
+                    bank_row = row
+            action = gnu.yearless_date_str(txn.date)
+            txn_value = txn.ending_balance["USD"] - txn.starting_balance["USD"]
+
+            # Look for existing paypal split entry. If found make sure
+            # it is up to date and move on.
+            split_guid = None
+            txn_guid = None
+            match_type = None
+            c = gnu.conn.cursor()
+            c.execute("SELECT s.guid, s.memo, s.value_num, t.guid "
+                      "FROM splits AS s "
+                      "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                      "WHERE s.account_guid = ? AND s.action = ? "
+                      "    AND s.memo LIKE '%time=' || ? || '%'",
+                      (gnu.paypal_acct, action, paypal_date_str(txn.date)))
+            rows = c.fetchall()
+            if rows:
+                match_type = "paypal memo"
+                check(len(rows) == 1)
+                split_guid, split_memo, split_value, txn_guid = rows[0]
+                check(split_memo == txn.memo.as_string())
+                check(split_value == txn_value)
+
+            # Need to create paypal split. Look for existing bank
+            # transaction to attach to.
+            if (txn_guid is None and bank_row and not bank_row.void
+                and bank_row.net_amount):
+                m = gnu.find_closest_txn(gnu.bank_accts, txn.date.date(),
+                                         -bank_row.net_amount,
+                                         no_split=gnu.paypal_acct,
+                                         max_days=4)
+                if m:
+                    match_type = "bank account"
+                    txn_guid = m[2]
+
+            # Need to create paypal split. Look for existing expense
+            # transaction to attach to.
+            if (txn_guid is None and main_row and not main_row.void
+                and main_row.net_amount):
+                m = gnu.find_closest_txn([], txn.date.date(),
+                                         -main_row.net_amount,
+                                         no_split=gnu.paypal_acct,
+                                         max_days=4)
+                if m:
+                    match_type = "expense account"
+                    txn_guid = m[2]
+
+            # No existing transaction found. Create new transaction and splits.
+            if txn_guid is None:
+                txn_guid, split_guid = gnu.new_txn(
+                    gnu.paypal_acct, txn.date.date(),
+                    txn_value,
+                    src_amount=(0 if main_row.void or main_row is bank_row
+                                else -main_row.net_amount),
+                    memo=txn.memo.as_string(),
+                    desc="{}: {}".format(main_row.type, main_row.name))
+                gnu.balance_txn(txn_guid)
+
+            # Matching transaction was found but need to add or update
+            # the paypal split.
+            elif split_guid is None:
+                c.execute("SELECT guid, memo, action "
+                          "FROM splits WHERE tx_guid = ? AND account_guid = ?",
+                          (txn_guid,gnu.paypal_acct))
+                rows = c.fetchall()
+                if rows:
+                    check(len(rows) == 1)
+                    split_guid, split_memo, split_action = rows[0]
+                    check(not split_memo)
+                    check(not split_action)
+                    gnu.update_split(split_guid, action, memo_tstr=txn.memo,
+                                     amount=txn_value)
+                else:
+                    gnu.new_split(txn_guid, gnu.paypal_acct,
+                                  txn_value,
+                                  memo=txn.memo.as_string(),
+                                  action=action)
+                gnu.balance_txn(txn_guid)
+
+            if 0:
+                if txn_guid:
+                    c.execute("SELECT description, post_date FROM transactions "
+                              "WHERE guid = ?",
+                              (txn_guid,))
+                    rows = c.fetchall()
+                    check(len(rows) == 1)
+                    description, post_date_str = rows[0]
+                    txn_post_date = gnu.date(post_date_str)
+
+                    c.execute("SELECT guid, account_guid, memo, action, "
+                              "value_num, reconcile_state "
+                              "FROM splits WHERE tx_guid = ? ORDER BY rowid",
+                              (txn_guid,))
+
+                    print(txn_post_date, description, file=sys.stderr)
+                    for (split_guid, account, memo, action, value,
+                         reconcile_state) in c.fetchall():
+                        print(" {:9.2f}".format(value/100.0), acct_map[account],
+                              memo, file=sys.stderr)
+
+                print(match_type, file=sys.stderr)
+                print("\n", file=sys.stderr)
+
+        gnu.commit()
+
 
 def import_pay_txns(html_filename, cash_db):
     stubs = parse_mypay_html(html_filename)
@@ -209,10 +326,10 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
             # Try to find manually entered transaction that's close in
             # date with matching amount and merge with it, otherwise
             # add a new transaction.
-            m = gnu.find_closest_txn(gnu.checking_acct, date, amount,
+            m = gnu.find_closest_txn([gnu.checking_acct], date, amount,
                                      no_action=True)
             if m:
-                split_guid, split_memo, txn_post_date = m
+                split_guid, split_memo, txn_guid, txn_post_date = m
                 assert not split_memo or split_memo in ('Checking',), split_memo
                 gnu.update_split(split_guid,
                                   memo=memo,
@@ -221,9 +338,9 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
                                       date, txn_post_date),
                                   reconcile_date=reconcile_date)
             else:
-                split_guid = gnu.new_txn(gnu.checking_acct, date, amount,
-                                         memo or memo_tstr.as_string(),
-                                         reconcile_date)
+                txn_guid, split_guid = gnu.new_txn(
+                    gnu.checking_acct, date, amount,
+                    memo or memo_tstr.as_string(), reconcile_date)
 
         assert split_guid
         assert split_guid not in split_guids
@@ -858,14 +975,13 @@ def generate_paypal_memos(txns, csv_fields):
             row.override["insurance_amount"] = None
 
             # Collapse seperate date/time fields into one timestamp.
-            row.override["time"] = txn.date.strftime("%Y-%m-%dT%H:%M:%S")
+            row.override["time"] = paypal_date_str(txn.date)
             row.override["date"] = None
             row.override["time_zone"] = None
 
             # Add update date.
             if row.updated_by:
-              row.override["updated"] = (
-                  row.updated_by.txn.date.strftime("%Y-%m-%dT%H:%M:%S"))
+              row.override["updated"] = paypal_date_str(row.updated_by.txn.date)
 
             # Abbreviate transaction_id and status.
             row.override["txn"] = row.transaction_id
@@ -952,6 +1068,10 @@ def paypal_row_value(row, name):
       return row.override[name]
   elif name in row.field_idx:
       return row.row[row.field_idx[name]]
+
+
+def paypal_date_str(date):
+    return date.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 #
@@ -1650,6 +1770,12 @@ class GnuCash:
         self.expense_acct = self.acct(("Expenses",))
         self.income_acct = self.acct(("Income",))
         self.checking_acct = self.acct(( "Assets", "Current Assets", "Checking Account"))
+        self.paypal_acct = self.acct(( "Assets", "Current Assets", "Paypal"))
+        self.bank_accts = [self.checking_acct,
+                           self.acct(("Liabilities", "Chase")),
+                           self.acct(("Liabilities", "Citibank 3296")),
+                           self.acct(("Liabilities", "Citibank 6842")),
+                           self.acct(("Liabilities", "Citibank 7969"))]
 
     def commit(self):
         self.conn.cursor().execute("COMMIT")
@@ -1727,14 +1853,15 @@ class GnuCash:
         return guid
 
     def new_txn(self, acct, date, amount, memo, reconcile_date=None,
-                opening=False, imbalance=False):
+                opening=False, imbalance=False, desc=None, src_amount=None):
         if opening:
             src_acct = self.opening_acct
             description = "Opening Balance"
         elif imbalance:
             src_acct = self.imbalance_acct
             description ="Missing transactions"
-        elif amount < 0:
+        elif ((src_amount is None and amount < 0)
+              or (src_amount is not None and src_amount > 0)):
             src_acct = self.expense_acct
             description = "Withdrawal: {}".format(memo)
         else:
@@ -1749,11 +1876,11 @@ class GnuCash:
                      ("num", ""),
                      ("post_date", self.date_str(date)),
                      ("enter_date", self.date_str(date)),
-                     ("description", description)))
+                     ("description", description if desc is None else desc)))
 
         src_split = dict(txn_guid=txn_guid,
                          acct=src_acct,
-                         amount=-amount,
+                         amount=-amount if src_amount is None else src_amount,
                          memo="")
 
         dst_split = dict(txn_guid=txn_guid,
@@ -1763,7 +1890,9 @@ class GnuCash:
                          action=self.yearless_date_str(date),
                          reconcile_date=reconcile_date)
 
-        if amount < 0:
+        if src_amount == 0:
+            dst_guid = self.new_split(**dst_split)
+        elif amount < 0:
             # Reverse next two guids for test.sh backwards compatibility.
             self.force_guids.extend((self.guid(), self.guid()))
             dst_guid = self.new_split(**dst_split)
@@ -1771,7 +1900,7 @@ class GnuCash:
         else:
             src_guid = self.new_split(**src_split)
             dst_guid = self.new_split(**dst_split)
-        return dst_guid
+        return txn_guid, dst_guid
 
     def new_split(self, txn_guid, acct, amount, memo, action="",
                   reconcile_date=None):
@@ -1793,7 +1922,7 @@ class GnuCash:
         return split_guid
 
     def update_split(self, split_guid, action=None, memo=None, memo_tstr=None,
-                     reconcile_date=None, remove_txn_suffix=None):
+                     reconcile_date=None, remove_txn_suffix=None, amount=None):
         fields = []
 
         if action is not None:
@@ -1828,6 +1957,9 @@ class GnuCash:
         else:
             assert remove_txn_suffix is None
 
+        if amount is not None:
+            fields.append(("value_num", amount))
+
         if reconcile_date is not None:
             if reconcile_date:
                 fields.append(("reconcile_state", "y"))
@@ -1837,6 +1969,26 @@ class GnuCash:
                 fields.append(("reconcile_date", None))
 
         self.update("splits", "guid", split_guid, fields)
+
+    def balance_txn(self, txn_guid):
+        c = self.conn.cursor()
+        c.execute("SELECT guid, account_guid, value_num "
+                  "FROM splits WHERE tx_guid = ?", (txn_guid,))
+        value_sum = 0
+        imbalance_split = None
+        imbalance_value = None
+        for guid, account_guid, value_num in c.fetchall():
+            value_sum += value_num
+            if account_guid == self.imbalance_acct and imbalance_split is None:
+                check(imbalance_split is None)
+                imbalance_split = guid
+                imbalance_value = value_num
+        if value_sum != 0:
+            if imbalance_split is None:
+                self.new_split(txn_guid, self.imbalance_acct, -value_sum, "")
+            else:
+                self.update_split(imbalance_split,
+                                  amount=imbalance_value - value_sum)
 
     def find_matching_txn(self, acct, date, amount, memo_tstr, ignore_splits):
         """Find transaction with a split having exact or near exact matching
@@ -1900,7 +2052,8 @@ class GnuCash:
 
         return match
 
-    def find_closest_txn(self, acct, date, amount, no_action=False):
+    def find_closest_txn(self, accts, date, amount, no_action=False,
+                         no_split=None, max_days=10):
         """Find transaction with a split matching the amount and acct and
         having a close date."""
 
@@ -1908,28 +2061,37 @@ class GnuCash:
         c.execute("SELECT s.guid, s.memo, t.guid, t.post_date "
                   "FROM splits AS s "
                   "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
-                  "WHERE s.account_guid = ? AND s.value_num = ?"
-                  + (" AND s.action = ''" if no_action else ""),
-                  (acct, amount))
+                  "WHERE s.value_num = ? "
+                  + (" AND s.account_guid IN (" + ",".join("?" for _ in accts)
+                     + ") " if accts else "")
+                  + (" AND s.action = ''" if no_action else "")
+                  + (" AND NOT EXISTS(SELECT * FROM splits AS s2 "
+                     "WHERE s2.tx_guid = s.tx_guid AND s2.account_guid = ? "
+                     "AND s2.action <> '')" if no_split else ""),
+               (amount,) + tuple(accts) + ((no_split,) if no_split else ()))
 
         match = None
         closest_offset = None
         for split_guid, split_memo, txn_guid, txn_post_date_str in c.fetchall():
             txn_post_date = self.date(txn_post_date_str)
             offset = abs((txn_post_date - date).days)
-            if offset < 10 and (closest_offset is None
-                                or offset < closest_offset):
-                match = split_guid, split_memo, txn_post_date
+            if offset < max_days and (closest_offset is None
+                                      or offset < closest_offset):
+                match = split_guid, split_memo, txn_guid, txn_post_date
                 closest_offset = offset
 
         return match
 
-    def print_txns(self, header, split_filter):
+    def acct_map(self):
         acct_map = {}
         c = self.conn.cursor()
         c.execute("SELECT guid, name FROM accounts")
         for guid, name in c.fetchall():
             acct_map[guid] = name
+        return acct_map
+
+    def print_txns(self, header, split_filter):
+        acct_map = self.acct_map()
 
         c = self.conn.cursor()
         c.execute("SELECT guid, post_date, description FROM transactions "

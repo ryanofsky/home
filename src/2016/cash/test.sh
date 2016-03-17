@@ -26,7 +26,7 @@ run() {
         diff -u <(git show "$2:$SQL_FILE") <(sqlite3 _test.db <<< ".dump")
     else
         diff -u "$2" <(sqlite3 _test.db <<< ".dump")
-    fi | colordiff
+    fi | colordiff >&2
     fail=${PIPESTATUS[0]}
     if [ "$fail" != 0 ]; then
         echo "Diff failed (status $fail)."
@@ -65,7 +65,7 @@ setup file   expected-chase-memos.db.sql
 run   file   expected-chase-csv1.db.sql "$CMD"
 
 setup file   expected-chase-memos.db.sql
-run   file   expected-chase-memos.db.sql "cash.import_paypal_csv('/home/russ/store/statements/paypal','_test.db')" > _test.out.txt
+run   file   expected-paypal-import.db.sql "cash.import_paypal_csv('/home/russ/store/statements/paypal','_test.db')" > _test.out.txt
 if ! diff -q  expected-paypal.txt _test.out.txt; then
    diff -u expected-paypal.txt _test.out.txt | colordiff
    echo Fail
