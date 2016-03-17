@@ -181,12 +181,13 @@ def import_paypal_csv(csv_dir, cash_db):
             # No existing transaction found. Create new transaction and splits.
             if txn_guid is None:
                 txn_guid, split_guid = gnu.new_txn(
-                    gnu.paypal_acct, txn.date.date(),
-                    txn_value,
-                    src_amount=(0 if main_row.void or main_row is bank_row
-                                else -main_row.net_amount),
+                    date=txn.date.date(),
+                    desc="{}: {}".format(main_row.type, main_row.name),
                     memo=txn.memo.as_string(),
-                    desc="{}: {}".format(main_row.type, main_row.name))
+                    acct=gnu.paypal_acct,
+                    amount=txn_value,
+                    src_amount=(0 if main_row.void or main_row is bank_row
+                                else -main_row.net_amount))
                 gnu.balance_txn(txn_guid)
 
             # Matching transaction was found but need to add or update
@@ -297,14 +298,25 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
         if reconcile_date is not None:
             prev_balance = balance - amount
             if acct_balance is None:
-                gnu.new_txn(gnu.checking_acct, date, prev_balance,
-                            "", reconcile_date, opening=True)
+                gnu.new_txn(
+                    date=date,
+                    desc="Opening Balance",
+                    memo="",
+                    acct=gnu.checking_acct,
+                    amount=prev_balance,
+                    src_acct=gnu.opening_acct,
+                    reconcile_date=reconcile_date)
             elif prev_balance != acct_balance:
                 print ("Imbalance:", reconcile_date, date, prev_balance,
                        acct_balance)
-                gnu.new_txn(gnu.checking_acct, date,
-                            prev_balance - acct_balance, "", reconcile_date,
-                            imbalance=True)
+                gnu.new_txn(
+                    date=date,
+                    desc="Missing transactions",
+                    memo="",
+                    acct=gnu.checking_acct,
+                    amount=prev_balance - acct_balance,
+                    src_acct=gnu.imbalance_acct,
+                    reconcile_date=reconcile_date)
 
         # If a pre-existing imported txn was found, update it.
         m = gnu.find_matching_txn(gnu.checking_acct, date, amount, tstr,
@@ -339,8 +351,13 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
                                   reconcile_date=reconcile_date)
             else:
                 txn_guid, split_guid = gnu.new_txn(
-                    gnu.checking_acct, date, amount,
-                    memo or memo_tstr.as_string(), reconcile_date)
+                    date=date,
+                    desc="{}: {}".format("Withdrawal" if amount <= 0 else "Deposit",
+                                         memo or memo_tstr.as_string(tags=False)),
+                    memo=memo or memo_tstr.as_string(),
+                    acct=gnu.checking_acct,
+                    amount=amount,
+                    reconcile_date=reconcile_date)
 
         assert split_guid
         assert split_guid not in split_guids
@@ -1875,21 +1892,12 @@ class GnuCash:
                      ("placeholder", 0)))
         return guid
 
-    def new_txn(self, acct, date, amount, memo, reconcile_date=None,
-                opening=False, imbalance=False, desc=None, src_amount=None):
-        if opening:
-            src_acct = self.opening_acct
-            description = "Opening Balance"
-        elif imbalance:
-            src_acct = self.imbalance_acct
-            description ="Missing transactions"
-        elif ((src_amount is None and amount < 0)
-              or (src_amount is not None and src_amount > 0)):
-            src_acct = self.expense_acct
-            description = "Withdrawal: {}".format(memo)
-        else:
-            src_acct = self.income_acct
-            description = "Deposit: {}".format(memo)
+    def new_txn(self, date, desc, memo, acct, amount, src_acct=None,
+                src_amount=None, reconcile_date=None):
+        if src_amount is None:
+            src_amount = -amount
+        if src_acct is None:
+            src_acct = self.income_acct if src_amount < 0 else self.expense_acct
 
         txn_guid = self.guid()
 
@@ -1903,7 +1911,7 @@ class GnuCash:
 
         src_split = dict(txn_guid=txn_guid,
                          acct=src_acct,
-                         amount=-amount if src_amount is None else src_amount,
+                         amount=src_amount,
                          memo="")
 
         dst_split = dict(txn_guid=txn_guid,
@@ -1915,7 +1923,7 @@ class GnuCash:
 
         if src_amount == 0:
             dst_guid = self.new_split(**dst_split)
-        elif amount < 0:
+        elif src_amount > 0:
             # Reverse next two guids for test.sh backwards compatibility.
             self.force_guids.extend((self.guid(), self.guid()))
             dst_guid = self.new_split(**dst_split)
