@@ -112,120 +112,7 @@ def import_paypal_csv(csv_dir, cash_db):
 
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, csv_files[-1])
-        acct_map = gnu.acct_map()
-
-        for txn in txns:
-            # Set some useful variables from txn.
-            main_row = txn.rows[txn.main_row]
-            bank_row = None
-            for row in txn.rows:
-                if row.bank_type or row.credit_type:
-                    check(bank_row is None)
-                    bank_row = row
-            action = gnu.yearless_date_str(txn.date)
-            txn_value = txn.ending_balance["USD"] - txn.starting_balance["USD"]
-
-            # Look for existing paypal split entry. If found make sure
-            # it is up to date and move on.
-            split_guid = None
-            txn_guid = None
-            match_type = None
-            c = gnu.conn.cursor()
-            c.execute("SELECT s.guid, s.memo, s.value_num, t.guid "
-                      "FROM splits AS s "
-                      "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
-                      "WHERE s.account_guid = ? AND s.action = ? "
-                      "    AND s.memo LIKE '%time=' || ? || '%'",
-                      (gnu.paypal_acct, action, paypal_date_str(txn.date)))
-            rows = c.fetchall()
-            if rows:
-                match_type = "paypal memo"
-                check(len(rows) == 1)
-                split_guid, split_memo, split_value, txn_guid = rows[0]
-                check(split_memo == txn.memo.as_string())
-                check(split_value == txn_value)
-
-            # Need to create paypal split. Look for existing bank
-            # transaction to attach to.
-            if (txn_guid is None and bank_row and not bank_row.void
-                and bank_row.net_amount):
-                m = gnu.find_closest_txn(gnu.bank_accts, txn.date.date(),
-                                         -bank_row.net_amount,
-                                         no_split=gnu.paypal_acct,
-                                         max_days=4)
-                if m:
-                    match_type = "bank account"
-                    txn_guid = m[2]
-
-            # Need to create paypal split. Look for existing expense
-            # transaction to attach to.
-            if (txn_guid is None and main_row and not main_row.void
-                and main_row.net_amount):
-                m = gnu.find_closest_txn([], txn.date.date(),
-                                         -main_row.net_amount,
-                                         no_split=gnu.paypal_acct,
-                                         max_days=4)
-                if m:
-                    match_type = "expense account"
-                    txn_guid = m[2]
-
-            # No existing transaction found. Create new transaction and splits.
-            if txn_guid is None:
-                txn_guid, split_guid = gnu.new_txn(
-                    date=txn.date.date(),
-                    desc="{}: {}".format(main_row.type, main_row.name),
-                    memo=txn.memo.as_string(),
-                    acct=gnu.paypal_acct,
-                    amount=txn_value,
-                    src_amount=(0 if main_row.void or main_row is bank_row
-                                else -main_row.net_amount))
-                gnu.balance_txn(txn_guid)
-
-            # Matching transaction was found but need to add or update
-            # the paypal split.
-            elif split_guid is None:
-                c.execute("SELECT guid, memo, action "
-                          "FROM splits WHERE tx_guid = ? AND account_guid = ?",
-                          (txn_guid,gnu.paypal_acct))
-                rows = c.fetchall()
-                if rows:
-                    check(len(rows) == 1)
-                    split_guid, split_memo, split_action = rows[0]
-                    check(not split_memo)
-                    check(not split_action)
-                    gnu.update_split(split_guid, action, memo_tstr=txn.memo,
-                                     amount=txn_value)
-                else:
-                    gnu.new_split(txn_guid, gnu.paypal_acct,
-                                  txn_value,
-                                  memo=txn.memo.as_string(),
-                                  action=action)
-                gnu.balance_txn(txn_guid)
-
-            if 0:
-                if txn_guid:
-                    c.execute("SELECT description, post_date FROM transactions "
-                              "WHERE guid = ?",
-                              (txn_guid,))
-                    rows = c.fetchall()
-                    check(len(rows) == 1)
-                    description, post_date_str = rows[0]
-                    txn_post_date = gnu.date(post_date_str)
-
-                    c.execute("SELECT guid, account_guid, memo, action, "
-                              "value_num, reconcile_state "
-                              "FROM splits WHERE tx_guid = ? ORDER BY rowid",
-                              (txn_guid,))
-
-                    print(txn_post_date, description, file=sys.stderr)
-                    for (split_guid, account, memo, action, value,
-                         reconcile_state) in c.fetchall():
-                        print(" {:9.2f}".format(value/100.0), acct_map[account],
-                              memo, file=sys.stderr)
-
-                print(match_type, file=sys.stderr)
-                print("\n", file=sys.stderr)
-
+        merge_paypal_txns(gnu, txns)
         gnu.commit()
 
 
@@ -723,6 +610,91 @@ def fragments_split_columns(fragments, *columns):
             col_idx += 1
         ret[col_idx].append(f)
     return ret
+
+#
+# Paypal gnucash import functions.
+#
+
+def merge_paypal_txns(gnu, txns):
+    for txn in txns:
+        txn_value = txn.ending_balance["USD"] - txn.starting_balance["USD"]
+        action = gnu.yearless_date_str(txn.date)
+
+        # Look for existing paypal split entry. If found make sure
+        # it is up to date and move on.
+        c = gnu.conn.cursor()
+        c.execute("SELECT s.guid, s.memo, s.value_num, t.guid "
+                  "FROM splits AS s "
+                  "INNER JOIN transactions AS t ON (t.guid = s.tx_guid) "
+                  "WHERE s.account_guid = ? AND s.action = ? "
+                  "    AND s.memo LIKE '%time=' || ? || '%'",
+                  (gnu.paypal_acct, action, paypal_date_str(txn.date)))
+        rows = c.fetchall()
+        if rows:
+            check(len(rows) == 1)
+            split_guid, split_memo, split_value, txn_guid = rows[0]
+            check(split_memo == txn.memo.as_string())
+            check(split_value == txn_value)
+            continue
+
+        # Need to create paypal split. Look for existing bank
+        # transaction to attach paypal split to.
+        txn_guid = None
+        bank_row, = [r for r in txn.rows
+                     if r.bank_type or r.credit_type] or [None]
+        if (txn_guid is None and bank_row and not bank_row.void
+            and bank_row.net_amount):
+            m = gnu.find_closest_txn(gnu.bank_accts, txn.date.date(),
+                                      -bank_row.net_amount,
+                                      no_split=gnu.paypal_acct,
+                                      max_days=4)
+            if m:
+                txn_guid = m[2]
+
+        # If no matching bank transaction, looking matcihng expense
+        # transaction to attach paypal split to.
+        main_row = txn.rows[txn.main_row]
+        if (txn_guid is None and main_row and not main_row.void
+            and main_row.net_amount):
+            m = gnu.find_closest_txn([], txn.date.date(),
+                                      -main_row.net_amount,
+                                      no_split=gnu.paypal_acct,
+                                      max_days=4)
+            if m:
+                txn_guid = m[2]
+
+        # No existing transaction found. Create new transaction and splits.
+        if txn_guid is None:
+            txn_guid, split_guid = gnu.new_txn(
+                date=txn.date.date(),
+                desc="{}: {}".format(main_row.type, main_row.name),
+                memo=txn.memo.as_string(),
+                acct=gnu.paypal_acct,
+                amount=txn_value,
+                src_amount=(0 if main_row.void or main_row is bank_row
+                            else -main_row.net_amount))
+            gnu.balance_txn(txn_guid)
+
+        # Existing transaction was found but need to add or update a
+        # paypal split inside it.
+        else:
+            c.execute("SELECT guid, memo, action "
+                      "FROM splits WHERE tx_guid = ? AND account_guid = ?",
+                      (txn_guid,gnu.paypal_acct))
+            rows = c.fetchall()
+            if rows:
+                check(len(rows) == 1)
+                split_guid, split_memo, split_action = rows[0]
+                check(not split_memo)
+                check(not split_action)
+                gnu.update_split(split_guid, action, memo_tstr=txn.memo,
+                                 amount=txn_value)
+            else:
+                gnu.new_split(txn_guid, gnu.paypal_acct,
+                              txn_value,
+                              memo=txn.memo.as_string(),
+                              action=action)
+            gnu.balance_txn(txn_guid)
 
 
 #
