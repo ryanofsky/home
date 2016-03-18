@@ -187,6 +187,14 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", ("Laura (paypal)",))
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work")
         move_expense(gnu, txns, acct_names, acct_guids, "%google *music%", "Recurring: Google Play Music")
+        move_expense(gnu, txns, acct_names, acct_guids, "%south brooklyn weightli%", "Recurring: SBWC")
+        move_expense(gnu, txns, acct_names, acct_guids, "%linode.com%", "Recurring: Linode")
+        move_expense(gnu, txns, acct_names, acct_guids, "%emilia sherifova%", "Recurring: Apartment Rent")
+        move_expense(gnu, txns, acct_names, acct_guids, "%conexis%", "Recurring: COBRA")
+        move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited")
+        move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox")
+        move_expense(gnu, txns, acct_names, acct_guids, "%newyorktime%", "Recurring: New York Times")
+        move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", None)
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
@@ -231,12 +239,15 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, name, variants=()):
         desc, = rows[0]
 
         # Fix up transaction description
-        if (desc.startswith("Withdrawal: ")
-            or desc.startswith("Deposit: ")
-            or desc.startswith("Credit: ")
-            or desc.startswith("Debit: ")
-            or desc.startswith("Payment Received: ")
-            or desc.startswith("Payment Sent: ")):
+        if variants is None:
+            new_desc = desc
+        elif (desc.startswith("Withdrawal: ")
+              or desc.startswith("Deposit: ")
+              or desc.startswith("Credit: ")
+              or desc.startswith("Debit: ")
+              or desc.startswith("Payment Received: ")
+              or desc.startswith("Payment Sent: ")
+              or desc.startswith("Subscription Payment Sent: ")):
             new_desc = acct_parts[-1]
         else:
             for variant in variants:
