@@ -149,113 +149,7 @@ def cleanup(cash_db):
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, "cleanup")
 
-        # Manually mixed up mandel/gapps transactions.
-        gapps_split, gapps_memo, mandel_txn = find_split(
-            gnu, datetime.date(2015, 2, 11), "%Apps_Yanof%", -1000)
-        mandel_split, mandel_memo, gapps_txn = find_split(
-            gnu, datetime.date(2015, 2, 13), "%Mandel Vision%", -1000)
-        gapps_memo = TaggedStr.parse(gapps_memo, check_tags=False)
-        mandel_memo = TaggedStr.parse(mandel_memo, check_tags=False)
-        gnu.update_split(mandel_split, txn=mandel_txn)
-        gnu.update_split(gapps_split, txn=gapps_txn)
-        gnu.update_split(gapps_split, memo_tstr=gapps_memo,
-                         remove_txn_suffix=mandel_memo.as_string(tags=False))
-
-        # Categorize expenses
-        auto_acct = gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
-        auto_acct = gnu.acct(("Expenses", "Auto", "Recurring"),
-                             acct_type="EXPENSE")
-        key_foods_acct = gnu.acct(("Expenses", "Auto", "Key Foods"),
-                                  acct_type="EXPENSE")
-        ctown_acct = gnu.acct(("Expenses", "Auto", "C-Town"),
-                               acct_type="EXPENSE")
-        target_acct = gnu.acct(("Expenses", "Auto", "Target"),
-                               acct_type="EXPENSE")
-        cvs_acct = gnu.acct(("Expenses", "Auto", "CVS"),
-                             acct_type="EXPENSE")
-        laura_acct = gnu.acct(("Expenses", "Auto", "Laura"),
-                               acct_type="EXPENSE")
-        gapps_acct = gnu.acct(("Expenses", "Auto", "Recurring",
-                               "Google Apps for Work"),
-                               acct_type="EXPENSE")
-        gmusic_acct = gnu.acct(("Expenses", "Auto", "Recurring",
-                                "Google Play Music"),
-                                 acct_type="EXPENSE")
-
-        acct_name = gnu.acct_map(full=True)
-        txns = set()
-
-        def key_foods_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal"):
-               new_desc = "Key Foods"
-            elif desc == "Key Food":
-               new_desc = "Key Foods"
-            elif desc.startswith("Key Food:"):
-               new_desc = "Key Foods:" + desc[len("Key Food:"):]
-            check(new_desc == "Key Foods" or new_desc.startswith("Key Foods"))
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%key foods%",
-                                 key_foods_acct, key_foods_desc))
-
-        def cvs_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal"):
-               new_desc = "CVS"
-            check(new_desc == "CVS" or new_desc.startswith("CVS:"))
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%cvs%", cvs_acct, cvs_desc))
-
-        def ctown_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal"):
-               new_desc = "C-Town"
-            check(new_desc == "C-Town" or new_desc.startswith("C-Town:"))
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%c-town%", ctown_acct, ctown_desc))
-
-        def target_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal"):
-               new_desc = "Target"
-            check(new_desc == "Target" or new_desc.startswith("Target:"))
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%targetcorpo%", target_acct, target_desc))
-
-        def laura_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal:") or desc in (
-                    "Payment Received: Lauren Jennings",
-                    "Payment Sent: Lauren Jennings"):
-               new_desc = "Laura (paypal)"
-            check(new_desc == "Laura (paypal)", desc)
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%laurenjenni%", laura_acct, laura_desc))
-
-        def gapps_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal:") or desc.startswith("Deposit:"):
-               new_desc = "Google Apps for Work: yanofsky.org"
-            check(new_desc == "Google Apps for Work: yanofsky.org", desc)
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%apps_yanof%", gapps_acct, gapps_desc))
-
-        def gmusic_desc(desc):
-            new_desc = desc
-            if desc.startswith("Withdrawal:"):
-               new_desc = "Google Play Music"
-            check(new_desc == "Google Play Music", desc)
-            return new_desc
-
-        txns.update(move_expense(gnu, acct_name, "%google *music%", gmusic_acct, gmusic_desc))
-
-        # Delete old cash imbalance txn.
+        # Manually delete old cash imbalance txn.
         c = gnu.conn.cursor()
         c.execute("SELECT guid FROM transactions "
                   "WHERE description = ? AND post_date = ?",
@@ -267,6 +161,34 @@ def cleanup(cash_db):
         delete_split(gnu, txn, gnu.cash_acct, "", "", -400000)
         delete_txn(gnu, txn)
 
+        # Manually fix mixed up mandel/gapps transactions.
+        gapps_split, gapps_memo, mandel_txn = find_split(
+            gnu, datetime.date(2015, 2, 11), "%Apps_Yanof%", -1000)
+        mandel_split, mandel_memo, gapps_txn = find_split(
+            gnu, datetime.date(2015, 2, 13), "%Mandel Vision%", -1000)
+        gapps_memo = TaggedStr.parse(gapps_memo, check_tags=False)
+        mandel_memo = TaggedStr.parse(mandel_memo, check_tags=False)
+        gnu.update_split(mandel_split, txn=mandel_txn)
+        gnu.update_split(gapps_split, txn=gapps_txn)
+        gnu.update_split(gapps_split, memo_tstr=gapps_memo,
+                         remove_txn_suffix=mandel_memo.as_string(tags=False))
+
+
+        # Categorize expenses
+        txns = set()
+        gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
+        gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
+        acct_names = gnu.acct_map(full=True)
+        acct_guids = {name: guid for guid, name in acct_names.items()}
+        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Key Foods", ("Key Food",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "CVS")
+        move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "C-Town")
+        move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Target")
+        move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", ("Laura (paypal)",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work")
+        move_expense(gnu, txns, acct_names, acct_guids, "%google *music%", "Recurring: Google Play Music")
+
+        # Print uncategorized
         gnu.print_txns("== Unmatched ==",
                        lambda txn_guid, **_: txn_guid not in txns)
 
@@ -285,7 +207,15 @@ def find_split(gnu, txn_date, split_memo, amount):
     return rows[0]
 
 
-def move_expense(gnu, acct_name, pattern, acct, new_desc_cb):
+def move_expense(gnu, txns, acct_names, acct_guids, pattern, name, variants=()):
+    acct_parts = ("Expenses", "Auto") + tuple(name.split(": "))
+    acct_name = ": ".join(acct_parts)
+    if acct_name in acct_guids:
+        acct = acct_guids[acct_name]
+    else:
+        acct = acct_guids[acct_name] = gnu.acct(acct_parts, acct_type="EXPENSE")
+        acct_names[acct] = acct_name
+
     txns = set()
     c = gnu.conn.cursor()
     c.execute("SELECT guid, tx_guid FROM splits "
@@ -300,7 +230,26 @@ def move_expense(gnu, acct_name, pattern, acct, new_desc_cb):
         rows = list(d.fetchall())
         check(len(rows) == 1)
         desc, = rows[0]
-        new_desc = new_desc_cb(desc)
+
+        # Fix up transaction description
+        if (desc.startswith("Withdrawal: ")
+            or desc.startswith("Deposit: ")
+            or desc.startswith("Credit: ")
+            or desc.startswith("Debit: ")
+            or desc.startswith("Payment Received: ")
+            or desc.startswith("Payment Sent: ")):
+            new_desc = acct_parts[-1]
+        else:
+            for variant in variants:
+                if desc == variant:
+                    new_desc = acct_parts[-1]
+                    break
+                if desc.startswith(variant + ":"):
+                    new_desc = acct_parts[-1] + desc[len(variant):]
+                    break
+            else:
+                check(desc == acct_parts[-1] or desc.startswith(acct_parts[-1] + ":"), desc)
+                new_desc = desc
 
         if new_desc != desc:
             gnu.update("transactions", "guid", txn,
@@ -312,7 +261,7 @@ def move_expense(gnu, acct_name, pattern, acct, new_desc_cb):
         rows = list(d.fetchall())
         expense_split = None
         for other_split, other_acct in rows:
-            n = acct_name[other_acct]
+            n = acct_names[other_acct]
             if n.startswith("Expenses: ") or n == "Expenses" or n == "Income":
                 check(expense_split is None)
                 expense_split = other_split
