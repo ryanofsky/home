@@ -149,6 +149,19 @@ def cleanup(cash_db):
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, "cleanup")
 
+        # Manually mixed up mandel/gapps transactions.
+        gapps_split, gapps_memo, mandel_txn = find_split(
+            gnu, datetime.date(2015, 2, 11), "%Apps_Yanof%", -1000)
+        mandel_split, mandel_memo, gapps_txn = find_split(
+            gnu, datetime.date(2015, 2, 13), "%Mandel Vision%", -1000)
+        gapps_memo = TaggedStr.parse(gapps_memo, check_tags=False)
+        mandel_memo = TaggedStr.parse(mandel_memo, check_tags=False)
+        gnu.update_split(mandel_split, txn=mandel_txn)
+        gnu.update_split(gapps_split, txn=gapps_txn)
+        gnu.update_split(gapps_split, memo_tstr=gapps_memo,
+                         remove_txn_suffix=mandel_memo.as_string(tags=False))
+
+        # Categorize expenses
         auto_acct = gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         key_foods_acct = gnu.acct(("Expenses", "Auto", "Key Foods"),
                                   acct_type="EXPENSE")
@@ -207,6 +220,20 @@ def cleanup(cash_db):
 
         gnu.print_txns("== Unmatched ==",
                        lambda txn_guid, **_: txn_guid not in txns)
+
+
+def find_split(gnu, txn_date, split_memo, amount):
+    c = gnu.conn.cursor()
+    c.execute("SELECT s.guid, s.memo, t.guid "
+              "FROM splits AS s, transactions AS t "
+              "WHERE t.guid = s.tx_guid AND t.post_date = ? "
+              "AND s.memo LIKE ? AND s.value_num = ? "
+              "AND s.value_denom = 100 AND s.quantity_num = ? "
+              "AND s.quantity_denom = 100",
+              (gnu.date_str(txn_date), split_memo, amount, amount))
+    rows = list(c.fetchall())
+    check(len(rows) == 1, rows)
+    return rows[0]
 
 
 def move_expense(gnu, acct_name, pattern, acct, new_desc_cb):
@@ -2107,7 +2134,8 @@ class GnuCash:
         return split_guid
 
     def update_split(self, split_guid, action=None, memo=None, memo_tstr=None,
-                     reconcile_date=None, remove_txn_suffix=None, amount=None):
+                     reconcile_date=None, remove_txn_suffix=None, amount=None,
+                     txn=None):
         fields = []
 
         if action is not None:
@@ -2152,6 +2180,9 @@ class GnuCash:
             else:
                 fields.append(("reconcile_state", "n"))
                 fields.append(("reconcile_date", None))
+
+        if txn is not None:
+            fields.append(("tx_guid", txn))
 
         self.update("splits", "guid", split_guid, fields)
 
@@ -2327,8 +2358,9 @@ class GnuCash:
                     header = None
                 print(post_date, guid[:7], description)
                 for split, account, memo, action, value in splits:
-                  print(" {:9.2f} {} {}{}{}".format(
+                  print(" {:9.2f} {} {}{}{}{}{}".format(
                       value/100.0, split[:7], acct_map.get(account, account),
+                      action and "--", action,
                       memo and " -- ", memo))
 
     @staticmethod
