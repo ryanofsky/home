@@ -139,6 +139,12 @@ def import_pay_txns(html_filename, cash_db):
         gnu.commit()
 
 
+def dump(cash_db):
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, "")
+        gnu.print_txns("== All transactions ==",  lambda **_: True)
+
+
 def test_parse_yearless_dates():
     txn_post_date = datetime.date(2013, 1, 1)
     while txn_post_date <= datetime.date(2014, 1, 1):
