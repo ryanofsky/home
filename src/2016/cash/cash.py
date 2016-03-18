@@ -152,12 +152,14 @@ def cleanup(cash_db):
         auto_acct = gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         key_foods_acct = gnu.acct(("Expenses", "Auto", "Key Foods"),
                                   acct_type="EXPENSE")
+        cvs_acct = gnu.acct(("Expenses", "Auto", "CVS"),
+                             acct_type="EXPENSE")
         acct_name = gnu.acct_map(full=True)
+        txns = set()
 
         c = gnu.conn.cursor()
         c.execute("SELECT guid, tx_guid FROM splits "
                   "WHERE lower(memo) LIKE ?", ("%key foods%",))
-        txns = set()
         for split, txn, in c.fetchall():
             txns.add(txn)
             d = gnu.conn.cursor()
@@ -192,6 +194,40 @@ def cleanup(cash_db):
                 check(n.startswith("Expenses: ") or n == "Expenses")
                 gnu.update("splits", "guid", expense_split,
                            (("account_guid", key_foods_acct),))
+
+
+
+        c.execute("SELECT guid, tx_guid FROM splits "
+                  "WHERE lower(memo) LIKE ?", ("%cvs%",))
+        for split, txn, in c.fetchall():
+            txns.add(txn)
+
+            # Fix txn desc
+            d.execute("SELECT description FROM transactions "
+                      "WHERE guid = ?", (txn,))
+            rows = list(d.fetchall())
+            check(len(rows) == 1)
+            desc, = rows[0]
+            new_desc = desc
+            if desc.startswith("Withdrawal"):
+               new_desc = "CVS"
+            check(new_desc == "CVS" or new_desc.startswith("CVS:"))
+
+            if new_desc != desc:
+                gnu.update("transactions", "guid", txn,
+                           (("description", new_desc),))
+
+            # Fix expense account
+            d.execute("SELECT guid, account_guid FROM splits "
+                      "WHERE tx_guid = ? AND guid <> ?", (txn, split))
+            rows = list(d.fetchall())
+            check(len(rows) == 1)
+            expense_split, expense_acct = rows[0]
+            if expense_acct != key_foods_acct:
+                n = acct_name[expense_acct]
+                check(n.startswith("Expenses: ") or n == "Expenses")
+                gnu.update("splits", "guid", expense_split,
+                           (("account_guid", cvs_acct),))
 
         # Delete old cash imbalance txn.
         c.execute("SELECT guid FROM transactions "
