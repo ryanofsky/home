@@ -216,7 +216,6 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, name, variants=()):
         acct = acct_guids[acct_name] = gnu.acct(acct_parts, acct_type="EXPENSE")
         acct_names[acct] = acct_name
 
-    txns = set()
     c = gnu.conn.cursor()
     c.execute("SELECT guid, tx_guid FROM splits "
               "WHERE lower(memo) LIKE ?", (pattern,))
@@ -270,8 +269,6 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, name, variants=()):
         if expense_acct != acct:
             gnu.update("splits", "guid", expense_split,
                         (("account_guid", acct),))
-
-    return txns
 
 
 def delete_split(gnu, txn, acct, memo, action, amount):
