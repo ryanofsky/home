@@ -193,8 +193,38 @@ def cleanup(cash_db):
                 gnu.update("splits", "guid", expense_split,
                            (("account_guid", key_foods_acct),))
 
-        gnu.print_txns("== Unmatched ==", lambda txn_guid, **_: txn_guid not in txns)
+        # Delete old cash imbalance txn.
+        c.execute("SELECT guid FROM transactions "
+                  "WHERE description = ? AND post_date = ?",
+                  ("Cash", gnu.date_str(datetime.date(2020,1,1))))
+        rows = list(c.fetchall())
+        check(len(rows) == 1)
+        txn, = rows[0]
+        delete_split(gnu, txn, gnu.expense_acct, "", "", 400000)
+        delete_split(gnu, txn, gnu.cash_acct, "", "", -400000)
+        delete_txn(gnu, txn)
 
+        gnu.print_txns("== Unmatched ==",
+                       lambda txn_guid, **_: txn_guid not in txns)
+
+
+def delete_split(gnu, txn, acct, memo, action, amount):
+    c = gnu.conn.cursor()
+    c.execute("DELETE FROM splits WHERE tx_guid = ? AND account_guid = ? "
+              "AND memo = ? AND action = ? AND value_num = ? "
+              "AND value_denom = 100 AND quantity_num = ? "
+              "AND quantity_denom = 100 AND lot_guid IS NULL",
+              (txn, acct, memo, action, amount, amount))
+    check(c.rowcount == 1)
+
+
+def delete_txn(gnu, txn):
+    c = gnu.conn.cursor()
+    c.execute("SELECT * FROM splits WHERE tx_guid = ?", (txn,))
+    rows = list(c.fetchall())
+    check(len(rows) == 0, rows)
+    c.execute("DELETE FROM transactions WHERE guid = ?", (txn,))
+    check(c.rowcount == 1)
 
 def test_parse_yearless_dates():
     txn_post_date = datetime.date(2013, 1, 1)
@@ -1899,6 +1929,7 @@ class GnuCash:
                            self.acct(("Liabilities", "Chase")),
                            self.acct(("Liabilities", "Citibank 3296")),
                            self.acct(("Liabilities", "Citibank 7969"))]
+        self.cash_acct = self.acct(("Assets", "Current Assets", "Cash"))
 
     def commit(self):
         self.conn.cursor().execute("COMMIT")
@@ -2223,7 +2254,7 @@ class GnuCash:
         return acct_map
 
     def print_txns(self, header, split_filter):
-        acct_map = self.acct_map()
+        acct_map = self.acct_map(True)
 
         c = self.conn.cursor()
         c.execute("SELECT guid, post_date, description FROM transactions "
@@ -2256,7 +2287,9 @@ class GnuCash:
                     header = None
                 print(post_date, description)
                 for account, memo, action, value in splits:
-                  print(" {:9.2f}".format(value/100.0), acct_map[account], memo)
+                  print(" {:9.2f} {}{}{}".format(
+                      value/100.0, acct_map.get(account, account),
+                      memo and " -- ", memo))
 
     @staticmethod
     def date(date_str):
