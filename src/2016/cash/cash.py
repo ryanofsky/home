@@ -174,6 +174,9 @@ def cleanup(cash_db):
         gapps_acct = gnu.acct(("Expenses", "Auto", "Recurring",
                                "Google Apps for Work"),
                                acct_type="EXPENSE")
+        gmusic_acct = gnu.acct(("Expenses", "Auto", "Recurring",
+                                "Google Play Music"),
+                                 acct_type="EXPENSE")
 
         acct_name = gnu.acct_map(full=True)
         txns = set()
@@ -220,6 +223,15 @@ def cleanup(cash_db):
             return new_desc
 
         txns.update(move_expense(gnu, acct_name, "%apps_yanof%", gapps_acct, gapps_desc))
+
+        def gmusic_desc(desc):
+            new_desc = desc
+            if desc.startswith("Withdrawal:"):
+               new_desc = "Google Play Music"
+            check(new_desc == "Google Play Music", desc)
+            return new_desc
+
+        txns.update(move_expense(gnu, acct_name, "%google *music%", gmusic_acct, gmusic_desc))
 
         # Delete old cash imbalance txn.
         c = gnu.conn.cursor()
