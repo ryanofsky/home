@@ -52,10 +52,10 @@ run() {
     if test -z "$expected"; then expected="$name"; fi
 
     mkdir -p _test
+    dump "$expected" "$name.expected"
     dump "$input"    "$name.input"
     python3.5 -c "import cash; $cmd"
     dump ""          "$name.output"
-    dump "$expected" "$name.expected"
     compare "_test/$name.expected.txt" "_test/$name.output.txt"
     compare "_test/$name.expected.sql" "_test/$name.output.sql"
 }
