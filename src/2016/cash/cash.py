@@ -154,6 +154,8 @@ def cleanup(cash_db):
                                   acct_type="EXPENSE")
         cvs_acct = gnu.acct(("Expenses", "Auto", "CVS"),
                              acct_type="EXPENSE")
+        laura_acct = gnu.acct(("Expenses", "Auto", "Laura"),
+                               acct_type="EXPENSE")
         acct_name = gnu.acct_map(full=True)
         txns = set()
 
@@ -179,6 +181,17 @@ def cleanup(cash_db):
             return new_desc
 
         txns.update(move_expense(gnu, acct_name, "%cvs%", cvs_acct, cvs_desc))
+
+        def laura_desc(desc):
+            new_desc = desc
+            if desc.startswith("Withdrawal:") or desc in (
+                    "Payment Received: Lauren Jennings",
+                    "Payment Sent: Lauren Jennings"):
+               new_desc = "Laura (paypal)"
+            check(new_desc == "Laura (paypal)", desc)
+            return new_desc
+
+        txns.update(move_expense(gnu, acct_name, "%laurenjenni%", laura_acct, laura_desc))
 
         # Delete old cash imbalance txn.
         c = gnu.conn.cursor()
@@ -221,11 +234,15 @@ def move_expense(gnu, acct_name, pattern, acct, new_desc_cb):
         d.execute("SELECT guid, account_guid FROM splits "
                   "WHERE tx_guid = ? AND guid <> ?", (txn, split))
         rows = list(d.fetchall())
-        check(len(rows) == 1)
-        expense_split, expense_acct = rows[0]
+        expense_split = None
+        for other_split, other_acct in rows:
+            n = acct_name[other_acct]
+            if n.startswith("Expenses: ") or n == "Expenses" or n == "Income":
+                check(expense_split is None)
+                expense_split = other_split
+                expense_acct = other_acct
+        check(expense_split is not None, rows)
         if expense_acct != acct:
-            n = acct_name[expense_acct]
-            check(n.startswith("Expenses: ") or n == "Expenses")
             gnu.update("splits", "guid", expense_split,
                         (("account_guid", acct),))
 
@@ -2294,7 +2311,7 @@ class GnuCash:
             splits = []
             for split_guid, account, memo, action, value, reconcile_state in \
                 d.fetchall():
-                splits.append((account, memo, action, value))
+                splits.append((split_guid, account, memo, action, value))
                 if split_filter(txn_guid=guid, split_guid=split_guid,
                                 account=account,
                                 memo=memo, action=action, value=value,
@@ -2308,10 +2325,10 @@ class GnuCash:
                 if header:
                     print(header)
                     header = None
-                print(post_date, description)
-                for account, memo, action, value in splits:
-                  print(" {:9.2f} {}{}{}".format(
-                      value/100.0, acct_map.get(account, account),
+                print(post_date, guid[:7], description)
+                for split, account, memo, action, value in splits:
+                  print(" {:9.2f} {} {}{}{}".format(
+                      value/100.0, split[:7], acct_map.get(account, account),
                       memo and " -- ", memo))
 
     @staticmethod
