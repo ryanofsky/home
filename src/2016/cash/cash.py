@@ -169,6 +169,8 @@ def cleanup(cash_db):
                                   acct_type="EXPENSE")
         ctown_acct = gnu.acct(("Expenses", "Auto", "C-Town"),
                                acct_type="EXPENSE")
+        target_acct = gnu.acct(("Expenses", "Auto", "Target"),
+                               acct_type="EXPENSE")
         cvs_acct = gnu.acct(("Expenses", "Auto", "CVS"),
                              acct_type="EXPENSE")
         laura_acct = gnu.acct(("Expenses", "Auto", "Laura"),
@@ -214,6 +216,15 @@ def cleanup(cash_db):
             return new_desc
 
         txns.update(move_expense(gnu, acct_name, "%c-town%", ctown_acct, ctown_desc))
+
+        def target_desc(desc):
+            new_desc = desc
+            if desc.startswith("Withdrawal"):
+               new_desc = "Target"
+            check(new_desc == "Target" or new_desc.startswith("Target:"))
+            return new_desc
+
+        txns.update(move_expense(gnu, acct_name, "%targetcorpo%", target_acct, target_desc))
 
         def laura_desc(desc):
             new_desc = desc
