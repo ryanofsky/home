@@ -199,6 +199,10 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited")
         move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox")
         move_expense(gnu, txns, acct_names, acct_guids, "%newyorktime%", "Recurring: New York Times")
+        move_expense(gnu, txns, acct_names, acct_guids, "%soylent%", "Recurring: Soylent")
+        move_expense(gnu, txns, acct_names, acct_guids, "%t-mobile%", "Recurring: T-Mobile")
+        move_expense(gnu, txns, acct_names, acct_guids, "%experian%", "Recurring: Experian Scam")
+        move_expense(gnu, txns, acct_names, acct_guids, "%joe frank%", "Recurring: Joe Frank", variants=("Joe Frank (paypal)",))
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
@@ -280,12 +284,19 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
                   "WHERE tx_guid = ? AND guid <> ?", (txn, split))
         rows = list(d.fetchall())
         expense_split = None
+        imbalance_split = None
         for other_split, other_acct in rows:
             n = acct_names[other_acct]
             if n.startswith("Expenses: ") or n == "Expenses" or n == "Income":
                 check(expense_split is None)
                 expense_split = other_split
                 expense_acct = other_acct
+            if n == "Imbalance-USD":
+                imbalance_split = other_split
+                imbalance_acct = other_acct
+        if expense_split is None:
+            expense_split = imbalance_split
+            expense_acct = imbalance_acct
         check(expense_split is not None, rows)
         if expense_acct != acct:
             gnu.update("splits", "guid", expense_split,
