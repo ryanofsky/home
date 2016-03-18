@@ -180,11 +180,12 @@ def cleanup(cash_db):
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
-        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Key Foods", ("Key Food",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Key Foods", variants=("Key Food",))
         move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "CVS")
         move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "C-Town")
+        move_expense(gnu, txns, acct_names, acct_guids, "%associated market%", "Groceries", "Associated Market", variants=(("Associated Food"),))
         move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Target")
-        move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", ("Laura (paypal)",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",))
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work")
         move_expense(gnu, txns, acct_names, acct_guids, "%google *music%", "Recurring: Google Play Music")
         move_expense(gnu, txns, acct_names, acct_guids, "%south brooklyn weightli%", "Recurring: SBWC")
@@ -216,7 +217,7 @@ def find_split(gnu, txn_date, split_memo, amount):
     return rows[0]
 
 
-def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, variants=(), acct=None, desc=None):
+def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=()):
     if acct is None:
         acct_parts = ("Expenses", "Auto") + tuple(acct_name.split(": "))
         full_name = ": ".join(acct_parts)
