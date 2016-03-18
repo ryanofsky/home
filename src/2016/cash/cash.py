@@ -180,7 +180,7 @@ def cleanup(cash_db):
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
-        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Key Foods", variants=("Key Food",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Groceries", "Key Foods", variants=("Key Food",))
         move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "CVS")
         move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "C-Town")
         move_expense(gnu, txns, acct_names, acct_guids, "%associated market%", "Groceries", "Associated Market", variants=(("Associated Food"),))
