@@ -194,7 +194,8 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited")
         move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox")
         move_expense(gnu, txns, acct_names, acct_guids, "%newyorktime%", "Recurring: New York Times")
-        move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", None)
+        move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", desc=False)
+        move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
@@ -215,14 +216,20 @@ def find_split(gnu, txn_date, split_memo, amount):
     return rows[0]
 
 
-def move_expense(gnu, txns, acct_names, acct_guids, pattern, name, variants=()):
-    acct_parts = ("Expenses", "Auto") + tuple(name.split(": "))
-    acct_name = ": ".join(acct_parts)
-    if acct_name in acct_guids:
-        acct = acct_guids[acct_name]
+def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, variants=(), acct=None, desc=None):
+    if acct is None:
+        acct_parts = ("Expenses", "Auto") + tuple(acct_name.split(": "))
+        full_name = ": ".join(acct_parts)
+        if full_name in acct_guids:
+            acct = acct_guids[full_name]
+        else:
+            acct = acct_guids[full_name] = gnu.acct(acct_parts, acct_type="EXPENSE")
+            acct_names[acct] = full_name
     else:
-        acct = acct_guids[acct_name] = gnu.acct(acct_parts, acct_type="EXPENSE")
-        acct_names[acct] = acct_name
+        acct_parts = acct_names[acct].split(": ")
+
+    if desc is None:
+        desc = acct_parts[-1]
 
     c = gnu.conn.cursor()
     c.execute("SELECT guid, tx_guid FROM splits "
@@ -236,32 +243,32 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, name, variants=()):
                   "WHERE guid = ?", (txn,))
         rows = list(d.fetchall())
         check(len(rows) == 1)
-        desc, = rows[0]
+        old_desc, = rows[0]
 
         # Fix up transaction description
-        if variants is None:
+        if desc == False:
+            new_desc = old_desc
+        elif (old_desc.startswith("Withdrawal: ")
+              or old_desc.startswith("Deposit: ")
+              or old_desc.startswith("Credit: ")
+              or old_desc.startswith("Debit: ")
+              or old_desc.startswith("Payment Received: ")
+              or old_desc.startswith("Payment Sent: ")
+              or old_desc.startswith("Subscription Payment Sent: ")):
             new_desc = desc
-        elif (desc.startswith("Withdrawal: ")
-              or desc.startswith("Deposit: ")
-              or desc.startswith("Credit: ")
-              or desc.startswith("Debit: ")
-              or desc.startswith("Payment Received: ")
-              or desc.startswith("Payment Sent: ")
-              or desc.startswith("Subscription Payment Sent: ")):
-            new_desc = acct_parts[-1]
         else:
             for variant in variants:
-                if desc == variant:
-                    new_desc = acct_parts[-1]
+                if old_desc == variant:
+                    new_desc = desc
                     break
-                if desc.startswith(variant + ":"):
-                    new_desc = acct_parts[-1] + desc[len(variant):]
+                if old_desc.startswith(variant + ":"):
+                    new_desc = desc + old_desc[len(variant):]
                     break
             else:
-                check(desc == acct_parts[-1] or desc.startswith(acct_parts[-1] + ":"), desc)
-                new_desc = desc
+                check(old_desc == desc or old_desc.startswith(desc + ":"), old_desc)
+                new_desc = old_desc
 
-        if new_desc != desc:
+        if new_desc != old_desc:
             gnu.update("transactions", "guid", txn,
                         (("description", new_desc),))
 
