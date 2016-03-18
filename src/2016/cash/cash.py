@@ -163,12 +163,18 @@ def cleanup(cash_db):
 
         # Categorize expenses
         auto_acct = gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
+        auto_acct = gnu.acct(("Expenses", "Auto", "Recurring"),
+                             acct_type="EXPENSE")
         key_foods_acct = gnu.acct(("Expenses", "Auto", "Key Foods"),
                                   acct_type="EXPENSE")
         cvs_acct = gnu.acct(("Expenses", "Auto", "CVS"),
                              acct_type="EXPENSE")
         laura_acct = gnu.acct(("Expenses", "Auto", "Laura"),
                                acct_type="EXPENSE")
+        gapps_acct = gnu.acct(("Expenses", "Auto", "Recurring",
+                               "Google Apps for Work"),
+                               acct_type="EXPENSE")
+
         acct_name = gnu.acct_map(full=True)
         txns = set()
 
@@ -205,6 +211,15 @@ def cleanup(cash_db):
             return new_desc
 
         txns.update(move_expense(gnu, acct_name, "%laurenjenni%", laura_acct, laura_desc))
+
+        def gapps_desc(desc):
+            new_desc = desc
+            if desc.startswith("Withdrawal:") or desc.startswith("Deposit:"):
+               new_desc = "Google Apps for Work: yanofsky.org"
+            check(new_desc == "Google Apps for Work: yanofsky.org", desc)
+            return new_desc
+
+        txns.update(move_expense(gnu, acct_name, "%apps_yanof%", gapps_acct, gapps_desc))
 
         # Delete old cash imbalance txn.
         c = gnu.conn.cursor()
