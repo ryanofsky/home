@@ -52,21 +52,25 @@ run() {
     if test -z "$expected"; then expected="$name"; fi
 
     mkdir -p _test
-    dump "$expected" "$name.expected"
     dump "$input"    "$name.input"
     python3.5 -c "import cash; $cmd"
     dump ""          "$name.output"
+    dump "$expected" "$name.expected"
     compare "_test/$name.expected.txt" "_test/$name.output.txt"
     compare "_test/$name.expected.sql" "_test/$name.output.sql"
 }
+
+run 8-clean          ""              "7-citi"         "cash.cleanup('_test.db')"
+exit
 
 run 1-chase          "$CHASE_COMMIT" "$CHASE_COMMIT^" "cash.import_chase_txns('1-chase-data', '_test.db')"
 run 2-mypay          "$PAY_COMMIT"   "$PAY_COMMIT^"   "cash.import_pay_txns('$IN_PAY', '_test.db')"
 run 3-chase-memos    ""              "HEAD"           "cash.update_chase_memos('_test.db')"
 run 4-chase-0130     ""              "3-chase-memos"  "cash.import_chase_update('/home/russ/store/statements/chase-7165/2016-01-30.csv','_test.db')"
 run 5-chase-0308     ""              "4-chase-0130"   "cash.import_chase_update('/home/russ/store/statements/chase-7165/2016-03-08.csv','_test.db')"
-run 6-paypal         ""              "3-chase-memos"  "cash.import_paypal_csv('/home/russ/store/statements/paypal','_test.db')"
+run 6-paypal         ""              "5-chase-0308"   "cash.import_paypal_csv('/home/russ/store/statements/paypal','_test.db')"
 run 7-citi           ""              "6-paypal"       "cash.import_citi_tsv('/home/russ/store/statements/citi-6842/2016-03-01.tsv','_test.db')"
+
 run 4.1-chase-merge "4-chase-0130"   "3-chase-memos"  "$CHASE_MERGE_CMD"
 python3.5 -c "import cash; cash.test_parse_yearless_dates()"
 

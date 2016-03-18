@@ -56,11 +56,11 @@ sqlite query listing user accounts
 ###############################################################################
 WITH RECURSIVE
     r(guid, name) AS (
-        SELECT guid, name
+        SELECT guid, NULL
             FROM accounts
             WHERE name = 'Root Account'
         UNION ALL
-        SELECT accounts.guid, r.name || ' > ' || accounts.name
+        SELECT accounts.guid, ifnull(r.name || ': ', '') || accounts.name
             FROM r
             JOIN accounts ON (accounts.parent_guid = r.guid)
     )

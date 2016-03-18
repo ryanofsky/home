@@ -145,6 +145,57 @@ def dump(cash_db):
         gnu.print_txns("== All transactions ==",  lambda **_: True)
 
 
+def cleanup(cash_db):
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, "cleanup")
+
+        auto_acct = gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
+        key_foods_acct = gnu.acct(("Expenses", "Auto", "Key Foods"),
+                                  acct_type="EXPENSE")
+        acct_name = gnu.acct_map(full=True)
+
+        c = gnu.conn.cursor()
+        c.execute("SELECT guid, tx_guid FROM splits "
+                  "WHERE lower(memo) LIKE ?", ("%key foods%",))
+        txns = set()
+        for split, txn, in c.fetchall():
+            txns.add(txn)
+            d = gnu.conn.cursor()
+
+            # Fix txn desc
+            d.execute("SELECT description FROM transactions "
+                      "WHERE guid = ?", (txn,))
+            rows = list(d.fetchall())
+            check(len(rows) == 1)
+            desc, = rows[0]
+            new_desc = desc
+            if desc.startswith("Withdrawal"):
+               new_desc = "Key Foods"
+            elif desc == "Key Food":
+               new_desc = "Key Foods"
+            elif desc.startswith("Key Food:"):
+               new_desc = "Key Foods:" + desc[len("Key Food:"):]
+            check(new_desc == "Key Foods" or new_desc.startswith("Key Foods"))
+
+            if new_desc != desc:
+                gnu.update("transactions", "guid", txn,
+                           (("description", new_desc),))
+
+            # Fix expense account
+            d.execute("SELECT guid, account_guid FROM splits "
+                      "WHERE tx_guid = ? AND guid <> ?", (txn, split))
+            rows = list(d.fetchall())
+            check(len(rows) == 1)
+            expense_split, expense_acct = rows[0]
+            if expense_acct != key_foods_acct:
+                n = acct_name[expense_acct]
+                check(n.startswith("Expenses: ") or n == "Expenses")
+                gnu.update("splits", "guid", expense_split,
+                           (("account_guid", key_foods_acct),))
+
+        gnu.print_txns("== Unmatched ==", lambda txn_guid, **_: txn_guid not in txns)
+
+
 def test_parse_yearless_dates():
     txn_post_date = datetime.date(2013, 1, 1)
     while txn_post_date <= datetime.date(2014, 1, 1):
@@ -2145,10 +2196,28 @@ class GnuCash:
 
         return match
 
-    def acct_map(self):
+    def acct_map(self, full=False):
         acct_map = {}
         c = self.conn.cursor()
-        c.execute("SELECT guid, name FROM accounts")
+        if full:
+            sql = """
+                WITH RECURSIVE
+                    r(guid, name) AS (
+                        SELECT guid, name
+                            FROM accounts
+                            WHERE parent_guid = (
+                               SELECT guid FROM accounts
+                               WHERE name = 'Root Account')
+                        UNION ALL
+                        SELECT accounts.guid, r.name || ': ' || accounts.name
+                            FROM r
+                            JOIN accounts ON (accounts.parent_guid = r.guid)
+                    )
+                SELECT guid, name FROM r;
+            """
+        else:
+            sql = "SELECT guid, name FROM accounts"
+        c.execute(sql)
         for guid, name in c.fetchall():
             acct_map[guid] = name
         return acct_map
@@ -2172,7 +2241,8 @@ class GnuCash:
             for split_guid, account, memo, action, value, reconcile_state in \
                 d.fetchall():
                 splits.append((account, memo, action, value))
-                if split_filter(split_guid=split_guid, account=account,
+                if split_filter(txn_guid=guid, split_guid=split_guid,
+                                account=account,
                                 memo=memo, action=action, value=value,
                                 reconcile_state=reconcile_state,
                                 post_date=post_date,
