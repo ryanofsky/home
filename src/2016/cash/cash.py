@@ -187,7 +187,9 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Home", "Target")
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",))
         move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurant", desc=False)
+        move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
 
         # Recurring expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work")
@@ -203,6 +205,11 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%t-mobile%", "Recurring: T-Mobile")
         move_expense(gnu, txns, acct_names, acct_guids, "%experian%", "Recurring: Experian Scam")
         move_expense(gnu, txns, acct_names, acct_guids, "%joe frank%", "Recurring: Joe Frank", variants=("Joe Frank (paypal)",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%audible%", "Recurring: Audible", variants=("Audible.com",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%spotify%", "Recurring: Spotify")
+        move_expense(gnu, txns, acct_names, acct_guids, "%time warner nyc%", "Recurring: Time Warner Cable")
+        move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA")
+        move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"))
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
@@ -259,7 +266,9 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
               or old_desc.startswith("Deposit: ")
               or old_desc.startswith("Credit: ")
               or old_desc.startswith("Debit: ")
+              or old_desc.startswith("Authorization: ")
               or old_desc.startswith("Payment Received: ")
+              or old_desc.startswith("Preapproved Payment Sent: ")
               or old_desc.startswith("Payment Sent: ")
               or old_desc.startswith("Subscription Payment Sent: ")):
             new_desc = desc
@@ -284,7 +293,9 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
                   "WHERE tx_guid = ? AND guid <> ?", (txn, split))
         rows = list(d.fetchall())
         expense_split = None
+        expense_acct = None
         imbalance_split = None
+        imbalance_acct = None
         for other_split, other_acct in rows:
             n = acct_names[other_acct]
             if n.startswith("Expenses: ") or n == "Expenses" or n == "Income":
@@ -297,8 +308,8 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         if expense_split is None:
             expense_split = imbalance_split
             expense_acct = imbalance_acct
-        check(expense_split is not None, rows)
-        if expense_acct != acct:
+        check(not rows or expense_split is not None, rows)
+        if expense_acct and expense_acct != acct:
             gnu.update("splits", "guid", expense_split,
                         (("account_guid", acct),))
 
