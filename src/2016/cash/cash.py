@@ -157,19 +157,7 @@ def cleanup(cash_db):
         acct_name = gnu.acct_map(full=True)
         txns = set()
 
-        c = gnu.conn.cursor()
-        c.execute("SELECT guid, tx_guid FROM splits "
-                  "WHERE lower(memo) LIKE ?", ("%key foods%",))
-        for split, txn, in c.fetchall():
-            txns.add(txn)
-            d = gnu.conn.cursor()
-
-            # Fix txn desc
-            d.execute("SELECT description FROM transactions "
-                      "WHERE guid = ?", (txn,))
-            rows = list(d.fetchall())
-            check(len(rows) == 1)
-            desc, = rows[0]
+        def key_foods_desc(desc):
             new_desc = desc
             if desc.startswith("Withdrawal"):
                new_desc = "Key Foods"
@@ -178,58 +166,22 @@ def cleanup(cash_db):
             elif desc.startswith("Key Food:"):
                new_desc = "Key Foods:" + desc[len("Key Food:"):]
             check(new_desc == "Key Foods" or new_desc.startswith("Key Foods"))
+            return new_desc
 
-            if new_desc != desc:
-                gnu.update("transactions", "guid", txn,
-                           (("description", new_desc),))
+        txns.update(move_expense(gnu, acct_name, "%key foods%",
+                                 key_foods_acct, key_foods_desc))
 
-            # Fix expense account
-            d.execute("SELECT guid, account_guid FROM splits "
-                      "WHERE tx_guid = ? AND guid <> ?", (txn, split))
-            rows = list(d.fetchall())
-            check(len(rows) == 1)
-            expense_split, expense_acct = rows[0]
-            if expense_acct != key_foods_acct:
-                n = acct_name[expense_acct]
-                check(n.startswith("Expenses: ") or n == "Expenses")
-                gnu.update("splits", "guid", expense_split,
-                           (("account_guid", key_foods_acct),))
-
-
-
-        c.execute("SELECT guid, tx_guid FROM splits "
-                  "WHERE lower(memo) LIKE ?", ("%cvs%",))
-        for split, txn, in c.fetchall():
-            txns.add(txn)
-
-            # Fix txn desc
-            d.execute("SELECT description FROM transactions "
-                      "WHERE guid = ?", (txn,))
-            rows = list(d.fetchall())
-            check(len(rows) == 1)
-            desc, = rows[0]
+        def cvs_desc(desc):
             new_desc = desc
             if desc.startswith("Withdrawal"):
                new_desc = "CVS"
             check(new_desc == "CVS" or new_desc.startswith("CVS:"))
+            return new_desc
 
-            if new_desc != desc:
-                gnu.update("transactions", "guid", txn,
-                           (("description", new_desc),))
-
-            # Fix expense account
-            d.execute("SELECT guid, account_guid FROM splits "
-                      "WHERE tx_guid = ? AND guid <> ?", (txn, split))
-            rows = list(d.fetchall())
-            check(len(rows) == 1)
-            expense_split, expense_acct = rows[0]
-            if expense_acct != key_foods_acct:
-                n = acct_name[expense_acct]
-                check(n.startswith("Expenses: ") or n == "Expenses")
-                gnu.update("splits", "guid", expense_split,
-                           (("account_guid", cvs_acct),))
+        txns.update(move_expense(gnu, acct_name, "%cvs%", cvs_acct, cvs_desc))
 
         # Delete old cash imbalance txn.
+        c = gnu.conn.cursor()
         c.execute("SELECT guid FROM transactions "
                   "WHERE description = ? AND post_date = ?",
                   ("Cash", gnu.date_str(datetime.date(2020,1,1))))
@@ -244,6 +196,42 @@ def cleanup(cash_db):
                        lambda txn_guid, **_: txn_guid not in txns)
 
 
+def move_expense(gnu, acct_name, pattern, acct, new_desc_cb):
+    txns = set()
+    c = gnu.conn.cursor()
+    c.execute("SELECT guid, tx_guid FROM splits "
+              "WHERE lower(memo) LIKE ?", (pattern,))
+    for split, txn, in c.fetchall():
+        txns.add(txn)
+        d = gnu.conn.cursor()
+
+        # Fix txn desc
+        d.execute("SELECT description FROM transactions "
+                  "WHERE guid = ?", (txn,))
+        rows = list(d.fetchall())
+        check(len(rows) == 1)
+        desc, = rows[0]
+        new_desc = new_desc_cb(desc)
+
+        if new_desc != desc:
+            gnu.update("transactions", "guid", txn,
+                        (("description", new_desc),))
+
+        # Fix expense account
+        d.execute("SELECT guid, account_guid FROM splits "
+                  "WHERE tx_guid = ? AND guid <> ?", (txn, split))
+        rows = list(d.fetchall())
+        check(len(rows) == 1)
+        expense_split, expense_acct = rows[0]
+        if expense_acct != acct:
+            n = acct_name[expense_acct]
+            check(n.startswith("Expenses: ") or n == "Expenses")
+            gnu.update("splits", "guid", expense_split,
+                        (("account_guid", acct),))
+
+    return txns
+
+
 def delete_split(gnu, txn, acct, memo, action, amount):
     c = gnu.conn.cursor()
     c.execute("DELETE FROM splits WHERE tx_guid = ? AND account_guid = ? "
@@ -252,7 +240,6 @@ def delete_split(gnu, txn, acct, memo, action, amount):
               "AND quantity_denom = 100 AND lot_guid IS NULL",
               (txn, acct, memo, action, amount, amount))
     check(c.rowcount == 1)
-
 
 def delete_txn(gnu, txn):
     c = gnu.conn.cursor()
