@@ -72,4 +72,7 @@ if ! diff -q  expected-paypal.txt _test.out.txt; then
    exit 1
 fi
 
+setup file   expected-paypal-import.db.sql
+run   file   expected-citi-import.db.sql "cash.import_citi_tsv('/home/russ/Downloads/MC_842_013114_022916.TXT','_test.db')"
+
 echo Tests pass

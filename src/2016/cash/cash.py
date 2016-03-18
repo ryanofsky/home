@@ -28,8 +28,9 @@ def import_chase_txns(chase_dir, cash_db):
         for filename in sorted(os.listdir(chase_dir)):
             if not filename.endswith(".json"):
                 continue
-            _, _, _, acct_balance = merge_chase_txns(
+            _, _, _, acct_balance = merge_txns(
                 gnu, read_pdf_txns(os.path.join(chase_dir, filename)),
+                acct=gnu.checking_acct,
                 acct_balance=acct_balance,
                 reconcile_date=parse_statement_date(filename),
                 compat=True)
@@ -56,7 +57,7 @@ def update_chase_memos(cash_db):
         gnu.commit()
 
 
-def import_chase_update(filename, cash_db, disable_memo_merge=False):
+def import_chase_update(filename, cash_db, **kwargs):
     rand_seed = os.path.basename(filename)
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, rand_seed)
@@ -66,8 +67,8 @@ def import_chase_update(filename, cash_db, disable_memo_merge=False):
             assert filename.endswith(".json")
             txns = read_pdf_txns(filename)
 
-        first_date, last_date, split_guids, _ = merge_chase_txns(
-            gnu, txns, disable_memo_merge=disable_memo_merge)
+        first_date, last_date, split_guids, _ = merge_txns(
+            gnu, txns, gnu.checking_acct, **kwargs)
 
         gnu.print_txns(
             "== Unreconciled transactions between {} and {} ==".format(
@@ -113,6 +114,19 @@ def import_paypal_csv(csv_dir, cash_db):
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, csv_files[-1])
         merge_paypal_txns(gnu, txns)
+        gnu.commit()
+
+
+def import_citi_tsv(tsv_filename, cash_db):
+    rand_seed = os.path.basename(tsv_filename)
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, rand_seed)
+        txns = read_citi_tsv(tsv_filename)
+
+        first_date, last_date, split_guids, _ = merge_txns(
+            gnu, txns, gnu.citi_acct, debit_label="Debit",
+            credit_label="Credit")
+
         gnu.commit()
 
 
@@ -167,8 +181,9 @@ def read_csv_txns(csv_filename):
         yield date, amount, None, desc, tstr
 
 
-def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
-                     reconcile_date=None, compat=False):
+def merge_txns(gnu, txns, acct, disable_memo_merge=False, acct_balance=None,
+               reconcile_date=None, compat=False, debit_label="Withdrawal",
+               credit_label="Deposit"):
     first_date = last_date = None
     split_guids = set()
 
@@ -180,7 +195,7 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
                     date=date,
                     desc="Opening Balance",
                     memo="",
-                    acct=gnu.checking_acct,
+                    acct=acct,
                     amount=prev_balance,
                     src_acct=gnu.opening_acct,
                     reconcile_date=reconcile_date)
@@ -191,13 +206,13 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
                     date=date,
                     desc="Missing transactions",
                     memo="",
-                    acct=gnu.checking_acct,
+                    acct=acct,
                     amount=prev_balance - acct_balance,
                     src_acct=gnu.imbalance_acct,
                     reconcile_date=reconcile_date)
 
         # If a pre-existing imported txn was found, update it.
-        m = gnu.find_matching_txn(gnu.checking_acct, date, amount, tstr,
+        m = gnu.find_matching_txn(acct, date, amount, tstr,
                                   split_guids) if not compat else None
         if m:
             split_guid, merged_tstr = m
@@ -216,7 +231,7 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
             # Try to find manually entered transaction that's close in
             # date with matching amount and merge with it, otherwise
             # add a new transaction.
-            m = gnu.find_closest_txn([gnu.checking_acct], date, amount,
+            m = gnu.find_closest_txn([acct], date, amount,
                                      no_action=True)
             if m:
                 split_guid, split_memo, txn_guid, txn_post_date = m
@@ -230,10 +245,10 @@ def merge_chase_txns(gnu, txns, disable_memo_merge=False, acct_balance=None,
             else:
                 txn_guid, split_guid = gnu.new_txn(
                     date=date,
-                    desc="{}: {}".format("Withdrawal" if amount <= 0 else "Deposit",
+                    desc="{}: {}".format(debit_label if amount <= 0 else credit_label,
                                          memo or memo_tstr.as_string(tags=False)),
                     memo=memo or memo_tstr.as_string(),
-                    acct=gnu.checking_acct,
+                    acct=acct,
                     amount=amount,
                     reconcile_date=reconcile_date)
 
@@ -1093,6 +1108,38 @@ def paypal_date_str(date):
 
 
 #
+# Citicard tsv parsing function.
+#
+
+def read_citi_tsv(tsv_filename):
+    with open(tsv_filename) as fp:
+        head = fp.readline()
+        body = fp.read()
+    check(head == "Status\tDate\tDescription\tDebit\tCredit\n")
+    pos = 0
+    txns = []
+    while pos < len(body):
+        m = re.compile(r"([^\t\n]+)\t([^\t\n]+)\t([^\t]+)\t([^\t\n]*)"
+                       r"(?:\t([^\t\n]*))?(?:\n|$)").match(body, pos)
+        pos = m.end()
+        status, date_str, desc, debit, credit = m.groups()
+        check(status == "Cleared")
+        date = datetime.datetime.strptime(date_str, "%m/%d/%Y").date()
+        tstr = CitiStr()
+        tstr.lines.extend(desc.rstrip("\n").split("\n"))
+        tstr.set_tag("tsv", True)
+        if debit:
+            check(not credit)
+            amount = -parse_price(debit)
+        else:
+            check(credit)
+            amount = parse_price(credit)
+        txns.append((date, amount, None, None, tstr))
+    txns.sort(key=lambda x: x[0])
+    return txns
+
+
+#
 # Mypay gnucash import functions.
 #
 
@@ -1787,12 +1834,13 @@ class GnuCash:
         self.imbalance_acct = self.acct(("Imbalance-USD",))
         self.expense_acct = self.acct(("Expenses",))
         self.income_acct = self.acct(("Income",))
-        self.checking_acct = self.acct(( "Assets", "Current Assets", "Checking Account"))
+        self.checking_acct = self.acct(("Assets", "Current Assets",
+                                        "Checking Account"))
+        self.citi_acct = self.acct(("Liabilities", "Citibank 6842"))
         self.paypal_acct = self.acct(( "Assets", "Current Assets", "Paypal"))
-        self.bank_accts = [self.checking_acct,
+        self.bank_accts = [self.checking_acct, self.citi_acct,
                            self.acct(("Liabilities", "Chase")),
                            self.acct(("Liabilities", "Citibank 3296")),
-                           self.acct(("Liabilities", "Citibank 6842")),
                            self.acct(("Liabilities", "Citibank 7969"))]
 
     def commit(self):
@@ -2161,7 +2209,7 @@ class GnuCash:
         gnucash either.
 
         The splits.reconcile_date field will be overwritten with the
-        statement date when the merge_chase_txns reconcile date option
+        statement date when the merge_txns reconcile date option
         is set.
 
         Aside from the dates above stored in gnucash format, the
@@ -2257,6 +2305,12 @@ class TaggedStr:
                     tag_str.append('{}={}'.format(tag, line))
 
         return "{} [{}]".format(line_str, ", ".join(tag_str))
+
+    def merge_from(self, other):
+        return self.tags == other.tags and self.lines == other.lines
+
+    def has_mismatched_date(self):
+        return False
 
     @classmethod
     def parse(cls, string, check_tags=True):
@@ -2456,3 +2510,12 @@ class ChaseStr(TaggedStr):
         csv_dates = self.tag("date")
         return (pdf_dates and csv_dates
                 and any(csv_date not in pdf_dates for csv_date in csv_dates))
+
+
+class CitiStr(TaggedStr):
+    """Tagged string class for citicard memo field"""
+
+    allowed_tags = (
+        # Whether string includes information from tsv file.
+        ("tsv", False),
+    )
