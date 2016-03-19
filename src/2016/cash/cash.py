@@ -214,9 +214,18 @@ def cleanup(cash_db):
         vanguard_acct = gnu.acct(("Assets", "Investments", "Vanguard"), acct_type="BANK")
         orphan_acct = gnu.acct(("Orphan-USD",))
 
+        # Merge misdated key food txn
+        txn1 = find_txn(gnu, 2015, 6, 24, "Key Food")
+        txn2 = find_txn(gnu, 2015, 2, 24, "Withdrawal: Card Purchase With Pin  02/24 Key Foods #0440 Hempstead NY")
+        gnu.update("transactions", "guid", txn1, (("post_date", gnu.date_str(datetime.date(2015,2,24))),))
+        delete_split(gnu, txn1, gnu.acct(("Orphan-USD",)), "", "", -8560)
+        delete_split(gnu, txn2, gnu.expense_acct, "", "", 8560)
+        gnu.update_split(select_split(gnu, txn2, gnu.checking_acct), txn=txn1)
+        delete_txn(gnu, txn2)
+
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
-        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Groceries", "Key Foods", variants=("Key Food",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Groceries", "Key Foods", variants=("Key Food",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "Groceries", "C-Town")
         move_expense(gnu, txns, acct_names, acct_guids, "%associated market%", "Groceries", "Associated Market", variants=(("Associated Food"),))
         move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "Purchases", "CVS")
@@ -257,6 +266,8 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%fandango%", "Entertainment", desc=False)
 
         # One time expenses
+        move_expense(gnu, txns, acct_names, acct_guids, "%Inst Xfer  Amalvarado8%", "Orders", "eBay: Lenovo T530 Type 2392 ThinkPad")
+        move_expense(gnu, txns, acct_names, acct_guids, "%donate ebay%", "Orders", "eBay: Humane Society Donation")
         move_expense(gnu, txns, acct_names, acct_guids, "%mandel%", "Medical", "Eric R. Mandel, M.D.", variants=("Mandel Vision",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%us0005wf94%", "Transportation", "Daniel Rocha Uber Reimburse")
         move_expense(gnu, txns, acct_names, acct_guids, "%1072919%", "Entertainment", "Ryan Kelly Wedding Reimburse")
