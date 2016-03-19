@@ -173,7 +173,6 @@ def cleanup(cash_db):
         gnu.update_split(gapps_split, memo_tstr=gapps_memo,
                          remove_txn_suffix=mandel_memo.as_string(tags=False))
 
-
         # Categorize expenses
         txns = set()
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
@@ -181,12 +180,12 @@ def cleanup(cash_db):
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
         move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Groceries", "Key Foods", variants=("Key Food",))
-        move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "Drug Store", "CVS")
         move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "Groceries", "C-Town")
         move_expense(gnu, txns, acct_names, acct_guids, "%associated market%", "Groceries", "Associated Market", variants=(("Associated Food"),))
-        move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Home", "Target")
+        move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "Purchases", "CVS")
+        move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Purchases", "Target")
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",))
-        move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurant", desc=False)
+        move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", desc=False)
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
