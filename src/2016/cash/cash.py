@@ -150,13 +150,7 @@ def cleanup(cash_db):
         gnu = GnuCash(conn, "cleanup")
 
         # Manually delete old cash imbalance txn.
-        c = gnu.conn.cursor()
-        c.execute("SELECT guid FROM transactions "
-                  "WHERE description = ? AND post_date = ?",
-                  ("Cash", gnu.date_str(datetime.date(2020,1,1))))
-        rows = list(c.fetchall())
-        check(len(rows) == 1)
-        txn, = rows[0]
+        txn = find_txn(gnu, 2020, 1, 1, "Cash")
         delete_split(gnu, txn, gnu.expense_acct, "", "", 400000)
         delete_split(gnu, txn, gnu.cash_acct, "", "", -400000)
         delete_txn(gnu, txn)
@@ -210,9 +204,27 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA")
         move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"))
 
+        # Post-categorization cleanup.
+        txn1 = find_txn(gnu, 2016, 2, 21, "Credit Card Payment")
+        txn2 = find_txn(gnu, 2016, 2, 23, "Credit Card Payment")
+        delete_split(gnu, txn1, gnu.checking_acct, "", "", -6127)
+        delete_split(gnu, txn2, gnu.citi_acct, "", "", 6127)
+        gnu.update_split(select_split(gnu, txn2, gnu.checking_acct), txn=txn1)
+        delete_txn(gnu, txn2)
+
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
                        lambda txn_guid, **_: txn_guid not in txns)
+
+
+def find_txn(gnu, year, month, day, desc):
+    c = gnu.conn.cursor()
+    c.execute("SELECT guid FROM transactions "
+              "WHERE description = ? AND post_date = ?",
+              (desc, gnu.date_str(datetime.date(year, month, day))))
+    rows = list(c.fetchall())
+    check(len(rows) == 1)
+    return rows[0][0]
 
 
 def find_split(gnu, txn_date, split_memo, amount):
@@ -313,6 +325,14 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
                         (("account_guid", acct),))
 
 
+def select_split(gnu, txn, acct):
+    c = gnu.conn.cursor()
+    c.execute("SELECT guid FROM splits WHERE tx_guid = ? AND account_guid = ? ", (txn, acct))
+    rows = list(c.fetchall())
+    check(len(rows) == 1, rows)
+    return rows[0][0]
+
+
 def delete_split(gnu, txn, acct, memo, action, amount):
     c = gnu.conn.cursor()
     c.execute("DELETE FROM splits WHERE tx_guid = ? AND account_guid = ? "
@@ -322,6 +342,7 @@ def delete_split(gnu, txn, acct, memo, action, amount):
               (txn, acct, memo, action, amount, amount))
     check(c.rowcount == 1)
 
+
 def delete_txn(gnu, txn):
     c = gnu.conn.cursor()
     c.execute("SELECT * FROM splits WHERE tx_guid = ?", (txn,))
@@ -329,6 +350,7 @@ def delete_txn(gnu, txn):
     check(len(rows) == 0, rows)
     c.execute("DELETE FROM transactions WHERE guid = ?", (txn,))
     check(c.rowcount == 1)
+
 
 def test_parse_yearless_dates():
     txn_post_date = datetime.date(2013, 1, 1)
