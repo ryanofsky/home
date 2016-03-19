@@ -223,6 +223,15 @@ def cleanup(cash_db):
         gnu.update_split(select_split(gnu, txn2, gnu.checking_acct), txn=txn1)
         delete_txn(gnu, txn2)
 
+        # Another misdated key food txn
+        txn1 = find_txn(gnu, 2015, 5, 31, "Key Food")
+        txn2 = find_txn(gnu, 2015, 3, 31, "Withdrawal: Card Purchase With Pin  03/31 Key Foods #0440 Ro Hempsted NY")
+        gnu.update("transactions", "guid", txn1, (("post_date", gnu.date_str(datetime.date(2015,3,31))),))
+        delete_split(gnu, txn1, gnu.acct(("Orphan-USD",)), "", "", -5746)
+        delete_split(gnu, txn2, gnu.expense_acct, "", "", 5746)
+        gnu.update_split(select_split(gnu, txn2, gnu.checking_acct), txn=txn1)
+        delete_txn(gnu, txn2)
+
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
         move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Groceries", "Key Foods", variants=("Key Food",), override_expense_type=True)
@@ -233,6 +242,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%walgreens%", "Purchases", "Walgreens")
         move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Purchases", "Target")
         move_expense(gnu, txns, acct_names, acct_guids, "%target t%", "Purchases", "Target")
+        move_expense(gnu, txns, acct_names, acct_guids, "%kmart%", "Purchases", "Kmart")
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%seamless%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%seamlss%", "Restaurants", desc=False, override_expense_type=True)
@@ -244,6 +254,9 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%uq atlantic trm%", "Clothing", "Uniqlo", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%uq soho%", "Clothing", "Uniqlo", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%chipotle%", "Restaurants", "Chipotle")
+        move_expense(gnu, txns, acct_names, acct_guids, "%wendys%", "Restaurants", "Wendy's")
+        move_expense(gnu, txns, acct_names, acct_guids, "%burger king%", "Restaurants", "Burger King")
+        move_expense(gnu, txns, acct_names, acct_guids, "%wrapido%", "Restaurants", "Wrapido")
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
         move_expense(gnu, txns, acct_names, acct_guids, "%aliexpress%", "Orders", "AliExpress")
@@ -266,6 +279,13 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%fandango%", "Entertainment", desc=False)
 
         # One time expenses
+        move_expense(gnu, txns, acct_names, acct_guids, "%Inst Xfer  Pig Newton%", "Orders", "Louis CK")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Hphomestore%", "Orders", "HP Stream Mini Desktop - 200-010 (Order H393201678)")
+        move_expense(gnu, txns, acct_names, acct_guids, "%J222224Hevlnw%", "Orders", "Joylent 15 Meal Variety Pack, joylent.eu")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Inst Xfer  Usarium Inc%", "Orders", "100% Food 6 Samples Set, spacenutrientsstation.com")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Inst Xfer  Allett Inc%", "Orders", "allett.com: Nylon Sport Wallet")
+        move_expense(gnu, txns, acct_names, acct_guids, "%05/29 Google *Tm *Ticketmas%", "Entertainment", "Mad Decent Block Party 8/8 Tickets")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Amz*Climbing Tree %", "Orders", "Fallen of World War II Video, fallen.io")
         move_expense(gnu, txns, acct_names, acct_guids, "%Inst Xfer  Amalvarado8%", "Orders", "eBay: Lenovo T530 Type 2392 ThinkPad")
         move_expense(gnu, txns, acct_names, acct_guids, "%donate ebay%", "Orders", "eBay: Humane Society Donation")
         move_expense(gnu, txns, acct_names, acct_guids, "%mandel%", "Medical", "Eric R. Mandel, M.D.", variants=("Mandel Vision",), override_expense_type=True)
@@ -300,6 +320,8 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%09/06 Metro-North Tvm%", "Entertainment", "Electric Zoo: Laura Grand Central Metro North Ticket")
 
         # Recurring expenses
+        move_expense(gnu, txns, acct_names, acct_guids, "%press plus%", "Recurring: Press+", "The Onion Non-US Paywall, Press+ Subscription, mypressplus.com", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%taxslayer%", "Recurring: TaxSlayer.com", "TaxSlayer.com", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%google *music%", "Recurring: Google Play Music", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%south brooklyn weightli%", "Recurring: SBWC", override_expense_type=True)
