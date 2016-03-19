@@ -168,6 +168,14 @@ def cleanup(cash_db):
         gnu.update_split(gapps_split, memo_tstr=gapps_memo,
                          remove_txn_suffix=mandel_memo.as_string(tags=False))
 
+        # Manually fix mixed up nirvanna/atm transactions
+        hat_split, hat_memo, atm_txn = find_split(
+            gnu, datetime.date(2010, 12, 10), "%12/11 Nirvanna Designs%", -6000)
+        atm_split, atm_memo, hat_txn = find_split(
+            gnu, datetime.date(2010, 12, 11), "%12/10 46 3Rd Ave%", -6000)
+        gnu.update_split(hat_split, txn=hat_txn)
+        gnu.update_split(atm_split, txn=atm_txn)
+
         # Manually merge unreconciled citi txn
         txn1 = find_txn(gnu, 2016, 2, 17, "Miami Airport: Snickers, Water")
         txn2 = find_txn(gnu, 2016, 2, 17, "Debit: NEWSLINK 31 MAIR       MIAMI         FL")
@@ -195,6 +203,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi card online payment%", desc="Credit Card Payment", acct=lambda d: gnu.citi_acct if d.year >= 2015 else gnu.citi_3296)
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%atm withdrawal%", desc="ATM Withdrawal", acct=gnu.cash_acct)
 
         # One time expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%milam's%", "Purchases", "Milam's")
