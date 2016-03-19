@@ -283,6 +283,16 @@ def cleanup(cash_db):
         delete_txn(gnu, imp_txn)
         txns.add(man_txn)
 
+        man_txn = find_txn(gnu, 2015, 11, 23, "Target: Hanes vneck t-shirts, mossimo L t-shirt")
+        imp_split, imp_memo, imp_txn = find_split(
+            gnu, datetime.date(2015, 11, 23), "%11/23 Target T%", -2899)
+        delete_split(gnu, man_txn, acct_guids["Expenses: Clothes"], "", "", 3000)
+        delete_split(gnu, man_txn, orphan_acct, "", "", -3000)
+        gnu.update_split(select_split(gnu, imp_txn, acct_guids["Expenses: Auto: Purchases"]), txn=man_txn, acct=acct_guids["Expenses: Auto: Clothing"])
+        gnu.update_split(select_split(gnu, imp_txn, gnu.checking_acct), txn=man_txn)
+        delete_txn(gnu, imp_txn)
+        txns.add(man_txn)
+
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
                        lambda txn_guid, account, desc, **_:
