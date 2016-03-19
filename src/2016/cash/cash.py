@@ -209,9 +209,11 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%mcdonald's%", "Restaurants", "McDonald's", override_expense_type=True,
                      desc_cb=lambda d: "McDonald's: Lunch" if d == "Lunch: McDonald's" else d)
         move_expense(gnu, txns, acct_names, acct_guids, "%chick-fil-a%", "Restaurants", "Chick-Fil-A", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%uq atlantic trm%", "Clothing", "Uniqlo", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%chipotle%", "Restaurants", "Chipotle")
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
+        move_expense(gnu, txns, acct_names, acct_guids, "%aliexpress%", "Orders", "AliExpress")
         move_expense(gnu, txns, acct_names, acct_guids, "%amazon mktplace%", "Orders", "Amazon.com", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%vanguard%", desc="Vanguard Transfer", acct=vanguard_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
@@ -222,6 +224,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%mta vending machines%", "Transportation", "Metrocard", variants=(("MTA Card",)), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%amtrak%", "Transportation", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%way2ride%", "Transportation", "Taxi")
+        move_expense(gnu, txns, acct_names, acct_guids, "%fandango%", "Entertainment", desc=False)
 
         # One time expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%milam's%", "Purchases", "Milam's")
@@ -229,11 +232,13 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%Blue Dog Kitchen%", "Restaurants", "Blue Dog Kitchen")
         move_expense(gnu, txns, acct_names, acct_guids, "%iron mind%", "Orders", "IronMind: Gripper, Egg")
         move_expense(gnu, txns, acct_names, acct_guids, "%gumroad%", "Orders", "Gumroad Inc: Rejection Therapy Cards")
+        move_expense(gnu, txns, acct_names, acct_guids, "%uncommon%", "Orders", "UncommonGoods: Plush Organ Heart")
         move_expense(gnu, txns, acct_names, acct_guids, "%bk brainery%", "Entertainment", "Brooklyn Brainery: How to Master Online Dating, Tips & Tricks")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
         move_expense(gnu, txns, acct_names, acct_guids, "%AMERICAN00123218517030%", "Transportation", "American Airlines Flight 1406, MIA -> JFK")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Transportation", "")
         move_expense(gnu, txns, acct_names, acct_guids, "%SPIRIT A48701238666090%", "Transportation", "Spirit Airlines Flight 171, LGA -> FLL")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Morgan Stanley   Trial Dep%", desc="Morgan Stanley Trial Deposit",  acct=gnu.opening_acct)
 
         # Recurring expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work", override_expense_type=True)
@@ -242,6 +247,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%linode.com%", "Recurring: Linode", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%emilia sherifova%", "Recurring: Apartment Rent", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%conexis%", "Recurring: COBRA", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%tw telecom%", "Recurring: COBRA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%traveling mailbox%", "Recurring: Traveling Mailbox", override_expense_type=True)
@@ -256,6 +262,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%time warner nyc%", "Recurring: Time Warner Cable", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%londontrust%", "Recurring: Private Internet Access VPN", override_expense_type=True)
 
         # Post-categorization cleanup.
         txn1 = find_txn(gnu, 2016, 2, 21, "Credit Card Payment")
