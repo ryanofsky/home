@@ -186,32 +186,36 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "Groceries", "C-Town")
         move_expense(gnu, txns, acct_names, acct_guids, "%associated market%", "Groceries", "Associated Market", variants=(("Associated Food"),))
         move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "Purchases", "CVS")
+        move_expense(gnu, txns, acct_names, acct_guids, "%walgreens%", "Purchases", "Walgreens")
         move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Purchases", "Target")
-        move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",))
+        move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", desc=False)
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
 
+        # One time expenses
+        move_expense(gnu, txns, acct_names, acct_guids, "%milam's%", "Purchases", "Milam's")
+
         # Recurring expenses
-        move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work")
-        move_expense(gnu, txns, acct_names, acct_guids, "%google *music%", "Recurring: Google Play Music")
-        move_expense(gnu, txns, acct_names, acct_guids, "%south brooklyn weightli%", "Recurring: SBWC")
-        move_expense(gnu, txns, acct_names, acct_guids, "%linode.com%", "Recurring: Linode")
-        move_expense(gnu, txns, acct_names, acct_guids, "%emilia sherifova%", "Recurring: Apartment Rent")
-        move_expense(gnu, txns, acct_names, acct_guids, "%conexis%", "Recurring: COBRA")
-        move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited")
-        move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox")
-        move_expense(gnu, txns, acct_names, acct_guids, "%newyorktime%", "Recurring: New York Times")
-        move_expense(gnu, txns, acct_names, acct_guids, "%soylent%", "Recurring: Soylent")
-        move_expense(gnu, txns, acct_names, acct_guids, "%t-mobile%", "Recurring: T-Mobile")
-        move_expense(gnu, txns, acct_names, acct_guids, "%experian%", "Recurring: Experian Scam")
-        move_expense(gnu, txns, acct_names, acct_guids, "%joe frank%", "Recurring: Joe Frank", variants=("Joe Frank (paypal)",))
-        move_expense(gnu, txns, acct_names, acct_guids, "%audible%", "Recurring: Audible", variants=("Audible.com",))
-        move_expense(gnu, txns, acct_names, acct_guids, "%spotify%", "Recurring: Spotify")
-        move_expense(gnu, txns, acct_names, acct_guids, "%time warner nyc%", "Recurring: Time Warner Cable")
-        move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA")
-        move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"))
+        move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%google *music%", "Recurring: Google Play Music", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%south brooklyn weightli%", "Recurring: SBWC", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%linode.com%", "Recurring: Linode", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%emilia sherifova%", "Recurring: Apartment Rent", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%conexis%", "Recurring: COBRA", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%newyorktime%", "Recurring: New York Times", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%soylent%", "Recurring: Soylent", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%t-mobile%", "Recurring: T-Mobile", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%experian%", "Recurring: Experian Scam", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%joe frank%", "Recurring: Joe Frank", variants=("Joe Frank (paypal)",), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%audible%", "Recurring: Audible", variants=("Audible.com",), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%spotify%", "Recurring: Spotify", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%time warner nyc%", "Recurring: Time Warner Cable", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"), override_expense_type=True)
 
         # Post-categorization cleanup.
         txn1 = find_txn(gnu, 2016, 2, 21, "Credit Card Payment")
@@ -250,7 +254,7 @@ def find_split(gnu, txn_date, split_memo, amount):
     return rows[0]
 
 
-def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=()):
+def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=(), override_expense_type=False):
     if acct is None:
         acct_parts = ("Expenses", "Auto") + tuple(acct_name.split(": "))
         full_name = ": ".join(acct_parts)
@@ -316,12 +320,15 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         expense_acct = None
         imbalance_split = None
         imbalance_acct = None
+        categorized_expense = False
         for other_split, other_acct in rows:
             n = acct_names[other_acct]
             if n.startswith("Expenses: ") or n == "Expenses" or n == "Income":
                 check(expense_split is None)
                 expense_split = other_split
                 expense_acct = other_acct
+                if n.startswith("Expenses: "):
+                    categorized_expense = True
             if n == "Imbalance-USD":
                 imbalance_split = other_split
                 imbalance_acct = other_acct
@@ -329,7 +336,7 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
             expense_split = imbalance_split
             expense_acct = imbalance_acct
         check(not rows or expense_split is not None, rows)
-        if expense_acct and expense_acct != acct:
+        if expense_acct and expense_acct != acct and (not categorized_expense or override_expense_type):
             gnu.update("splits", "guid", expense_split,
                         (("account_guid", acct),))
 
