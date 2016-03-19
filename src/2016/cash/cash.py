@@ -228,6 +228,8 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%84 tavern%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%Blue Dog Kitchen%", "Restaurants", "Blue Dog Kitchen")
         move_expense(gnu, txns, acct_names, acct_guids, "%iron mind%", "Orders", "IronMind: Gripper, Egg")
+        move_expense(gnu, txns, acct_names, acct_guids, "%gumroad%", "Orders", "Gumroad Inc: Rejection Therapy Cards")
+        move_expense(gnu, txns, acct_names, acct_guids, "%bk brainery%", "Entertainment", "Brooklyn Brainery: How to Master Online Dating, Tips & Tricks")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
         move_expense(gnu, txns, acct_names, acct_guids, "%AMERICAN00123218517030%", "Transportation", "American Airlines Flight 1406, MIA -> JFK")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Transportation", "")
