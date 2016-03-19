@@ -192,6 +192,22 @@ def cleanup(cash_db):
             gnu, datetime.date(2015, 8, 13), "%Spotifyusai%", -999)
         gnu.update_split(spt_split, txn=spt_txn)
 
+        # Manually merge unreconciled cvs txn
+        txn1 = find_txn(gnu, 2015, 9, 14, "CVS: Sewing kit, pepsi")
+        txn2 = find_txn(gnu, 2015, 9, 14, "Withdrawal: Card Purchase With Pin  09/14 Cvs 02498 02498--341 9 Brooklyn NY")
+        delete_split(gnu, txn1, gnu.acct(("Expenses", "Basic")), "", "", 673)
+        delete_split(gnu, txn1, gnu.acct(("Orphan-USD",)), "", "", -673)
+        gnu.update_split(select_split(gnu, txn2, gnu.checking_acct), txn=txn1)
+        gnu.update_split(select_split(gnu, txn2, gnu.expense_acct), txn=txn1)
+        delete_txn(gnu, txn2)
+
+        # Split gap epay/trader joes txns
+        gap = gnu.acct(("Liabilities", "Gap Visa"))
+        buy_txn = find_txn(gnu, 2013, 9, 15, "Trader Joe's")
+        pay_txn, pay_split = gnu.new_txn(datetime.date(2013, 9, 21), "Credit Card Payment", "", gap, 3132, gnu.checking_acct)
+        gnu.update_split(select_split(gnu, pay_txn, gnu.checking_acct), txn=buy_txn, acct=gap)
+        gnu.update_split(select_split(gnu, buy_txn, gnu.checking_acct), txn=pay_txn)
+
         # Categorize expenses
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
@@ -226,6 +242,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%amazon mktplace%", "Orders", "Amazon.com", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%amazon services-kindl%", "Orders", "Amazon Kindle Book", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%vanguard%", desc="Vanguard Transfer", acct=vanguard_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%gap epay%", desc="Credit Card Payment", acct=acct_guids["Liabilities: Gap Visa"])
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi card online payment%", desc="Credit Card Payment", acct=lambda d: gnu.citi_acct if d.year >= 2015 else gnu.citi_3296)
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
@@ -243,6 +260,9 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%iron mind%", "Orders", "IronMind: Gripper, Egg")
         move_expense(gnu, txns, acct_names, acct_guids, "%gumroad%", "Orders", "Gumroad Inc: Rejection Therapy Cards")
         move_expense(gnu, txns, acct_names, acct_guids, "%uncommon%", "Orders", "UncommonGoods: Plush Organ Heart")
+        move_expense(gnu, txns, acct_names, acct_guids, "%best belts%", "Orders", "Best Belts: 3 Inch Lift Belt, Rust Color")
+        move_expense(gnu, txns, acct_names, acct_guids, "%tacticalgea%", "Orders", "TacticalGear.com: 5.11 COVRT 18 Backpack")
+        move_expense(gnu, txns, acct_names, acct_guids, "%smashwords%", "Orders", "Smashwords Ebook: The Motivation Hacker, Nick Winter")
         move_expense(gnu, txns, acct_names, acct_guids, "%the great books founda%", "Orders", "Great Books Reading and Discussion Second Series and Reader Aid")
         move_expense(gnu, txns, acct_names, acct_guids, "%bk brainery%", "Entertainment", "Brooklyn Brainery: How to Master Online Dating, Tips & Tricks")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
@@ -250,6 +270,11 @@ def cleanup(cash_db):
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Transportation", "")
         move_expense(gnu, txns, acct_names, acct_guids, "%SPIRIT A48701238666090%", "Transportation", "Spirit Airlines Flight 171, LGA -> FLL")
         move_expense(gnu, txns, acct_names, acct_guids, "%Morgan Stanley   Trial Dep%", desc="Morgan Stanley Trial Deposit",  acct=gnu.opening_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%flavorus%", "Entertainment", "Electric Zoo: Tickets")
+        move_expense(gnu, txns, acct_names, acct_guids, "%perryscope producti%", "Entertainment", "Electric Zoo: Souvenir Shit")
+        move_expense(gnu, txns, acct_names, acct_guids, "%09/05 perkins restau%", "Entertainment", "Electric Zoo: Lunch, Perkins Restaurant Harlem")
+        move_expense(gnu, txns, acct_names, acct_guids, "%electric zoo 646-561-6426%", "Entertainment", "Electric Zoo: Wristband money")
+        move_expense(gnu, txns, acct_names, acct_guids, "%09/06 Metro-North Tvm%", "Entertainment", "Electric Zoo: Laura Grand Central Metro North Ticket")
 
         # Recurring expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work", override_expense_type=True)
@@ -259,6 +284,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%emilia sherifova%", "Recurring: Apartment Rent", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%conexis%", "Recurring: COBRA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%tw telecom%", "Recurring: COBRA", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%benefitconnect%", "Recurring: COBRA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%traveling mailbox%", "Recurring: Traveling Mailbox", override_expense_type=True)
@@ -274,7 +300,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%londontrust%", "Recurring: Private Internet Access VPN", override_expense_type=True)
-        move_expense(gnu, txns, acct_names, acct_guids, "%brooklyn creative leag%", "Recurring: Brooklyn Creative League", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%brooklyn creative%", "Recurring: Brooklyn Creative League", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%siriusxm%", "Recurring: Sirius XM", variants=("Sirius",),override_expense_type=True)
 
         # Post-categorization cleanup.
@@ -313,6 +339,8 @@ def cleanup(cash_db):
                        and not (account == gnu.cash_acct
                                 or acct_names.get(account, "").startswith("Assets: Current Assets: Bitcoin: ")
                                 or acct_names.get(account, "").startswith("Expenses: ")
+                                or account == gnu.income_acct
+                                or (account == gnu.checking_acct and not desc.startswith("Withdrawal: "))
                                 or desc.startswith("Google Document")))
 
 
