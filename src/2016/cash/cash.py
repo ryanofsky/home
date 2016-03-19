@@ -248,21 +248,33 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%online payment, thank you%", desc="Credit Card Payment", acct=gnu.checking_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%atm withdrawal%", desc="ATM Withdrawal", acct=gnu.cash_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%non-chase atm fee-with%", "Fees", desc="Non-Chase ATM Fee", ignore_variants=("Non-Chase ATM Withdrawal", "ATM Withdrawal", "Honduras ATM", "Mark David Application Fee"))
+        move_expense(gnu, txns, acct_names, acct_guids, "%non-chase atm withdraw%", desc="Non-Chase ATM Withdrawal", ignore_variants=("Honduras ATM",'Mark David Application Fee',"ATM Withdrawal"), acct=gnu.cash_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%mta vending machines%", "Transportation", "Metrocard", variants=(("MTA Card",)), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%amtrak%", "Transportation", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%way2ride%", "Transportation", "Taxi")
+        move_expense(gnu, txns, acct_names, acct_guids, "%uber technologies%", "Transportation", "Uber")
         move_expense(gnu, txns, acct_names, acct_guids, "%fandango%", "Entertainment", desc=False)
 
         # One time expenses
+        move_expense(gnu, txns, acct_names, acct_guids, "%mandel%", "Medical", "Eric R. Mandel, M.D.", variants=("Mandel Vision",), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%us0005wf94%", "Transportation", "Daniel Rocha Uber Reimburse")
+        move_expense(gnu, txns, acct_names, acct_guids, "%1072919%", "Entertainment", "Ryan Kelly Wedding Reimburse")
+        move_expense(gnu, txns, acct_names, acct_guids, "%0891691%", "Entertainment", "Eyal Peled Ski Trip Reimburse")
+        move_expense(gnu, txns, acct_names, acct_guids, "%US0005Jm0T%", "Entertainment", "Eyal Peled Alex Gift Reimburse")
+        move_expense(gnu, txns, acct_names, acct_guids, "%New York State Dmv N%", "Fees", "NY Driver's License", variants=("New York Drivers License",), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%New York State Dmv 518-4740904%", "Fees", "NY Driver's License Renewal", variants=("New York Drivers License",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%milam's%", "Purchases", "Milam's")
         move_expense(gnu, txns, acct_names, acct_guids, "%84 tavern%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%Blue Dog Kitchen%", "Restaurants", "Blue Dog Kitchen")
         move_expense(gnu, txns, acct_names, acct_guids, "%iron mind%", "Orders", "IronMind: Gripper, Egg")
         move_expense(gnu, txns, acct_names, acct_guids, "%gumroad%", "Orders", "Gumroad Inc: Rejection Therapy Cards")
         move_expense(gnu, txns, acct_names, acct_guids, "%uncommon%", "Orders", "UncommonGoods: Plush Organ Heart")
+        move_expense(gnu, txns, acct_names, acct_guids, "%inst xfer  manning pub%", "Orders", "Manning Publications: Soft Skills, John Z. Sonmez")
         move_expense(gnu, txns, acct_names, acct_guids, "%best belts%", "Orders", "Best Belts: 3 Inch Lift Belt, Rust Color")
         move_expense(gnu, txns, acct_names, acct_guids, "%tacticalgea%", "Orders", "TacticalGear.com: 5.11 COVRT 18 Backpack")
         move_expense(gnu, txns, acct_names, acct_guids, "%smashwords%", "Orders", "Smashwords Ebook: The Motivation Hacker, Nick Winter")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Inst Xfer  Crucial.Com%", "Orders", "Crucial.com: 2x2x8GB DDR3 PC3-12800 SODIMM (Order 0602488724)")
         move_expense(gnu, txns, acct_names, acct_guids, "%the great books founda%", "Orders", "Great Books Reading and Discussion Second Series and Reader Aid")
         move_expense(gnu, txns, acct_names, acct_guids, "%bk brainery%", "Entertainment", "Brooklyn Brainery: How to Master Online Dating, Tips & Tricks")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
@@ -298,6 +310,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%spotify%", "Recurring: Spotify", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%time warner nyc%", "Recurring: Time Warner Cable", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%ymca greater ny%", "Recurring: YMCA", "YMCA Purchase", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%londontrust%", "Recurring: Private Internet Access VPN", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%brooklyn creative%", "Recurring: Brooklyn Creative League", override_expense_type=True)
@@ -339,6 +352,8 @@ def cleanup(cash_db):
                        and not (account == gnu.cash_acct
                                 or acct_names.get(account, "").startswith("Assets: Current Assets: Bitcoin: ")
                                 or acct_names.get(account, "").startswith("Expenses: ")
+                                or account == acct_guids["Liabilities: Gap Visa"]
+                                or account == gnu.paypal_acct
                                 or account == gnu.income_acct
                                 or (account == gnu.checking_acct and not desc.startswith("Withdrawal: "))
                                 or desc.startswith("Google Document")))
@@ -368,7 +383,7 @@ def find_split(gnu, txn_date, split_memo, amount):
     return rows[0]
 
 
-def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=(), override_expense_type=False, desc_cb=None):
+def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=(), ignore_variants=(), override_expense_type=False, desc_cb=None):
     if acct is None:
         acct_parts = ("Expenses", "Auto") + tuple(acct_name.split(": "))
         full_name = ": ".join(acct_parts)
@@ -395,6 +410,9 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         rows = list(d.fetchall())
         check(len(rows) == 1)
         old_desc, post_date = rows[0]
+
+        if old_desc in ignore_variants:
+            continue
 
         if desc_cb:
             new_desc = desc_cb(old_desc)
@@ -423,7 +441,7 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
                     new_desc = desc + new_desc[len(variant):]
                     break
             else:
-                check(new_desc == desc or new_desc.startswith(desc + ":"), (txn, new_desc))
+                check(new_desc == desc or new_desc.startswith(desc + ":"), (txn, new_desc, desc))
 
         if new_desc != old_desc:
             gnu.update("transactions", "guid", txn,
