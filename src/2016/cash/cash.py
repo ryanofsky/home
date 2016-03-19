@@ -189,6 +189,7 @@ def cleanup(cash_db):
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
         vanguard_acct = gnu.acct(("Assets", "Investments", "Vanguard"), acct_type="BANK")
+        orphan_acct = gnu.acct(("Orphan-USD",))
 
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
@@ -261,6 +262,16 @@ def cleanup(cash_db):
         delete_split(gnu, txn2, gnu.citi_acct, "", "", 6127)
         gnu.update_split(select_split(gnu, txn2, gnu.checking_acct), txn=txn1)
         delete_txn(gnu, txn2)
+
+        # Merge imported/manual target transactions.
+        man_split, man_memo, man_txn = find_split(
+            gnu, datetime.date(2015, 12, 28), "Gym shorts, 2 shirts, sweatpants, bathrug", 2947)
+        imp_split, imp_memo, imp_txn = find_split(
+            gnu, datetime.date(2015, 12, 28), "%12/28 Target T%", -7319)
+        delete_split(gnu, man_txn, orphan_acct, "", "", -2947)
+        gnu.update_split(select_split(gnu, imp_txn, acct_guids["Expenses: Auto: Purchases"]), txn=man_txn, amount=7319-2947)
+        gnu.update_split(select_split(gnu, imp_txn, gnu.checking_acct), txn=man_txn)
+        delete_txn(gnu, imp_txn)
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
@@ -2254,7 +2265,7 @@ class GnuCash:
 
     def update_split(self, split_guid, action=None, memo=None, memo_tstr=None,
                      reconcile_date=None, remove_txn_suffix=None, amount=None,
-                     txn=None):
+                     txn=None, acct=None):
         fields = []
 
         if action is not None:
@@ -2302,6 +2313,9 @@ class GnuCash:
 
         if txn is not None:
             fields.append(("tx_guid", txn))
+
+        if acct is not None:
+            fields.append(("account_guid", acct))
 
         self.update("splits", "guid", split_guid, fields)
 
