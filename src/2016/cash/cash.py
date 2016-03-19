@@ -148,6 +148,7 @@ def dump(cash_db):
 def cleanup(cash_db):
     with sqlite3.connect(cash_db) as conn:
         gnu = GnuCash(conn, "cleanup")
+        txns = set()
 
         # Manually delete old cash imbalance txn.
         txn = find_txn(gnu, 2020, 1, 1, "Cash")
@@ -170,13 +171,13 @@ def cleanup(cash_db):
         # Manually merge unreconciled citi txn
         txn1 = find_txn(gnu, 2016, 2, 17, "Miami Airport: Snickers, Water")
         txn2 = find_txn(gnu, 2016, 2, 17, "Debit: NEWSLINK 31 MAIR       MIAMI         FL")
+        txns.add(txn1)
         delete_split(gnu, txn1, gnu.citi_acct, "", "Payment", -618)
         delete_split(gnu, txn2, gnu.expense_acct, "", "", 618)
         gnu.update_split(select_split(gnu, txn2, gnu.citi_acct), txn=txn1)
         delete_txn(gnu, txn2)
 
         # Categorize expenses
-        txns = set()
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
         acct_names = gnu.acct_map(full=True)
