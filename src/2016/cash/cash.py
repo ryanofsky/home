@@ -199,11 +199,15 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%duane reade%", "Purchases", "Duane Reade", variants=("Duane reade",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%walgreens%", "Purchases", "Walgreens")
         move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Purchases", "Target")
+        move_expense(gnu, txns, acct_names, acct_guids, "%target t%", "Purchases", "Target")
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%seamless%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%seamlss%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", desc=False)
         move_expense(gnu, txns, acct_names, acct_guids, "%starbucks%", "Restaurants", "Starbucks", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%mcdonald's%", "Restaurants", "McDonald's", override_expense_type=True,
+                     desc_cb=lambda d: "McDonald's: Lunch" if d == "Lunch: McDonald's" else d)
+        move_expense(gnu, txns, acct_names, acct_guids, "%chick-fil-a%", "Restaurants", "Chick-Fil-A", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%chipotle%", "Restaurants", "Chipotle")
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
@@ -291,7 +295,7 @@ def find_split(gnu, txn_date, split_memo, amount):
     return rows[0]
 
 
-def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=(), override_expense_type=False):
+def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, desc=None, acct=None, variants=(), override_expense_type=False, desc_cb=None):
     if acct is None:
         acct_parts = ("Expenses", "Auto") + tuple(acct_name.split(": "))
         full_name = ": ".join(acct_parts)
@@ -319,30 +323,34 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         check(len(rows) == 1)
         old_desc, post_date = rows[0]
 
+        if desc_cb:
+            new_desc = desc_cb(old_desc)
+        else:
+            new_desc = old_desc
+
         # Fix up transaction description
         if desc == False:
-            new_desc = old_desc
-        elif (old_desc.startswith("Withdrawal: ")
-              or old_desc.startswith("Deposit: ")
-              or old_desc.startswith("Credit: ")
-              or old_desc.startswith("Debit: ")
-              or old_desc.startswith("Authorization: ")
-              or old_desc.startswith("Payment Received: ")
-              or old_desc.startswith("Preapproved Payment Sent: ")
-              or old_desc.startswith("Payment Sent: ")
-              or old_desc.startswith("Subscription Payment Sent: ")):
+            pass
+        elif (new_desc.startswith("Withdrawal: ")
+              or new_desc.startswith("Deposit: ")
+              or new_desc.startswith("Credit: ")
+              or new_desc.startswith("Debit: ")
+              or new_desc.startswith("Authorization: ")
+              or new_desc.startswith("Payment Received: ")
+              or new_desc.startswith("Preapproved Payment Sent: ")
+              or new_desc.startswith("Payment Sent: ")
+              or new_desc.startswith("Subscription Payment Sent: ")):
             new_desc = desc
         else:
             for variant in variants:
-                if old_desc == variant:
+                if new_desc == variant:
                     new_desc = desc
                     break
-                if old_desc.startswith(variant + ":"):
-                    new_desc = desc + old_desc[len(variant):]
+                if new_desc.startswith(variant + ":"):
+                    new_desc = desc + new_desc[len(variant):]
                     break
             else:
-                check(old_desc == desc or old_desc.startswith(desc + ":"), old_desc)
-                new_desc = old_desc
+                check(new_desc == desc or new_desc.startswith(desc + ":"), (txn, new_desc))
 
         if new_desc != old_desc:
             gnu.update("transactions", "guid", txn,
