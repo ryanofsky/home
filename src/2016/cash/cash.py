@@ -217,10 +217,12 @@ def cleanup(cash_db):
                      desc_cb=lambda d: "McDonald's: Lunch" if d == "Lunch: McDonald's" else d)
         move_expense(gnu, txns, acct_names, acct_guids, "%chick-fil-a%", "Restaurants", "Chick-Fil-A", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%uq atlantic trm%", "Clothing", "Uniqlo", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%uq soho%", "Clothing", "Uniqlo", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%chipotle%", "Restaurants", "Chipotle")
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
         move_expense(gnu, txns, acct_names, acct_guids, "%aliexpress%", "Orders", "AliExpress")
+        move_expense(gnu, txns, acct_names, acct_guids, "%amazon.com%", "Orders", "Amazon.com", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%amazon mktplace%", "Orders", "Amazon.com", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%amazon services-kindl%", "Orders", "Amazon Kindle Book", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%vanguard%", desc="Vanguard Transfer", acct=vanguard_acct)
@@ -272,6 +274,8 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%ymc* Greater ny%", "Recurring: YMCA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%netflix%", "Recurring: Netflix", variants=("Paypal ??", "Netflix (paypal)"), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%londontrust%", "Recurring: Private Internet Access VPN", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%brooklyn creative leag%", "Recurring: Brooklyn Creative League", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%siriusxm%", "Recurring: Sirius XM", variants=("Sirius",),override_expense_type=True)
 
         # Post-categorization cleanup.
         txn1 = find_txn(gnu, 2016, 2, 21, "Credit Card Payment")
@@ -307,6 +311,7 @@ def cleanup(cash_db):
                        lambda txn_guid, account, desc, **_:
                        txn_guid not in txns
                        and not (account == gnu.cash_acct
+                                or acct_names.get(account, "").startswith("Assets: Current Assets: Bitcoin: ")
                                 or acct_names.get(account, "").startswith("Expenses: ")
                                 or desc.startswith("Google Document")))
 
