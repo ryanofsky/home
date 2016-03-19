@@ -272,6 +272,7 @@ def cleanup(cash_db):
         gnu.update_split(select_split(gnu, imp_txn, acct_guids["Expenses: Auto: Purchases"]), txn=man_txn, amount=7319-2947)
         gnu.update_split(select_split(gnu, imp_txn, gnu.checking_acct), txn=man_txn)
         delete_txn(gnu, imp_txn)
+        txns.add(man_txn)
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
