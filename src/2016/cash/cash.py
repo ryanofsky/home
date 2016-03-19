@@ -185,6 +185,13 @@ def cleanup(cash_db):
         gnu.update_split(select_split(gnu, txn2, gnu.citi_acct), txn=txn1)
         delete_txn(gnu, txn2)
 
+        # Manually fix mixed up spotify/kindle transactions
+        spt_split, spt_memo, knd_txn = find_split(
+            gnu, datetime.date(2015, 8, 11), "%paypal-usd@spotify.com%", 0)
+        spt_split2, spt_memo2, spt_txn = find_split(
+            gnu, datetime.date(2015, 8, 13), "%Spotifyusai%", -999)
+        gnu.update_split(spt_split, txn=spt_txn)
+
         # Categorize expenses
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
@@ -215,6 +222,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
         move_expense(gnu, txns, acct_names, acct_guids, "%aliexpress%", "Orders", "AliExpress")
         move_expense(gnu, txns, acct_names, acct_guids, "%amazon mktplace%", "Orders", "Amazon.com", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%amazon services-kindl%", "Orders", "Amazon Kindle Book", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%vanguard%", desc="Vanguard Transfer", acct=vanguard_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi card online payment%", desc="Credit Card Payment", acct=lambda d: gnu.citi_acct if d.year >= 2015 else gnu.citi_3296)
@@ -233,6 +241,7 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%iron mind%", "Orders", "IronMind: Gripper, Egg")
         move_expense(gnu, txns, acct_names, acct_guids, "%gumroad%", "Orders", "Gumroad Inc: Rejection Therapy Cards")
         move_expense(gnu, txns, acct_names, acct_guids, "%uncommon%", "Orders", "UncommonGoods: Plush Organ Heart")
+        move_expense(gnu, txns, acct_names, acct_guids, "%the great books founda%", "Orders", "Great Books Reading and Discussion Second Series and Reader Aid")
         move_expense(gnu, txns, acct_names, acct_guids, "%bk brainery%", "Entertainment", "Brooklyn Brainery: How to Master Online Dating, Tips & Tricks")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
         move_expense(gnu, txns, acct_names, acct_guids, "%AMERICAN00123218517030%", "Transportation", "American Airlines Flight 1406, MIA -> JFK")
