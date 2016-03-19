@@ -167,6 +167,14 @@ def cleanup(cash_db):
         gnu.update_split(gapps_split, memo_tstr=gapps_memo,
                          remove_txn_suffix=mandel_memo.as_string(tags=False))
 
+        # Manually merge unreconciled citi txn
+        txn1 = find_txn(gnu, 2016, 2, 17, "Miami Airport: Snickers, Water")
+        txn2 = find_txn(gnu, 2016, 2, 17, "Debit: NEWSLINK 31 MAIR       MIAMI         FL")
+        delete_split(gnu, txn1, gnu.citi_acct, "", "Payment", -618)
+        delete_split(gnu, txn2, gnu.expense_acct, "", "", 618)
+        gnu.update_split(select_split(gnu, txn2, gnu.citi_acct), txn=txn1)
+        delete_txn(gnu, txn2)
+
         # Categorize expenses
         txns = set()
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
