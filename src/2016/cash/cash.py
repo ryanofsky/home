@@ -188,26 +188,41 @@ def cleanup(cash_db):
         # Categorize expenses
         gnu.acct(("Expenses", "Auto"), acct_type="EXPENSE")
         gnu.acct(("Expenses", "Auto", "Recurring"), acct_type="EXPENSE")
+        vanguard_acct = gnu.acct(("Assets", "Investments", "Vanguard"), acct_type="BANK")
+
         acct_names = gnu.acct_map(full=True)
         acct_guids = {name: guid for guid, name in acct_names.items()}
         move_expense(gnu, txns, acct_names, acct_guids, "%key foods%", "Groceries", "Key Foods", variants=("Key Food",))
         move_expense(gnu, txns, acct_names, acct_guids, "%c-town%", "Groceries", "C-Town")
         move_expense(gnu, txns, acct_names, acct_guids, "%associated market%", "Groceries", "Associated Market", variants=(("Associated Food"),))
         move_expense(gnu, txns, acct_names, acct_guids, "%cvs%", "Purchases", "CVS")
+        move_expense(gnu, txns, acct_names, acct_guids, "%duane reade%", "Purchases", "Duane Reade", variants=("Duane reade",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%walgreens%", "Purchases", "Walgreens")
         move_expense(gnu, txns, acct_names, acct_guids, "%targetcorpo%", "Purchases", "Target")
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%seamless%", "Restaurants", desc=False, override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%seamlss%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", desc=False)
+        move_expense(gnu, txns, acct_names, acct_guids, "%starbucks%", "Restaurants", "Starbucks", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%chipotle%", "Restaurants", "Chipotle")
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
         move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
+        move_expense(gnu, txns, acct_names, acct_guids, "%amazon mktplace%", "Orders", "Amazon.com", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%vanguard%", desc="Vanguard Transfer", acct=vanguard_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%citi card online payment%", desc="Credit Card Payment", acct=lambda d: gnu.citi_acct if d.year >= 2015 else gnu.citi_3296)
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%online payment, thank you%", desc="Credit Card Payment", acct=gnu.checking_acct)
         move_expense(gnu, txns, acct_names, acct_guids, "%atm withdrawal%", desc="ATM Withdrawal", acct=gnu.cash_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%mta vending machines%", "Transportation", "Metrocard", variants=(("MTA Card",)), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%amtrak%", "Transportation", desc=False, override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%way2ride%", "Transportation", "Taxi")
 
         # One time expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%milam's%", "Purchases", "Milam's")
+        move_expense(gnu, txns, acct_names, acct_guids, "%84 tavern%", "Restaurants", desc=False, override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%Blue Dog Kitchen%", "Restaurants", "Blue Dog Kitchen")
+        move_expense(gnu, txns, acct_names, acct_guids, "%iron mind%", "Orders", "IronMind: Gripper, Egg")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
         move_expense(gnu, txns, acct_names, acct_guids, "%AMERICAN00123218517030%", "Transportation", "American Airlines Flight 1406, MIA -> JFK")
         #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Transportation", "")
@@ -245,7 +260,11 @@ def cleanup(cash_db):
 
         # Print uncategorized
         gnu.print_txns("== Unmatched ==",
-                       lambda txn_guid, **_: txn_guid not in txns)
+                       lambda txn_guid, account, desc, **_:
+                       txn_guid not in txns
+                       and not (account == gnu.cash_acct
+                                or acct_names.get(account, "").startswith("Expenses: ")
+                                or desc.startswith("Google Document")))
 
 
 def find_txn(gnu, year, month, day, desc):
@@ -351,8 +370,9 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
             new_acct = acct
 
         if expense_acct and expense_acct != new_acct:
-            if (override_expense_type
-                or not acct_names[expense_acct].startswith("Expenses: ")):
+            if ((override_expense_type
+                 or not acct_names[expense_acct].startswith("Expenses: "))
+                and not acct_names[expense_acct] == "Expenses: Work"):
                 gnu.update("splits", "guid", expense_split,
                             (("account_guid", new_acct),))
 
@@ -2435,7 +2455,7 @@ class GnuCash:
                 d.fetchall():
                 splits.append((split_guid, account, memo, action, value))
                 if split_filter(txn_guid=guid, split_guid=split_guid,
-                                account=account,
+                                account=account, desc=description,
                                 memo=memo, action=action, value=value,
                                 reconcile_state=reconcile_state,
                                 post_date=post_date,
