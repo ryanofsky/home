@@ -191,11 +191,18 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%laurenjenni%", "Laura", variants=("Laura (paypal)",), override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%eat24%", "Restaurants", desc=False)
         move_expense(gnu, txns, acct_names, acct_guids, "%mealsquares%", "Orders", "MealSquares")
+        move_expense(gnu, txns, acct_names, acct_guids, "%thevitamins%", "Orders", "Vitamin Shoppe")
         move_expense(gnu, txns, acct_names, acct_guids, "%citi autopay%", desc="Credit Card Payment", acct=gnu.citi_acct)
+        move_expense(gnu, txns, acct_names, acct_guids, "%citi card online payment%", desc="Credit Card Payment", acct=lambda d: gnu.citi_acct if d.year >= 2015 else gnu.citi_3296)
         move_expense(gnu, txns, acct_names, acct_guids, "%autopay auto-pmt%", desc="Credit Card Payment", acct=gnu.checking_acct)
 
         # One time expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%milam's%", "Purchases", "Milam's")
+        move_expense(gnu, txns, acct_names, acct_guids, "%Blue Dog Kitchen%", "Restaurants", "Blue Dog Kitchen")
+        #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Restaurants", "")
+        move_expense(gnu, txns, acct_names, acct_guids, "%AMERICAN00123218517030%", "Transportation", "American Airlines Flight 1406, MIA -> JFK")
+        #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Transportation", "")
+        move_expense(gnu, txns, acct_names, acct_guids, "%SPIRIT A48701238666090%", "Transportation", "Spirit Airlines Flight 171, LGA -> FLL")
 
         # Recurring expenses
         move_expense(gnu, txns, acct_names, acct_guids, "%apps_yanof%", "Recurring: Google Apps for Work", override_expense_type=True)
@@ -206,7 +213,9 @@ def cleanup(cash_db):
         move_expense(gnu, txns, acct_names, acct_guids, "%conexis%", "Recurring: COBRA", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%kindle unlimited%", "Recurring: Kindle Unlimited", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%travelingma%", "Recurring: Traveling Mailbox", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%traveling mailbox%", "Recurring: Traveling Mailbox", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%newyorktime%", "Recurring: New York Times", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%okcupid%", "Recurring: OkCupid", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%soylent%", "Recurring: Soylent", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%t-mobile%", "Recurring: T-Mobile", override_expense_type=True)
         move_expense(gnu, txns, acct_names, acct_guids, "%experian%", "Recurring: Experian Scam", override_expense_type=True)
@@ -263,11 +272,10 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         else:
             acct = acct_guids[full_name] = gnu.acct(acct_parts, acct_type="EXPENSE")
             acct_names[acct] = full_name
+        if desc is None:
+            desc = acct_parts[-1]
     else:
-        acct_parts = acct_names[acct].split(": ")
-
-    if desc is None:
-        desc = acct_parts[-1]
+        assert desc is not None
 
     c = gnu.conn.cursor()
     c.execute("SELECT guid, tx_guid FROM splits "
@@ -277,11 +285,11 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         d = gnu.conn.cursor()
 
         # Fix txn desc
-        d.execute("SELECT description FROM transactions "
+        d.execute("SELECT description, post_date FROM transactions "
                   "WHERE guid = ?", (txn,))
         rows = list(d.fetchall())
         check(len(rows) == 1)
-        old_desc, = rows[0]
+        old_desc, post_date = rows[0]
 
         # Fix up transaction description
         if desc == False:
@@ -318,27 +326,26 @@ def move_expense(gnu, txns, acct_names, acct_guids, pattern, acct_name=None, des
         rows = list(d.fetchall())
         expense_split = None
         expense_acct = None
-        imbalance_split = None
-        imbalance_acct = None
-        categorized_expense = False
         for other_split, other_acct in rows:
             n = acct_names[other_acct]
-            if n.startswith("Expenses: ") or n == "Expenses" or n == "Income":
-                check(expense_split is None)
+            if n == "Expenses" or n == "Income" or n.startswith("Expenses: "):
                 expense_split = other_split
                 expense_acct = other_acct
-                if n.startswith("Expenses: "):
-                    categorized_expense = True
-            if n == "Imbalance-USD":
-                imbalance_split = other_split
-                imbalance_acct = other_acct
-        if expense_split is None:
-            expense_split = imbalance_split
-            expense_acct = imbalance_acct
-        check(not rows or expense_split is not None, rows)
-        if expense_acct and expense_acct != acct and (not categorized_expense or override_expense_type):
-            gnu.update("splits", "guid", expense_split,
-                        (("account_guid", acct),))
+                break
+            elif n == "Imbalance-USD":
+                expense_split = other_split
+                expense_acct = other_acct
+
+        if callable(acct):
+            new_acct = acct(gnu.date(post_date))
+        else:
+            new_acct = acct
+
+        if expense_acct and expense_acct != new_acct:
+            if (override_expense_type
+                or not acct_names[expense_acct].startswith("Expenses: ")):
+                gnu.update("splits", "guid", expense_split,
+                            (("account_guid", new_acct),))
 
 
 def select_split(gnu, txn, acct):
@@ -2066,10 +2073,10 @@ class GnuCash:
         self.checking_acct = self.acct(("Assets", "Current Assets",
                                         "Checking Account"))
         self.citi_acct = self.acct(("Liabilities", "Citibank 6842"))
+        self.citi_3296 = self.acct(("Liabilities", "Citibank 3296"))
         self.paypal_acct = self.acct(( "Assets", "Current Assets", "Paypal"))
-        self.bank_accts = [self.checking_acct, self.citi_acct,
+        self.bank_accts = [self.checking_acct, self.citi_acct, self.citi_3296,
                            self.acct(("Liabilities", "Chase")),
-                           self.acct(("Liabilities", "Citibank 3296")),
                            self.acct(("Liabilities", "Citibank 7969"))]
         self.cash_acct = self.acct(("Assets", "Current Assets", "Cash"))
 
