@@ -3,5 +3,5 @@
 set -e
 set -x
 
-test ! -e russ.db.new || rm -iv russ.db.new
-sqlite3 russ.db.new < russ.db.sql
+test ! -e russ.db || rm -iv russ.db
+sqlite3 russ.db < russ.db.sql
