@@ -4,6 +4,7 @@ set -e
 set -x
 
 IN_CHASE=~/store/statements/chase-7165
+IN_PAYPAL=~/store/statements/paypal
 
 if [ ! -e pdfminer ]; then
     git clone https://github.com/euske/pdfminer.git
@@ -44,3 +45,5 @@ for i in "$IN_CHASE"/*.csv; do
         touch "$o"
     fi
 done
+
+python3.5 -c "import cash; cash.import_paypal_csv('$IN_PAYPAL', 'russ.db')"
