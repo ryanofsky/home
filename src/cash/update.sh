@@ -5,6 +5,7 @@ set -x
 
 IN_CHASE=~/store/statements/chase-7165
 IN_PAYPAL=~/store/statements/paypal
+IN_CITI=~/store/statements/citi-6842
 
 if [ ! -e pdfminer ]; then
     git clone https://github.com/euske/pdfminer.git
@@ -12,7 +13,7 @@ if [ ! -e pdfminer ]; then
     ( cd pdfminer; python setup.py build )
 fi
 
-mkdir -p 0-chase-txt 1-chase-data 2-chase-imported
+mkdir -p 0-chase-txt 1-chase-data 2-chase-imported 3-citi-imported
 
 for i in "$IN_CHASE"/*.pdf; do
     o="0-chase-txt/${i#$IN_CHASE/}"
@@ -47,3 +48,11 @@ for i in "$IN_CHASE"/*.csv; do
 done
 
 python3.5 -c "import cash; cash.import_paypal_csv('$IN_PAYPAL', 'russ.db')"
+
+for i in "$IN_CITI"/*.tsv; do
+    o="3-citi-imported/${i#$IN_CITI/}"
+    if [ ! -e "$o" ]; then
+        python3.5 -c "import cash; cash.import_citi_tsv('$i', 'russ.db')"
+        touch "$o"
+    fi
+done
