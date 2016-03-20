@@ -1,19 +1,21 @@
 #!/bin/bash
 
 set -e
+set -x
 
-IN_PAY=~/store/statements/income/2015-12-31-google.html
-CHASE_COMMIT=dee82671
-PAY_COMMIT=816ae5b0
+IN_MYPAY=~/store/statements/income/2015-12-31-google.html
+IN_CHASE=~/store/statements/chase-7165
+IN_PAYPAL=~/store/statements/paypal
+IN_CITI=~/store/statements/citi-6842
+
 SQL_FILE=russ/cash/russ.db.sql
-CHASE_MERGE_CMD="cash.import_chase_update('/home/russ/store/statements/chase-7165/2016-01-30.csv','_test.db', disable_memo_merge=True)"
-for i in 1-chase-data/*.json; do
-    if [ "$i" \> 1-chase-data/2014 ]; then
-        CHASE_MERGE_CMD="$CHASE_MERGE_CMD
-cash.import_chase_update('$i', '_test.db')
-"
-    fi
-done
+
+CHASE_PDF_COMMIT=dee82671
+MYPAY_COMMIT=816ae5b0
+CHASE_MEMO_COMMIT=2cb84985
+CHASE_CSV_COMMIT=70de74e7
+PAYPAL_COMMIT=6f2a55af
+CITI_COMMIT=7aed73e1
 
 set -x
 
@@ -60,18 +62,13 @@ run() {
     compare "_test/$name.expected.sql" "_test/$name.output.sql"
 }
 
-run 8-clean          ""              "7-citi"         "cash.cleanup('_test.db')"
-exit
+run 1-chase-pdf  "$CHASE_PDF_COMMIT"  "$CHASE_PDF_COMMIT^"  "cash.import_chase_txns('1-chase-data', '_test.db')"
+run 2-mypay      "$MYPAY_COMMIT"      "$MYPAY_COMMIT^"      "cash.import_pay_txns('$IN_MYPAY', '_test.db')"
+run 3-chase-memo "$CHASE_MEMO_COMMIT" "$CHASE_MEMO_COMMIT^" "cash.update_chase_memos('_test.db')"
+run 4-chase-csv  "$CHASE_CSV_COMMIT"  "$CHASE_CSV_COMMIT^"  "cash.import_chase_update('$IN_CHASE/2016-01-30.csv', '_test.db'); cash.import_chase_update('$IN_CHASE/2016-03-08.csv', '_test.db')"
+run 5-paypal     "$PAYPAL_COMMIT"     "$PAYPAL_COMMIT^"     "cash.import_paypal_csv('$IN_PAYPAL', '_test.db')"
+run 6-citi       "$CITI_COMMIT"       "$CITI_COMMIT^"       "cash.import_citi_tsv('$IN_CITI/2016-03-01.tsv', '_test.db')"
 
-run 1-chase          "$CHASE_COMMIT" "$CHASE_COMMIT^" "cash.import_chase_txns('1-chase-data', '_test.db')"
-run 2-mypay          "$PAY_COMMIT"   "$PAY_COMMIT^"   "cash.import_pay_txns('$IN_PAY', '_test.db')"
-run 3-chase-memos    ""              "HEAD"           "cash.update_chase_memos('_test.db')"
-run 4-chase-0130     ""              "3-chase-memos"  "cash.import_chase_update('/home/russ/store/statements/chase-7165/2016-01-30.csv','_test.db')"
-run 5-chase-0308     ""              "4-chase-0130"   "cash.import_chase_update('/home/russ/store/statements/chase-7165/2016-03-08.csv','_test.db')"
-run 6-paypal         ""              "5-chase-0308"   "cash.import_paypal_csv('/home/russ/store/statements/paypal','_test.db')"
-run 7-citi           ""              "6-paypal"       "cash.import_citi_tsv('/home/russ/store/statements/citi-6842/2016-03-01.tsv','_test.db')"
-
-run 4.1-chase-merge "4-chase-0130"   "3-chase-memos"  "$CHASE_MERGE_CMD"
 python3.5 -c "import cash; cash.test_parse_yearless_dates()"
 
 echo Tests pass
