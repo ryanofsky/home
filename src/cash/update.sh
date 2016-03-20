@@ -4,11 +4,14 @@ set -e
 set -x
 
 IN_CHASE=~/store/statements/chase-7165
-CASH_DB=~/russ/cash/russ.db
+
+if [ ! -e pdfminer ]; then
+    git clone https://github.com/euske/pdfminer.git
+    ( cd pdfminer; git apply ) < pdfminer.diff
+    ( cd pdfminer; python setup.py build )
+fi
 
 mkdir -p 0-chase-txt 1-chase-data 2-chase-imported
-
-(cd pdfminer; python setup.py build)
 
 for i in "$IN_CHASE"/*.pdf; do
     o="0-chase-txt/${i#$IN_CHASE/}"
@@ -25,13 +28,11 @@ for i in 0-chase-txt/*.json; do
     fi
 done
 
-python3.5 -c "import cash; cash.update_chase_memos('$CASH_DB')"
-
 for i in 1-chase-data/*.json; do
     o="2-chase-imported/${i#1-chase-data/}"
     o="${o%.json}.pdf"
     if [ ! -e "$o" ]; then
-        python3.5 -c "import cash; cash.import_chase_update('$i', '$CASH_DB')"
+        python3.5 -c "import cash; cash.import_chase_update('$i', 'russ.db')"
         touch "$o"
     fi
 done
@@ -39,7 +40,7 @@ done
 for i in "$IN_CHASE"/*.csv; do
     o="2-chase-imported/${i#$IN_CHASE/}"
     if [ ! -e "$o" ]; then
-        python3.5 -c "import cash; cash.import_chase_update('$i', '$CASH_DB')"
+        python3.5 -c "import cash; cash.import_chase_update('$i', 'russ.db')"
         touch "$o"
     fi
 done
