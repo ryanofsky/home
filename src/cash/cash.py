@@ -392,6 +392,111 @@ def cleanup(cash_db):
                                 or desc.startswith("Google Document")))
 
 
+def cleanup2(cash_db):
+    #FIXME: Orphan-USD
+    #FIXME: Expenses
+    with sqlite3.connect(cash_db) as conn:
+        gnu = GnuCash(conn, "cleanup2")
+        txns = set()
+        acct_names = gnu.acct_map(full=True)
+        acct_guids = {name: guid for guid, name in acct_names.items()}
+
+        # Manually fix mixed up duane readee/autopay transactions.
+        pay_split, pay_memo, dr_txn = find_split(
+            gnu, datetime.date(2012, 11, 21), "%Autopayblp%", -1000)
+        dr_split, dr_memo, pay_txn = find_split(
+            gnu, datetime.date(2012, 11, 21), "%11/21 Duane Reade%", -1000)
+        gnu.update_split(dr_split, txn=dr_txn)
+        gnu.update_split(pay_split, txn=pay_txn)
+        c = gnu.conn.cursor()
+        c.execute("UPDATE transactions SET description = ?, post_date = ? WHERE description = ? AND guid = ?", ("Credit Card Payment", gnu.date_str(datetime.date(2012,11,13)), "Duane Reade", pay_txn))
+        check(c.rowcount == 1)
+
+        """
+2012-11-21 0bf9cdb Duane Reade: Rx
+     10.00 f69a3c7 Expenses: Basic
+    -10.00 3d77f9b Assets: Current Assets: Checking Account--11/13 -- Chase            Autopayblp                 PPD ID: 4760039224 [pdf]
+2012-11-21 81b8f8d Duane Reade
+    -10.00 f95dd7e Assets: Current Assets: Checking Account--11/21 -- Card Purchase With Pin  11/21 Duane Reade 46 3Rd Ave New York NY [pdf, card=8636]
+     10.00 bf9dc28 Expenses: Auto: Purchases
+        """
+
+        pp_txn = find_txn(gnu, 2015, 1, 16, "Laura")
+        bank_split, bank_memo, bank_txn = find_split(
+            gnu, datetime.date(2015, 1, 20), "%Laurenjenni%", -20000)
+        gnu.update_split(bank_split, txn=pp_txn)
+        delete_split(gnu, pp_txn, gnu.acct(("Imbalance-USD",)), "", "", -20000)
+        delete_split(gnu, bank_txn, gnu.acct(("Expenses","Auto","Laura")), "", "", 20000)
+        delete_txn(gnu, bank_txn)
+        """
+
+2015-01-16 c0b595e Laura
+      0.00 998e882 Assets: Current Assets: Paypal--01/16 -- Lauren Jennings [amount=-200.00USD, bank=200.00USD, type="Payment Sent", time=2015-01-16T21:03:23, txn=3B09811121961815J, from=russ@yanofsky.org, to=laurenjennings92@gmail.com, counterparty=Verified, 1-type="Add Funds from a Bank Account", 1-txn=7D653283WL554570M]
+    200.00 ac2fda2 Expenses: Auto: Laura
+   -200.00 c75a2a0 Imbalance-USD
+
+2015-01-20 36906c8 Laura
+   -200.00 89ee7bb Assets: Current Assets: Checking Account--01/20 -- Paypal           Inst Xfer  Laurenjenni     Web ID: Paypalsi77 [pdf, csv]
+    200.00 4e4ea8c Expenses: Auto: Laura
+        """
+
+        cl_txn = gnu.guid()
+        cl_date = datetime.date(2014, 5, 28)
+        gnu.insert("transactions",
+                    (("guid", cl_txn),
+                     ("currency_guid", gnu.commodity_usd),
+                     ("num", ""),
+                     ("post_date", gnu.date_str(cl_date)),
+                     ("enter_date", gnu.date_str(cl_date)),
+                     ("description", "Express Checkout Payment Sent: ClickBank")))
+        dr_txn = find_txn(gnu, 2014, 5, 27, "Duane Reade")
+        gnu.update_split(select_split(gnu, dr_txn, gnu.paypal_acct), txn=cl_txn)
+        gnu.update_split(select_split(gnu, dr_txn, gnu.acct(("Imbalance-USD",))), txn=cl_txn)
+
+        """
+
+2014-05-27 9d85f5e Duane Reade
+     -5.43 9be1b64 Assets: Current Assets: Checking Account--05/27 -- Card Purchase With Pin  05/26 Duane Reade 125-133 3R New York NY [pdf, csv, card=8636, ref=035407, date=05
+/26]
+      5.43 7b1819e Expenses: Auto: Purchases
+     -5.43 fab2d05 Assets: Current Assets: Paypal--05/28 -- ClickBank [amount=-5.43USD, tax=0.44, type="Express Checkout Payment Sent", time=2014-05-28T22:08:22, txn=0J290914SK
+399171P, from=russ@yanofsky.org, to=paypal@clickbank.com, counterparty=Verified, quantity=1, invoice-number=XWWSFT3E]
+      5.43 7981833 Imbalance-USD
+        """
+
+        c.execute("UPDATE splits SET account_guid = ? WHERE account_guid = ? AND EXISTS(SELECT * FROM transactions WHERE (description = 'Credit Card Interest' or description LIKE '%Fee%') and guid = splits.tx_guid)", (gnu.acct(("Expenses", "Auto", "Fees")), gnu.expense_acct))
+
+        #move_expense(gnu, txns, acct_names, acct_guids, "%%", "Recurring: ", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%el dorado sales%", "Recurring: Easynews", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%int'l cirrus atm w/drawal%", acct=gnu.cash_acct, desc="International ATM Withdrawal", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%; 2co.com%", "Recurring: Hosting", "JohnCompanies VPS", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%2checkout%", "Recurring: Hosting", "Swvps", variants=("SWVPS","Refund: 2Checkout.com"), override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%swvps%",     "Recurring: Hosting", "Swvps", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%rapidvps%",  "Recurring: Hosting", "RapidVPS", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%domainregistration%",  "Recurring: Hosting", desc="Dotster Domain Registration", variants=("Domain registration",),override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%bq internet%",  "Recurring: VPS", "BQ Internet Backup", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%atm wdrl exchg rate adj%", "Fees", desc="International ATM Exchange Rate Fee", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%int'l cirrus atm fee%", "Fees", desc="International ATM Exchange Rate Fee", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%purch exchg rate adj%", "Fees", desc="International Purchase Exchange Rate Fee", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%earthlink%", "Recurring: EarthLink", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%xmradio%", "Recurring: Sirius XM", desc="XM Radio", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%Sprint8006396111 Achbillpay%", "Recurring: Sprint", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%mta mvm%", "Transportation", desc="Metrocard", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%mta mvm%", "Transportation", desc="Metrocard", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%pamela equities%", "Recurring: Apartment Rent", desc="Apartment Rent: 85 E 10th St", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%88 third realty%", "Recurring: Apartment Rent", desc="Apartment Rent: 92 3rd Ave", override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%CITI-Click 2 Pay Payment%", desc="Credit Card Payment", ignore_variants=("Credit Card Payment ",), acct=gnu.citi_3296)
+        move_expense(gnu, txns, acct_names, acct_guids, "%Citi Payment     Online Pmt%", desc="Credit Card Payment", ignore_variants=("Credit Card Payment ",), acct=gnu.citi_3296)
+        move_expense(gnu, txns, acct_names, acct_guids, "%Chase            Epay%", desc="Credit Card Payment", acct=gnu.card_acct, override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%Autopayblp%", desc="Credit Card Payment", acct=gnu.card_acct, override_expense_type=True)
+        move_expense(gnu, txns, acct_names, acct_guids, "%Con Ed of NY%", "Recurring: Con Edison", override_expense_type=True)
+
+        # Print uncategorized
+        gnu.print_txns("== Unmatched ==",
+                       lambda txn_guid, account, desc, **_:
+                       account == gnu.expense_acct
+                       or desc.startswith("Withdrawal: "))
+
 def find_txn(gnu, year, month, day, desc):
     c = gnu.conn.cursor()
     c.execute("SELECT guid FROM transactions "
@@ -2235,6 +2340,7 @@ class GnuCash:
                                         "Checking Account"))
         self.citi_acct = self.acct(("Liabilities", "Citibank 6842"))
         self.citi_3296 = self.acct(("Liabilities", "Citibank 3296"))
+        self.card_acct = self.acct(("Liabilities", "Chase"))
         self.paypal_acct = self.acct(( "Assets", "Current Assets", "Paypal"))
         self.bank_accts = [self.checking_acct, self.citi_acct, self.citi_3296,
                            self.acct(("Liabilities", "Chase")),
