@@ -9,7 +9,6 @@ TMP_DIR=/mnt/fort/_tmp/torrent
 STATES_DIR=$TMP_DIR/states
 SORT_FILE=$TMP_DIR/states-sort
 JSON_DIR=$TMP_DIR/json
-SYMLINK_DIR=$TMP_DIR/symlinks
 
 # List input directories. Download dir is one directory that is
 # input/output.
@@ -67,21 +66,26 @@ while read MTIME STATE_DIR STATE; do
 done < <(sort -n $SORT_FILE)
 echo "Check overridden states with (cd $JSON_DIR; git log -p -U0 --diff-filter=M)"
 
-# Create torrent dir with symlinks to data files.
-rm -rf $DOWNLOAD_DIR/torrent
-mkdir $DOWNLOAD_DIR/torrent
-python -c "import torrent; torrent.find_files('$JSON_DIR', '$DOWNLOAD_DIR/torrent', '${DATA_DIRS[*]}'.split())"
-
-# Create other symlink directories.
-rm -rf "$SYMLINK_DIR"
+# Create symlink directories.
+rm -rf $DOWNLOAD_DIR/symlinks
 for DATA_DIR in "${DATA_DIRS[@]}"; do
   if [ "$DATA_DIR" != "$DOWNLOAD_DIR" ]; then
-     python -c "import torrent; torrent.make_symlink_tree('$DATA_DIR', '$SYMLINK_DIR$DATA_DIR')"
+     python -c "import torrent; torrent.make_symlink_tree('$DATA_DIR', '$DOWNLOAD_DIR/symlinks$DATA_DIR')"
   fi
 done
 
+# Create torrent dir with symlinks to data files.
+rm -rf $DOWNLOAD_DIR/torrent
+mkdir $DOWNLOAD_DIR/torrent
+python -c "import torrent; torrent.find_files('$JSON_DIR', '$DOWNLOAD_DIR', '$DOWNLOAD_DIR/torrent')"
+echo "Search symlinks with (cd $DOWNLOAD_DIR/torrent; find -type l -printf '%P ---- %l\n')"
+
 # Add checksums.
-python -c "import torrent; torrent.load_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent', '/mnt/fort/_tmp/torrent.sums')"
+#python -c "import torrent; torrent.load_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent', '/mnt/fort/_tmp/torrent.sums')"
 python -c "import torrent; torrent.compute_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent')"
-(cd $JSON_DIR; git add .; git commit --allow-empty -m "Run compute_sums to get md5 checksums.")
+(cd $JSON_DIR; git add .; git commit -m "Run compute_sums to get md5 checksums.")
 #python -c "import torrent; torrent.dump_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent', '/mnt/fort/_tmp/torrent.sums')"
+
+# Move data and point symlinks into torrent directory.
+python -c "import torrent; torrent.move_torrents('$DOWNLOAD_DIR', '$DOWNLOAD_DIR/torrent')"
+echo "Check content (cd $DOWNLOAD_DIR; find -printf '%P ---- %T@ ---- %l\n' | sort)"

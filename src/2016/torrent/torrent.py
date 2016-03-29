@@ -15,6 +15,10 @@ from deluge.core.torrentmanager import TorrentState, TorrentManagerState
 
 
 def tojson(in_dir, out_dir):
+    """Convert deluge and vuze torrent state dirs to json format.
+
+    Can run incrementally. New torrent data just replaces old torrent data in
+    json dir."""
     torrents = load_torrents(out_dir)
 
     for f in os.listdir(in_dir):
@@ -58,6 +62,9 @@ def tojson(in_dir, out_dir):
 
 
 def fromjson(in_dir, out_dir):
+    """Convert json torrent info to deluge state dir format.
+
+    Not incremental. Output directory is created and populated from scratch."""
     torrents = load_torrents(in_dir)
 
     os.mkdir(out_dir)
@@ -82,7 +89,17 @@ def fromjson(in_dir, out_dir):
         fp.write(bencode.bencode(fr))
 
 
-def find_files(json_dir, torrent_dir, src_dirs):
+def find_files(json_dir, src_dir, torrent_dir):
+    """Populate torrent_dir with symlinks to downloaded files in src_dirs.
+
+    Doesn't change json_dir or src_dirs content, only creates/updates symlinks
+    in torrent_dir.
+
+    Can run incrementally. New symlinks will be added besides existing ones,
+    and existing ones will only be replaced if they point to /dev/null.
+    If a new symlink would conflict with an existing one this will throw an
+    exception."""
+
     torrents = load_torrents(json_dir)
     base_idx = {}  # File basename -> torrent_id, file name
     for torrent_id, torrent in torrents.items():
@@ -100,24 +117,23 @@ def find_files(json_dir, torrent_dir, src_dirs):
     # Crawl source directory and make matches
     file_idx = {}  # torrent_id, file number -> source file
     subs = set()  # Set of torrent -> source path substiutions.
-    for src_dir in src_dirs:
-        for root, dirs, files in os.walk(src_dir):
-            if root == torrent_dir:
-                del dirs[:]
-                continue
-            rel = os.path.relpath(root, src_dir)
-            for f in files:
-                file_info = base_idx.get(f)
-                if file_info:
-                    src_path = os.path.join(root, f)
-                    file_idx.setdefault(file_info, src_path)
-                    torrent_id, torrent_path = file_info
-                    src_parts = src_path.split(os.sep)
-                    torrent_parts = torrent_path.split(os.sep)
-                    while src_parts and torrent_parts and src_parts[-1] == torrent_parts[-1]:
-                        src_parts.pop()
-                        torrent_parts.pop()
-                    subs.add((os.sep.join(torrent_parts + [""]), os.sep.join(src_parts + [""])))
+    for root, dirs, files in os.walk(src_dir):
+        if root == torrent:
+            del dirs[:]
+            continue
+        rel = os.path.relpath(root, src_dir)
+        for f in files:
+            file_info = base_idx.get(f)
+            if file_info:
+                src_path = os.path.join(root, f)
+                file_idx.setdefault(file_info, src_path)
+                torrent_id, torrent_path = file_info
+                src_parts = src_path.split(os.sep)
+                torrent_parts = torrent_path.split(os.sep)
+                while src_parts and torrent_parts and src_parts[-1] == torrent_parts[-1]:
+                    src_parts.pop()
+                    torrent_parts.pop()
+                subs.add((os.sep.join(torrent_parts + [""]), os.sep.join(src_parts + [""])))
 
     subs = sorted(subs)
 
@@ -189,6 +205,23 @@ def find_files(json_dir, torrent_dir, src_dirs):
 
 
 def compute_sums(json_dir, torrent_dir):
+    """Verify torrent sha1 piece checksums and add file md5 checksums to json.
+
+    md5 file checksums will be added to json data for files whose sha1 piece
+    checksums validate, with minor caveat that that this function will ignore
+    invalid piece checksums at the very beginning and end of files if the
+    piece checksum can't be computed because piece data from the the next
+    or previous file is missing. (This could be fixed to be more strict, but
+    would require a little more complexity to be done efficiently.)
+
+    md5 checksums for files with pieces that don't validate are set to "" in the
+    json file.
+
+    This function runs incrementally, and skips hashing any files that already
+    have md5 checksums in the JSON.
+
+    This function only modifies the json dir files. It leaves the torrent_dir
+    directory unchanged."""
     for torrent_id in list_json_torrents(json_dir):
         torrent = load_json_torrent(json_dir, torrent_id)
         make_str(torrent)
@@ -283,6 +316,13 @@ def compute_sums(json_dir, torrent_dir):
 
 
 def dump_sums(json_dir, torrent_dir, sum_file):
+    """Copy md5 checksums from json_dir to a separate file (sum_file).
+
+    Probably can delete this later. Just using this during testing of initial
+    to avoid having to recompute all checksums each time json files are
+    recreated.
+
+    Only writes to sum_file, doesn't modify json_dir or torrent_dir."""
     torrents = load_torrents(json_dir)
     sums = []
 
@@ -309,6 +349,13 @@ def dump_sums(json_dir, torrent_dir, sum_file):
 
 
 def load_sums(json_dir, torrent_dir, sum_file):
+    """Copy md5 checksums from sum_file to json_dir files.
+
+    Probably can delete this later. Just using this during testing of initial
+    to avoid having to recompute all checksums each time json files are
+    recreated.
+
+    Only adds md5 sums to json_dir, doesn't modify torrent_dir or sum_file."""
     with open(sum_file) as fp:
         sums = json.load(fp)
     make_str(sums)
@@ -348,6 +395,14 @@ def load_sums(json_dir, torrent_dir, sum_file):
 
 
 def make_symlink_tree(src_dir, dst_dir):
+    """Create symlink directory tree at dst_mirroring src_dir tree.
+
+    This function is generic and doesn't assume anything about json or
+    torrent files. It can a create a symlink tree mirroring any arbitrary
+    source directory.
+
+    This function isn't meant to run incrementally and will fail if
+    anything already exists at paths where symlinks would be created."""
     for src_root, dirs, files in os.walk(src_dir, topdown=False):
         rel = os.path.relpath(src_root, src_dir)
         dst_root = os.path.join(dst_dir, rel)
@@ -358,6 +413,42 @@ def make_symlink_tree(src_dir, dst_dir):
             subprocess.check_call(["ln", "-s", src_file, dst_file])
             subprocess.check_call(["touch", "-hr", src_file, dst_file])
         subprocess.check_call(["touch", "-r", src_root, dst_root])
+
+
+def move_torrents(src_dir, torrent_dir):
+    """Move any torrent files out of src_dir into torrent_dir.
+
+    This function replaces any symlinks in torrent_dir pointing into
+    src_dir with the actual file content from src_dir (moving that
+    content from src_dir to torrent_dir), and replaces the content
+    moved out of src_dir with /mnt/torrent symlinks.
+
+    Can run incrementally. Doesn't modify any file in torrent_dir
+    that is not a symlink into src_dir, and doesn't modify any files
+    in src_dir not pointed to by a symlink in torrent_dir."""
+    for torrent_dir_path, dirs, files in os.walk(torrent_dir):
+        rel = os.path.relpath(torrent_dir_path, torrent_dir)
+        subprocess.check_call(["touch", "-hr", torrent_dir_path, "/tmp/torrent_dir_mtime"])
+
+        for f in files:
+            torrent_file_path = os.path.join(torrent_dir_path, f)
+            if not os.path.islink(torrent_file_path):
+                continue
+
+            src_file_path = os.readlink(torrent_file_path)
+            if not starts(src_file_path, src_dir):
+                continue
+
+            src_dir_path = os.path.dirname(src_file_path)
+            subprocess.check_call(["touch", "-hr", src_dir_path, "/tmp/src_dir_mtime"])
+            subprocess.check_call(["touch", "-hr", torrent_file_path, "/tmp/torrent_file_mtime"])
+            os.rename(src_file_path, torrent_file_path)
+            os.symlink(os.path.join("/mnt/torrent", rel, f), src_file_path)
+            subprocess.check_call(["touch", "-hr", torrent_file_path, src_file_path])
+            subprocess.check_call(["touch", "-hr", "/tmp/torrent_file_mtime", torrent_file_path])
+            subprocess.check_call(["touch", "-hr", "/tmp/src_dir_mtime", src_dir_path])
+
+        subprocess.check_call(["touch", "-hr", "/tmp/torrent_dir_mtime", torrent_dir_path])
 
 
 def save_torrents(torrents, json_dir):
@@ -475,6 +566,11 @@ def field(obj, *path, **kwargs):
             return default_value
         obj = obj[component]
     return obj
+
+
+def starts(path, start):
+    l = len(start)
+    return path.startswith(start) and (len(path) == l or path[l] == os.sep)
 
 
 def check(cond, error=None):
