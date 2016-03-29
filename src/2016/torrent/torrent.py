@@ -426,6 +426,10 @@ def move_torrents(src_dir, torrent_dir):
     Can run incrementally. Doesn't modify any file in torrent_dir
     that is not a symlink into src_dir, and doesn't modify any files
     in src_dir not pointed to by a symlink in torrent_dir."""
+    subprocess.check_call(["touch", "/tmp/torrent_dir_mtime"])
+    subprocess.check_call(["touch", "/tmp/torrent_file_mtime"])
+    subprocess.check_call(["touch", "/tmp/src_dir_mtime"])
+
     for torrent_dir_path, dirs, files in os.walk(torrent_dir):
         rel = os.path.relpath(torrent_dir_path, torrent_dir)
         subprocess.check_call(["touch", "-hr", torrent_dir_path, "/tmp/torrent_dir_mtime"])
@@ -450,6 +454,9 @@ def move_torrents(src_dir, torrent_dir):
 
         subprocess.check_call(["touch", "-hr", "/tmp/torrent_dir_mtime", torrent_dir_path])
 
+    os.unlink("/tmp/torrent_dir_mtime")
+    os.unlink("/tmp/torrent_file_mtime")
+    os.unlink("/tmp/src_dir_mtime")
 
 def save_torrents(torrents, json_dir):
     make_unicode(torrents)
