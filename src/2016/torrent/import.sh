@@ -89,3 +89,5 @@ python -c "import torrent; torrent.compute_sums('$JSON_DIR', '$DOWNLOAD_DIR/torr
 # Move data and point symlinks into torrent directory.
 python -c "import torrent; torrent.move_torrents('$DOWNLOAD_DIR', '$DOWNLOAD_DIR/torrent')"
 echo "Check content (cd $DOWNLOAD_DIR; find -printf '%P ---- %T@ ---- %l\n' | sort)"
+
+python -c "import torrent; torrent.list_torrents('$JSON_DIR', '$DOWNLOAD_DIR/torrent')"

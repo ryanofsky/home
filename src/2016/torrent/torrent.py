@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 
+import datetime
 import hashlib
 import json
 import os
@@ -89,6 +90,60 @@ def fromjson(in_dir, out_dir):
         fp.write(bencode.bencode(fr))
 
 
+def list_torrents(json_dir, torrent_dir):
+    torrents = load_torrents(json_dir)
+    metadata = []
+    for torrent_id, torrent in torrents.items():
+        tags = []
+        if "data" in torrent:
+            info = torrent["data"]["info"]
+            priorities = field(torrent, "state", "file_priorities")
+            md5s = field(torrent, "download", "md5")
+            total_files = 0
+            phys_files = 0
+            sym_files = 0
+            missing_files = 0
+            skip_files = 0
+            good_files = 0
+            for i, (path, length) in enumerate(get_torrent_files(info)):
+                abs_path = os.path.join(torrent_dir, torrent_id, path)
+
+                total_files += 1
+
+                if os.path.islink(abs_path):
+                    if os.readlink(abs_path) not in (os.devnull, "/dev/zero"):
+                        sym_files += 1
+                elif os.path.exists(abs_path):
+                    phys_files += 1
+
+                if priorities and priorities[i] == 0:
+                    skip_files += 1
+                elif md5s and md5s[i]:
+                    good_files += 1
+
+            counts = "{:>3} {:>7} {:>7}".format(total_files, "{}/{}/{}".format(phys_files, sym_files, total_files - phys_files - sym_files), "{}/{}/{}".format(good_files, total_files - good_files - skip_files, skip_files))
+            name = info["name"]
+            if len(torrent["data"]) > 1:
+                tags.append("vuze")
+        else:
+            counts = ""
+            name = None
+
+        timestamp = get_timestamp(torrent) or 0
+        if "state" in torrent:
+            tags.append("state")
+        if "fastresume" in torrent:
+            tags.append("fastresume")
+        metadata.append((timestamp, name, torrent_id, counts, tags))
+
+    metadata.sort()
+    print("Date       Hash     Total  Phys/Sym/Missing  Good/Bad/Skip  Name  Tags")
+    for timestamp, name, torrent_id, counts, tags in metadata:
+        tags = " [{}]".format(", ".join(tags)) if tags else ""
+        print("{:%Y-%m-%d} {} {:20} {!r}{}".format(
+            datetime.datetime.fromtimestamp(timestamp), torrent_id[:8], counts, name, tags))
+
+
 def find_files(json_dir, src_dir, torrent_dir):
     """Populate torrent_dir with symlinks to downloaded files in src_dirs.
 
@@ -143,7 +198,7 @@ def find_files(json_dir, src_dir, torrent_dir):
             continue
         info = torrent["data"]["info"]
 
-        timestamp = field(torrent, "state", "time_added") or field(torrent, "fastresume", "added_time") or field(torrent, "download", "mtime")
+        timestamp = get_timestamp(torrent)
         touch_paths = set()
 
         for path, length in get_torrent_files(info):
@@ -497,6 +552,12 @@ def get_torrent_files(info):
             yield os.path.join(info["name"], *file_info["path"]), file_info["length"]
     else:
         yield info["name"], info["length"]
+
+
+def get_timestamp(torrent):
+   return (field(torrent, "state", "time_added")
+           or field(torrent, "fastresume", "added_time")
+           or field(torrent, "download", "mtime"))
 
 
 def torrent_file(torrent, i):
