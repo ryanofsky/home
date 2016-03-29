@@ -78,10 +78,10 @@ def fromjson(in_dir, out_dir):
                           "w") as fp:
                     fp.write(bencode.bencode(v))
             elif k == "state":
+                v = unsort_dicts(v)
                 tm.torrents.append(TorrentState(**v))
-            else:
-                check(k== "fastresume")
-                fr[torrent_id] = v
+            elif k == "fastresume":
+                fr[torrent_id] = bencode.bencode(v)
 
     with open(os.path.join(out_dir, "torrents.state"), "w") as fp:
         pickle.dump(tm, fp)
@@ -577,6 +577,11 @@ def obj_dict(obj):
 def sort_dicts(obj):
     return update_obj(obj, lambda v: OrderedDict(
         x for x in sorted(v.items())) if isinstance(v, dict) else v)
+
+
+def unsort_dicts(obj):
+    return update_obj(obj, lambda v: dict(v.items())
+                           if isinstance(v, OrderedDict) else v)
 
 
 def make_unicode(obj):
