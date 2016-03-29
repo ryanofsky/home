@@ -410,8 +410,11 @@ def make_symlink_tree(src_dir, dst_dir):
         for f in files:
             src_file = os.path.join(src_root, f)
             dst_file = os.path.join(dst_root, f)
-            subprocess.check_call(["ln", "-s", src_file, dst_file])
-            subprocess.check_call(["touch", "-hr", src_file, dst_file])
+            if os.path.islink(src_file):
+                subprocess.check_call(["cp", "-an", "--reflink", src_file, dst_file])
+            else:
+                subprocess.check_call(["ln", "-s", src_file, dst_file])
+                subprocess.check_call(["touch", "-hr", src_file, dst_file])
         subprocess.check_call(["touch", "-r", src_root, dst_root])
 
 
