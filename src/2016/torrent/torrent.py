@@ -201,7 +201,8 @@ def find_files(json_dir, src_dir, torrent_dir):
         timestamp = get_timestamp(torrent)
         touch_paths = set()
 
-        for path, length in get_torrent_files(info):
+        priorities = field(torrent, "state", "file_priorities")
+        for i, (path, length) in enumerate(get_torrent_files(info)):
             # Look for direct match when file has unique basename.
             src_path = file_idx.get((torrent_id, path))
 
@@ -230,7 +231,10 @@ def find_files(json_dir, src_dir, torrent_dir):
                             break
 
             if not src_path:
-                src_path = os.devnull
+                if priorities and priorities[i] == 0:
+                    src_path = "/dev/zero"
+                else:
+                    src_path = os.devnull
 
             # Create parent dirs and save paths for later call to touch.
             torrent_dirname = os.path.dirname(os.path.join(torrent_id, path))
