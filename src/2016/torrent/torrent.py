@@ -393,85 +393,6 @@ def compute_sums(json_dir, torrent_dir):
         save_json_torrent(torrent, json_dir, torrent_id)
 
 
-def dump_sums(json_dir, torrent_dir, sum_file):
-    """Copy md5 checksums from json_dir to a separate file (sum_file).
-
-    Probably can delete this later. Just using this during testing of initial
-    to avoid having to recompute all checksums each time json files are
-    recreated.
-
-    Only writes to sum_file, doesn't modify json_dir or torrent_dir."""
-    torrents = load_torrents(json_dir)
-    sums = []
-
-    for torrent_id, torrent in torrents.items():
-        if not "data" in torrent:
-            continue
-        info = torrent["data"]["info"]
-
-        if not "download" in torrent:
-            continue
-        md5s = torrent["download"]["md5"]
-
-        for md5, (rel_path, file_length) in zip(md5s, get_torrent_files(info)):
-            src_path = os.path.join(torrent_dir, torrent_id, rel_path)
-            if os.path.islink(src_path):
-                src_path = os.readlink(src_path)
-            if md5:
-                sums.append([src_path, md5])
-
-    sums.sort()
-    make_unicode(sums)
-    with open(sum_file, "w") as fp:
-       json.dump(sums, fp, indent=4, separators=(",", ": "))
-
-
-def load_sums(json_dir, torrent_dir, sum_file):
-    """Copy md5 checksums from sum_file to json_dir files.
-
-    Probably can delete this later. Just using this during testing of initial
-    to avoid having to recompute all checksums each time json files are
-    recreated.
-
-    Only adds md5 sums to json_dir, doesn't modify torrent_dir or sum_file."""
-    with open(sum_file) as fp:
-        sums = json.load(fp)
-    make_str(sums)
-
-    sum_idx = {}
-    for path, sum in sums:
-        if path in sum_idx:
-            check(sum == sum_idx[path])
-            print("Warning: path {} in multiple torrents.".format(path))
-        sum_idx[path] = sum
-
-    torrents = load_torrents(json_dir)
-
-    for torrent_id, torrent in torrents.items():
-        if not "data" in torrent:
-            continue
-        info = torrent["data"]["info"]
-        download = torrent["download"]
-        md5s = download.setdefault("md5", [])
-        if not md5s:
-            for _ in get_torrent_files(info):
-                md5s.append("")
-
-        for i, (rel_path, file_length) in enumerate(get_torrent_files(info)):
-            src_path = os.path.join(torrent_dir, torrent_id, rel_path)
-            if os.path.islink(src_path):
-                src_path = os.readlink(src_path)
-            sum = sum_idx.pop(src_path, None)
-            if sum:
-                if md5s[i]:
-                    check(md5s[i] == sum)
-                else:
-                    md5s[i] = sum
-
-    print("Nonmatched", sum_idx)
-    save_torrents(torrents, json_dir)
-
-
 def make_symlink_tree(src_dir, dst_dir):
     """Create symlink directory tree at dst_mirroring src_dir tree.
 
@@ -502,7 +423,7 @@ def move_torrents(src_dir, torrent_dir):
     This function replaces any symlinks in torrent_dir pointing into
     src_dir with the actual file content from src_dir (moving that
     content from src_dir to torrent_dir), and replaces the content
-    moved out of src_dir with /mnt/torrent symlinks.
+    moved out of src_dir with /mnt/download/torrent symlinks.
 
     Can run incrementally. Doesn't modify any file in torrent_dir
     that is not a symlink into src_dir, and doesn't modify any files
@@ -526,7 +447,7 @@ def move_torrents(src_dir, torrent_dir):
             src_dir_path = os.path.dirname(src_file_path)
             subprocess.check_call(["touch", "-hr", src_dir_path, "/tmp/src_dir_mtime"])
             os.rename(src_file_path, torrent_file_path)
-            os.symlink(os.path.join("/mnt/torrent", rel, f), src_file_path)
+            os.symlink(os.path.join("/mnt/download/torrent", rel, f), src_file_path)
             subprocess.check_call(["touch", "-hr", torrent_file_path, src_file_path])
             subprocess.check_call(["touch", "-hr", "/tmp/src_dir_mtime", src_dir_path])
 

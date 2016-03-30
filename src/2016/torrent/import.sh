@@ -12,8 +12,7 @@ JSON_DIR=$TMP_DIR/json
 
 # List input directories. Download dir is one directory that is
 # input/output.
-DOWNLOAD_DIR=/mnt/fort/_download
-DOWNLOAD_DIR=$TMP_DIR/_download # For testing only
+DOWNLOAD_DIR=/mnt/download
 STATES=(
 old.3/latest/old/2009-07-26-backup/root/home/russ/.azureus/torrents
 old.47/latest/old/2012-01-28-rescue-toaster-root/home/russ/.azureus/torrents
@@ -31,17 +30,14 @@ $DOWNLOAD_DIR/pia2-config-deluge/*/state
 )
 DATA_DIRS=(
 $DOWNLOAD_DIR
-/mnt/fort/.snapshots/share@20140527T001746Z
-/mnt/fort/_tmp/data/old.56/latest/old/2014-03-25-share
-/mnt/fort/_tmp/data/old.57/latest/old/2014-03-25-share
+/mnt/snapshots/share@20140527T001746Z
+/mnt/data/old.56/latest/old/2014-03-25-share
+/mnt/data/old.57/latest/old/2014-03-25-share
 )
 
-# Set up temporary directory with an embedded mutable copy of
-# _download directory for testing.
-test ! -e $TMP_DIR/_download || btrfs su delete $TMP_DIR/_download
+# Create temp dir.
 test ! -e $TMP_DIR || btrfs su delete $TMP_DIR
 btrfs su create $TMP_DIR
-btrfs su snapshot /mnt/fort/_download $TMP_DIR/_download
 
 # Figure out ordering for state dirs.
 rm -rf $STATES_DIR $SORT_FILE
@@ -81,13 +77,12 @@ python -c "import torrent; torrent.find_files('$JSON_DIR', '$DOWNLOAD_DIR', '$DO
 echo "Search symlinks with (cd $DOWNLOAD_DIR/torrent; find -type l -printf '%P ---- %l\n')"
 
 # Add checksums.
-#python -c "import torrent; torrent.load_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent', '/mnt/fort/_tmp/torrent.sums')"
 python -c "import torrent; torrent.compute_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent')"
 (cd $JSON_DIR; git add .; git commit -m "Run compute_sums to get md5 checksums.")
-#python -c "import torrent; torrent.dump_sums('$JSON_DIR', '$DOWNLOAD_DIR/torrent', '/mnt/fort/_tmp/torrent.sums')"
 
 # Move data and point symlinks into torrent directory.
 python -c "import torrent; torrent.move_torrents('$DOWNLOAD_DIR', '$DOWNLOAD_DIR/torrent')"
 echo "Check content (cd $DOWNLOAD_DIR; find -printf '%P ---- %T@ ---- %l\n' | sort)"
 
+# List all torrents.
 python -c "import torrent; torrent.list_torrents('$JSON_DIR', '$DOWNLOAD_DIR/torrent')"
