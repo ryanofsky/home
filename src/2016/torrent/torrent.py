@@ -326,8 +326,8 @@ def compute_sums(json_dir, torrent_dir):
                 md5_file = i + 1
 
             print("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, file_skip_bytes))
-            if file_skip_bytes != file_length:
-                assert file_skip_bytes < file_length
+            if file_skip_bytes == 0 or file_skip_bytes != file_length:
+                assert file_skip_bytes <= file_length
                 file_bytes = 0
                 md5 = hashlib.md5()
                 with open(abs_path, "rb") as fp:
@@ -335,7 +335,7 @@ def compute_sums(json_dir, torrent_dir):
                         fp.seek(file_skip_bytes)
                         file_bytes += file_skip_bytes
                         md5 = None
-                    while file_bytes < file_length:
+                    while True:
                         assert total_bytes % piece_length == piece_bytes
                         piece = fp.read(piece_length - piece_bytes)
                         total_bytes += len(piece)
@@ -375,6 +375,10 @@ def compute_sums(json_dir, torrent_dir):
                                 file_bytes += file_skip_bytes
                                 fp.seek(file_bytes)
                                 md5 = None
+
+                        if file_bytes >= file_length:
+                            assert file_bytes == file_length
+                            break
 
                     check(not fp.read())
 
