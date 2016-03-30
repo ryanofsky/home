@@ -304,35 +304,35 @@ def compute_sums(json_dir, torrent_dir):
             assert total_bytes % piece_length == piece_bytes
             abs_path = os.path.join(torrent_dir, torrent_id, rel_path)
             size = os.path.getsize(abs_path)
-            skip_bytes = 0
+            file_skip_bytes = 0
             piece_skip_bytes = 0
             if size != file_length:
                 print >> sys.stderr, ("Bad file size {!r}, expected {} bytes, found {}.".format(rel_path, file_length, size))
-                skip_bytes = file_length
+                file_skip_bytes = file_length
             elif download_md5[i]:
-                skip_bytes = file_length
+                file_skip_bytes = file_length
                 # If there is another file following current file.
-                if total_bytes + skip_bytes < total_length:
+                if total_bytes + file_skip_bytes < total_length:
                     # Subtract size of the last piece in the file to cause
                     # that piece to be read.
-                    skip_bytes -= min((skip_bytes + piece_bytes) % piece_length,
-                                      skip_bytes)
-            if skip_bytes:
-                piece_skip_bytes = piece_bytes + skip_bytes
-                total_bytes += skip_bytes
-                piece_bytes = (piece_bytes + skip_bytes) % piece_length
+                    file_skip_bytes -= min((file_skip_bytes + piece_bytes) % piece_length,
+                                            file_skip_bytes)
+            if file_skip_bytes:
+                piece_skip_bytes = piece_bytes + file_skip_bytes
+                total_bytes += file_skip_bytes
+                piece_bytes = (piece_bytes + file_skip_bytes) % piece_length
                 piece_file = i + 1
                 sha1 = hashlib.sha1()
                 md5s = []
 
-            print("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, skip_bytes))
-            if skip_bytes != file_length:
-                assert skip_bytes < file_length
+            print("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, file_skip_bytes))
+            if file_skip_bytes != file_length:
+                assert file_skip_bytes < file_length
                 file_bytes = 0
                 md5 = hashlib.md5()
                 with open(abs_path, "rb") as fp:
-                    if skip_bytes > 0:
-                        file_bytes += skip_bytes
+                    if file_skip_bytes > 0:
+                        file_bytes += file_skip_bytes
                         fp.seek(file_bytes)
                         md5 = None
                     while file_bytes < file_length:
@@ -347,7 +347,7 @@ def compute_sums(json_dir, torrent_dir):
                             if file_bytes == file_length:
                                 md5s.append(md5.hexdigest())
                         if piece_bytes == piece_length or total_bytes == total_length:
-                            assert skip_bytes == 0
+                            assert file_skip_bytes == 0
                             assert md5
                             sha1_digest = sha1.digest()
                             sha = shas.read(20)
@@ -364,14 +364,14 @@ def compute_sums(json_dir, torrent_dir):
 
                             if sha != sha1_digest:
                                 print >> sys.stderr, "Bad checksum {!r} pos {}".format(rel_path, file_bytes - len(piece))
-                                skip_bytes = file_length - file_bytes
-                                if total_bytes + skip_bytes < total_length:
-                                    skip_bytes -= skip_bytes % piece_length
-                                piece_skip_bytes = skip_bytes
-                                total_bytes += skip_bytes
+                                file_skip_bytes = file_length - file_bytes
+                                if total_bytes + file_skip_bytes < total_length:
+                                    file_skip_bytes -= file_skip_bytes % piece_length
+                                piece_skip_bytes = file_skip_bytes
+                                total_bytes += file_skip_bytes
                                 piece_file = i + 1
 
-                                file_bytes += skip_bytes
+                                file_bytes += file_skip_bytes
                                 fp.seek(file_bytes)
                                 md5 = None
 
