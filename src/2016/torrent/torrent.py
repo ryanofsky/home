@@ -294,11 +294,11 @@ def compute_sums(json_dir, torrent_dir):
         piece_length = info["piece length"]
         total_bytes = 0  # Current byte position in torrent data.
         piece_bytes = 0  # Current byte position in piece.
-        piece_file = 0  # Index first file whose md5sum maybe be added to md5s if piece checksum is correct.
         sha1 = hashlib.sha1()
         shas = StringIO(info["pieces"])  # SHA1 checksums of pieces.
         check(((total_length + piece_length - 1) // piece_length)*20 == len(shas.getvalue()))
-        md5s = []  # MD5 checksums of files starting with piece_file.
+        md5s = []  # MD5 checksums of files starting with md5_file.
+        md5_file = 0  # Index first file whose md5sum maybe be added to md5s if piece checksum is correct.
 
         for i, (rel_path, file_length) in enumerate(get_torrent_files(info)):
             assert total_bytes % piece_length == piece_bytes
@@ -321,9 +321,9 @@ def compute_sums(json_dir, torrent_dir):
                 piece_skip_bytes = piece_bytes + file_skip_bytes
                 total_bytes += file_skip_bytes
                 piece_bytes = (piece_bytes + file_skip_bytes) % piece_length
-                piece_file = i + 1
                 sha1 = hashlib.sha1()
                 md5s = []
+                md5_file = i + 1
 
             print("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, file_skip_bytes))
             if file_skip_bytes != file_length:
@@ -353,13 +353,13 @@ def compute_sums(json_dir, torrent_dir):
                             sha = shas.read(20)
                             check(len(sha) == 20, repr(sha))
                             if sha == sha1_digest:
-                                for j, md5_hexdigest in enumerate(md5s, piece_file):
+                                for j, md5_hexdigest in enumerate(md5s, md5_file):
                                     assert md5_hexdigest
                                     check(not download_md5[j] or download_md5[j] == md5_hexdigest)
                                     download_md5[j] = md5_hexdigest
                             sha1 = hashlib.sha1()
                             piece_bytes = 0
-                            piece_file += len(md5s)
+                            md5_file += len(md5s)
                             del md5s[:]
 
                             if sha != sha1_digest:
@@ -369,7 +369,7 @@ def compute_sums(json_dir, torrent_dir):
                                     file_skip_bytes -= file_skip_bytes % piece_length
                                 piece_skip_bytes = file_skip_bytes
                                 total_bytes += file_skip_bytes
-                                piece_file = i + 1
+                                md5_file = i + 1
 
                                 file_bytes += file_skip_bytes
                                 fp.seek(file_bytes)
