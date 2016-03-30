@@ -266,21 +266,15 @@ def find_files(json_dir, src_dir, torrent_dir):
 def compute_sums(json_dir, torrent_dir):
     """Verify torrent sha1 piece checksums and add file md5 checksums to json.
 
-    md5 file checksums will be added to json data for files whose sha1 piece
-    checksums validate, with minor caveat that that this function will ignore
-    invalid piece checksums at the very beginning and end of files if the
-    piece checksum can't be computed because piece data from the the next
-    or previous file is missing. (This could be fixed to be more strict, but
-    would require a little more complexity to be done efficiently.)
+    md5 file checksums will be added to json data for files whose sha1
+    piece checksums validate. md5 checksums for files with pieces that
+    don't validate are set to "" in the json file.
 
-    md5 checksums for files with pieces that don't validate are set to "" in the
-    json file.
+    This function runs incrementally, and skips hashing any files that
+    already have md5 checksums in the JSON.
 
-    This function runs incrementally, and skips hashing any files that already
-    have md5 checksums in the JSON.
-
-    This function only modifies the json dir files. It leaves the torrent_dir
-    directory unchanged."""
+    This function only modifies the json dir files. It leaves the
+    torrent_dir directory unchanged."""
     for torrent_id in list_json_torrents(json_dir):
         torrent = load_json_torrent(json_dir, torrent_id)
         make_str(torrent)
@@ -291,81 +285,106 @@ def compute_sums(json_dir, torrent_dir):
         print("== {} ==".format(torrent_id))
         info = torrent["data"]["info"]
         download = torrent.setdefault("download", OrderedDict())
-        md5s = download.setdefault("md5", [])
-        if not md5s:
+        download_md5 = download.setdefault("md5", [])
+        if not download_md5:
             for _ in get_torrent_files(info):
-                md5s.append("")
+                download_md5.append("")
 
         total_length = sum(length for name, length in get_torrent_files(info))
-        total_bytes = 0
         piece_length = info["piece length"]
-        piece_bytes = 0
-        shas = StringIO(info["pieces"])
-        check(((total_length + piece_length - 1) // piece_length)*20 == len(shas.getvalue()))
+        total_bytes = 0  # Current byte position in torrent data.
+        piece_bytes = 0  # Current byte position in piece.
+        piece_file = 0  # Index first file whose md5sum maybe be added to md5s if piece checksum is correct.
         sha1 = hashlib.sha1()
-
-        def skip_pieces(offset):
-            for _ in range((piece_bytes + offset) // piece_length):
-                sha = shas.read(20)
-                check(len(sha) == 20, repr(sha))
-            new_piece_bytes = (piece_bytes + offset) % piece_length
-            if new_piece_bytes and total_bytes == total_length:
-                sha = shas.read(20)
-                check(len(sha) == 20, repr(sha))
-                new_piece_bytes = 0
-            new_sha1 = hashlib.sha1() if new_piece_bytes == 0 else None
-            return new_piece_bytes, new_sha1
+        shas = StringIO(info["pieces"])  # SHA1 checksums of pieces.
+        check(((total_length + piece_length - 1) // piece_length)*20 == len(shas.getvalue()))
+        md5s = []  # MD5 checksums of files starting with piece_file.
 
         for i, (rel_path, file_length) in enumerate(get_torrent_files(info)):
+            assert total_bytes % piece_length == piece_bytes
             abs_path = os.path.join(torrent_dir, torrent_id, rel_path)
             size = os.path.getsize(abs_path)
-            skip_file = False
+            skip_bytes = 0
+            piece_skip_bytes = 0
             if size != file_length:
                 print >> sys.stderr, ("Bad file size {!r}, expected {} bytes, found {}.".format(rel_path, file_length, size))
-                skip_file = True
-            elif md5s[i]:
-                skip_file = True
+                skip_bytes = file_length
+            elif download_md5[i]:
+                skip_bytes = file_length
+                # If there is another file following current file.
+                if total_bytes + skip_bytes < total_length:
+                    # Subtract size of the last piece in the file to cause
+                    # that piece to be read.
+                    skip_bytes -= min((skip_bytes + piece_bytes) % piece_length,
+                                      skip_bytes)
+            if skip_bytes:
+                piece_skip_bytes = piece_bytes + skip_bytes
+                total_bytes += skip_bytes
+                piece_bytes = (piece_bytes + skip_bytes) % piece_length
+                piece_file = i + 1
+                sha1 = hashlib.sha1()
+                md5s = []
 
-            if skip_file:
-                #print("Skip {!r} {}".format(rel_path, file_length))
-                total_bytes += file_length
-                piece_bytes, sha1 = skip_pieces(file_length)
-                continue
-
-            with open(abs_path, "rb") as fp:
+            print("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, skip_bytes))
+            if skip_bytes != file_length:
+                assert skip_bytes < file_length
                 file_bytes = 0
                 md5 = hashlib.md5()
-
-                while True:
-                    piece = fp.read(piece_length - piece_bytes)
-                    if not piece:
-                        assert file_bytes == file_length
-                        break
-                    piece_bytes += len(piece)
-                    total_bytes += len(piece)
-                    file_bytes += len(piece)
-                    if sha1:
-                      sha1.update(piece)
-                    md5.update(piece)
-                    if piece_bytes == piece_length or total_bytes == total_length:
-                        piece_bytes = 0
-                        sha = shas.read(20)
-                        check(len(sha) == 20, repr(sha))
-                        if sha1:
+                with open(abs_path, "rb") as fp:
+                    if skip_bytes > 0:
+                        file_bytes += skip_bytes
+                        fp.seek(file_bytes)
+                        md5 = None
+                    while file_bytes < file_length:
+                        assert total_bytes % piece_length == piece_bytes
+                        piece = fp.read(piece_length - piece_bytes)
+                        total_bytes += len(piece)
+                        piece_bytes += len(piece)
+                        file_bytes += len(piece)
+                        sha1.update(piece)
+                        if md5:
+                            md5.update(piece)
+                            if file_bytes == file_length:
+                                md5s.append(md5.hexdigest())
+                        if piece_bytes == piece_length or total_bytes == total_length:
+                            assert skip_bytes == 0
+                            assert md5
                             sha1_digest = sha1.digest()
+                            sha = shas.read(20)
+                            check(len(sha) == 20, repr(sha))
+                            if sha == sha1_digest:
+                                for j, md5_hexdigest in enumerate(md5s, piece_file):
+                                    assert md5_hexdigest
+                                    check(not download_md5[j] or download_md5[j] == md5_hexdigest)
+                                    download_md5[j] = md5_hexdigest
+                            sha1 = hashlib.sha1()
+                            piece_bytes = 0
+                            piece_file += len(md5s)
+                            del md5s[:]
+
                             if sha != sha1_digest:
                                 print >> sys.stderr, "Bad checksum {!r} pos {}".format(rel_path, file_bytes - len(piece))
-                                total_bytes += file_length - file_bytes
-                                piece_bytes, sha1 = skip_pieces(file_length - file_bytes)
-                                md5 = None
-                                break
-                        sha1 = hashlib.sha1()
-            if md5:
-                md5_hexdigest = md5.hexdigest()
-                #print >> sys.stderr, ("Good checksum {!r} md5 {}".format(rel_path, md5_hexdigest))
-                md5s[i] = md5_hexdigest
+                                skip_bytes = file_length - file_bytes
+                                if total_bytes + skip_bytes < total_length:
+                                    skip_bytes -= skip_bytes % piece_length
+                                piece_skip_bytes = skip_bytes
+                                total_bytes += skip_bytes
+                                piece_file = i + 1
 
-        check(piece_bytes == 0)
+                                file_bytes += skip_bytes
+                                fp.seek(file_bytes)
+                                md5 = None
+
+                    check(not fp.read())
+
+            if piece_skip_bytes:
+                for _ in range(piece_skip_bytes // piece_length):
+                    sha = shas.read(20)
+                    check(len(sha) == 20, repr(sha))
+                if piece_skip_bytes % piece_length != 0 and total_bytes == total_length:
+                    sha = shas.read(20)
+                    check(len(sha) == 20, repr(sha))
+
         check(total_bytes == total_length)
         r = shas.read()
         check(len(r) == 0, len(r))
