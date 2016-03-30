@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 
+import copy
 import datetime
 import hashlib
 import json
@@ -15,7 +16,7 @@ from deluge import bencode
 from deluge.core.torrentmanager import TorrentState, TorrentManagerState
 
 
-def tojson(in_dir, out_dir):
+def import_torrents(in_dir, out_dir):
     """Convert deluge and vuze torrent state dirs to json format.
 
     Can run incrementally. New torrent data just replaces old torrent data in
@@ -62,13 +63,10 @@ def tojson(in_dir, out_dir):
     save_torrents(torrents, out_dir)
 
 
-def fromjson(in_dir, out_dir):
+def export_torrents(torrents, out_dir):
     """Convert json torrent info to deluge state dir format.
 
     Not incremental. Output directory is created and populated from scratch."""
-    torrents = load_torrents(in_dir)
-
-    os.mkdir(out_dir)
     tm = TorrentManagerState()
     fr = OrderedDict()
     for torrent_id, t in sorted(torrents.items()):
@@ -90,9 +88,11 @@ def fromjson(in_dir, out_dir):
         fp.write(bencode.bencode(fr))
 
 
-def list_torrents(json_dir, torrent_dir):
+def select_torrents(json_dir, torrent_dir, deluge_dir=None):
+    """Print selected torrent info and optionally export to deluge dir."""
     torrents = load_torrents(json_dir)
-    metadata = []
+    print_torrents = []
+    deluge_torrents = {}
     for torrent_id, torrent in torrents.items():
         tags = []
         if "data" in torrent:
@@ -105,43 +105,82 @@ def list_torrents(json_dir, torrent_dir):
             missing_files = 0
             skip_files = 0
             good_files = 0
+            if len(torrent["data"]) > 1:
+                tags.append("vuze")
+
+            # SITUATIONAL: Begin conditions for including torrents.
+            if "vuze" in tags:
+                continue
+            #if not md5s or any(not md5 for md5 in md5s):
+            #    continue
+            if not md5s or all(md5s):
+                continue
+            if "fastresume" not in torrent or "state" not in torrent:
+                continue
+            # SITUATIONAL: End conditions for including torrents.
+
             for i, (path, length) in enumerate(get_torrent_files(info)):
-                abs_path = os.path.join(torrent_dir, torrent_id, path)
 
                 total_files += 1
-
-                if os.path.islink(abs_path):
-                    if os.readlink(abs_path) not in (os.devnull, "/dev/zero"):
-                        sym_files += 1
-                elif os.path.exists(abs_path):
-                    phys_files += 1
 
                 if priorities and priorities[i] == 0:
                     skip_files += 1
                 elif md5s and md5s[i]:
                     good_files += 1
 
+                if torrent_dir is not None:
+                    abs_path = os.path.join(torrent_dir, torrent_id, path)
+                    if os.path.islink(abs_path):
+                        if os.readlink(abs_path) not in (os.devnull, "/dev/zero"):
+                            sym_files += 1
+                    elif os.path.exists(abs_path):
+                        phys_files += 1
+
             counts = "{:>3} {:>7} {:>7}".format(total_files, "{}/{}/{}".format(phys_files, sym_files, total_files - phys_files - sym_files), "{}/{}/{}".format(good_files, total_files - good_files - skip_files, skip_files))
             name = info["name"]
-            if len(torrent["data"]) > 1:
-                tags.append("vuze")
+
         else:
             counts = ""
             name = None
+
+        # SITUATIONAL: Begin conditions for including torrents.
+        if name is None:
+            continue
+        if sym_files:
+            continue
+        if skip_files:
+            continue
+        # SITUATIONAL: End conditions for including torrents.
 
         timestamp = get_timestamp(torrent) or 0
         if "state" in torrent:
             tags.append("state")
         if "fastresume" in torrent:
             tags.append("fastresume")
-        metadata.append((timestamp, name, torrent_id, counts, tags))
+        print_torrents.append((timestamp, name, torrent_id, counts, tags))
+        deluge_torrents[torrent_id] = torrent
 
-    metadata.sort()
+    print_torrents.sort()
     print("Date       Hash     Total  Phys/Sym/Missing  Good/Bad/Skip  Name  Tags")
-    for timestamp, name, torrent_id, counts, tags in metadata:
+    for timestamp, name, torrent_id, counts, tags in print_torrents:
         tags = " [{}]".format(", ".join(tags)) if tags else ""
         print("{:%Y-%m-%d} {} {:20} {!r}{}".format(
             datetime.datetime.fromtimestamp(timestamp), torrent_id[:8], counts, name, tags))
+
+    if deluge_dir:
+        for torrent_id, torrent in deluge_torrents.items():
+            dst_dir = os.path.join("/home/pia/torrent", torrent_id)
+            torrent["state"]["save_path"] = dst_dir
+            torrent["fastresume"]["save_path"] = dst_dir
+            torrent["state"].pop("move_completed_path", None)
+            torrent["state"].pop("move_completed", None)
+            file_infos = field(torrent, u"fastresume", u"file sizes")
+            if file_infos:
+                for file_info in file_infos:
+                    file_info[1] = 0
+        save_torrents(copy.deepcopy(deluge_torrents), json_dir)
+        export_torrents(deluge_torrents, deluge_dir)
+        print("Wrote to {!r}, {!r}".format(json_dir, deluge_dir))
 
 
 def find_files(json_dir, src_dir, torrent_dir):
@@ -285,6 +324,7 @@ def compute_sums(json_dir, torrent_dir):
         print("== {} ==".format(torrent_id))
         info = torrent["data"]["info"]
         download = torrent.setdefault("download", OrderedDict())
+        #download.pop("md5", None) # Drop preexisting checksums.
         download_md5 = download.setdefault("md5", [])
         if not download_md5:
             for _ in get_torrent_files(info):
