@@ -298,14 +298,14 @@ def compute_sums(json_dir, torrent_dir):
         shas = StringIO(info["pieces"])  # SHA1 checksums of pieces.
         check(((total_length + piece_length - 1) // piece_length)*20 == len(shas.getvalue()))
         md5s = []  # MD5 checksums of files starting with md5_file.
-        md5_file = 0  # Index first file whose md5sum maybe be added to md5s if piece checksum is correct.
+        md5_file = 0  # Index of first file in md5s array.
 
         for i, (rel_path, file_length) in enumerate(get_torrent_files(info)):
             assert total_bytes % piece_length == piece_bytes
             abs_path = os.path.join(torrent_dir, torrent_id, rel_path)
             size = os.path.getsize(abs_path)
-            file_skip_bytes = 0
-            piece_skip_bytes = 0
+            file_skip_bytes = 0  # Number of bytes to skip from reading current file.
+            piece_skip_bytes = 0  # Above plus number of bytes in skipped piece before file if file begins at odd piece boundary.
             if size != file_length:
                 print >> sys.stderr, ("Bad file size {!r}, expected {} bytes, found {}.".format(rel_path, file_length, size))
                 file_skip_bytes = file_length
@@ -332,8 +332,8 @@ def compute_sums(json_dir, torrent_dir):
                 md5 = hashlib.md5()
                 with open(abs_path, "rb") as fp:
                     if file_skip_bytes > 0:
+                        fp.seek(file_skip_bytes)
                         file_bytes += file_skip_bytes
-                        fp.seek(file_bytes)
                         md5 = None
                     while file_bytes < file_length:
                         assert total_bytes % piece_length == piece_bytes
@@ -357,8 +357,8 @@ def compute_sums(json_dir, torrent_dir):
                                     assert md5_hexdigest
                                     check(not download_md5[j] or download_md5[j] == md5_hexdigest)
                                     download_md5[j] = md5_hexdigest
-                            sha1 = hashlib.sha1()
                             piece_bytes = 0
+                            sha1 = hashlib.sha1()
                             md5_file += len(md5s)
                             del md5s[:]
 
