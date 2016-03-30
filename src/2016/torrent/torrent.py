@@ -369,6 +369,7 @@ def compute_sums(json_dir, torrent_dir):
                                     file_skip_bytes -= file_skip_bytes % piece_length
                                 piece_skip_bytes = file_skip_bytes
                                 total_bytes += file_skip_bytes
+                                piece_bytes = (piece_bytes + file_skip_bytes) % piece_length
                                 md5_file = i + 1
 
                                 file_bytes += file_skip_bytes
