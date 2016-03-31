@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -x
+
+pyflakes *.py
+/usr/lib/python-exec/python3.5/pep8 *.py
+/usr/lib/python-exec/python3.5/pylint -r n -f parseable -d bad-indentation -d invalid-name -d expression-not-assigned *.py
