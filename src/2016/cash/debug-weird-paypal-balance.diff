@@ -1,0 +1,51 @@
+diff --git a/russ/cash/cash.py b/russ/cash/cash.py
+index 5ff8542..8315a66 100644
+--- a/russ/cash/cash.py
++++ b/russ/cash/cash.py
+@@ -1415,6 +1415,7 @@ def check_paypal_txns(txns):
+             # Verify the row either doesn't list a balance amount, or
+             # that the row balance amount equals the calculated
+             # balance.
++            row.weird = 0
+             if (row.balance_amount is not None
+                 and row.balance_amount != txn.calc_balance[row.currency]):
+                 # Allow unusual case where row balance doesn't match the
+@@ -1423,6 +1424,7 @@ def check_paypal_txns(txns):
+                 # seems to happen unpredictably, for most but not all
+                 # shopping cart item rows and for some very old rows
+                 # before 2007.
++                row.weird = 1
+                 check(row.balance_amount == txn.ending_balance[row.currency])
+ 
+         # Verify the transaction ending balance equals the calculated
+@@ -1433,8 +1435,10 @@ def check_paypal_txns(txns):
+         # verified when that transaction is processed (see txn.updates
+         # code above).
+         if txn.updated_by is None:
++            txn.weird = 0
+             check(txn.ending_balance == txn.calc_balance, txn.date)
+         else:
++            txn.weird = txn.ending_balance != txn.calc_balance
+             check(txn.updated_by.date > txn.date)
+ 
+         # Check for increasing transaction dates.
+@@ -1446,7 +1450,7 @@ def generate_paypal_memos(txns, csv_fields):
+ 
+     # Show fields in this order.
+     field_order = (
+-        "void", "amount", "fee", "shipping", "insurance", "tax", "cc", "bank",
++        "weird_row", "weird_txn", "void", "amount", "fee", "shipping", "insurance", "tax", "cc", "bank",
+         "name", "type", "time", "updated", "txn", "status", "ref", "from", "to",
+         "counterparty", "shipping_address", "address_status", "item_title",
+         "item_id", "auction_site", "item_url", "closing_date", "buyer_id",
+@@ -1572,6 +1576,10 @@ def generate_paypal_memos(txns, csv_fields):
+                             row.override[name] = None
+                         else:
+                             check(name in allow_dups, name)
++            if row.weird:
++               row.override["weird_row"] = True
++        if txn.weird:
++           rows[0].override["weird_txn"] = True
+ 
+         # Second pass over transaction rows, using csv field and
+         # override values to fill the transaction memo string.
