@@ -1,0 +1,10 @@
+- hosts: jumpy
+  tasks:
+    - name: bootstrap.sh
+      script: scripts/bootstrap.sh
+      environment:
+        LUKSPASS: "{{ lookup('password', 'credentials/luks') }}"
+      register: bootstrap_dbg_out
+
+    - name: show bootstrap.sh output
+      debug: var=bootstrap_dbg_out
