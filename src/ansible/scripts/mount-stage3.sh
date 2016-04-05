@@ -4,9 +4,9 @@ set -x
 set -e
 
 STAGE3=http://gentoo.mirrors.easynews.com/linux/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160331.tar.bz2
-ROOT=/dev/xvdc
 BOOT=/dev/xvda
 SWAP=/dev/xvdb
+ROOT=/dev/xvdc
 
 # So prompts don't hang the script forever. Ansible is fucking stupid.
 exec < /dev/null
