@@ -1,0 +1,4 @@
+- hosts: jumpy
+  tasks:
+    - name: Test plugin
+      test_plugin: arg=arg
