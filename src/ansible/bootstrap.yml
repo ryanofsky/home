@@ -1,6 +1,6 @@
 - hosts: jumpy
   tasks:
-    - name: bootstrap.sh
-      script: scripts/bootstrap.sh
+    - name: Run mount-stage3.sh script.
+      script: scripts/mount-stage3.sh
       environment:
-        LUKSPASS: "{{ lookup('password', 'credentials/luks') }}"
+        LUKSPASS: "{{ lookup('password', 'credentials/luks.' + inventory_hostname) }}"
