@@ -1,6 +1,66 @@
 - hosts: jumpy
+  vars:
+    boot_dev: /dev/xvda
+    swap_dev: /dev/xvdb
+    root_dev: /dev/xvdc
+    stage3_url: http://gentoo.mirrors.easynews.com/linux/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160331.tar.bz2
+
   tasks:
     - name: Run mount-stage3.sh script.
       script: scripts/mount-stage3.sh
       environment:
-        LUKSPASS: "{{ lookup('password', 'credentials/luks.' + inventory_hostname) }}"
+        LUKS_PASS: "{{ lookup('password', 'credentials/luks.' + inventory_hostname) }}"
+        BOOT_DEV: "{{ boot_dev }}"
+        SWAP_DEV: "{{ swap_dev }}"
+        ROOT_DEV: "{{ root_dev }}"
+        STAGE3_URL: "{{ stage3_url }}"
+      when: 0
+
+    - name: Get root uuid
+      command: blkid -s UUID -o value /dev/mapper/root
+      register: root_fs_uuid
+    - name: Get boot uuid
+      command: blkid -s UUID -o value {{ boot_dev }}
+      register: boot_dev_uuid
+    - name: Get root uuid
+      command: blkid -s UUID -o value {{ root_dev }}
+      register: root_dev_uuid
+
+    - name: Save fstab.upstream
+      script: scripts/upstream.sh /mnt/gentoo/etc/fstab
+    - name: Fetch fstab.upstream
+      fetch:
+        src: /mnt/gentoo/etc/fstab.upstream
+        dest: templates/etc/fstab.upstream
+        flat: yes
+    - name: Write fstab
+      template:
+        src: templates/etc/fstab
+        dest: /mnt/gentoo/etc/fstab
+        force: no
+
+    - name: Save crypttab.upstream
+      script: scripts/upstream.sh /mnt/gentoo/etc/crypttab
+    - name: Fetch crypttab.upstream
+      fetch:
+        src: /mnt/gentoo/etc/crypttab.upstream
+        dest: templates/etc/crypttab.upstream
+        flat: yes
+    - name: Write crypttab
+      template:
+        src: templates/etc/crypttab
+        dest: /mnt/gentoo/etc/crypttab
+        force: no
+
+    - name: Save make.conf.upstream
+      script: scripts/upstream.sh /mnt/gentoo/etc/portage/make.conf
+    - name: Fetch make.conf.upstream
+      fetch:
+        src: /mnt/gentoo/etc/portage/make.conf.upstream
+        dest: templates/etc/portage/make.conf.upstream
+        flat: yes
+    - name: Write make.conf
+      template:
+        src: templates/etc/portage/make.conf
+        dest: /mnt/gentoo/etc/portage/make.conf
+        force: no
