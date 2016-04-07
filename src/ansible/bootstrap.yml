@@ -1,8 +1,8 @@
 - hosts: jumpy
   vars:
-    boot_dev: /dev/xvda
-    swap_dev: /dev/xvdb
-    root_dev: /dev/xvdc
+    boot_dev: /dev/sda
+    swap_dev: /dev/sdb
+    root_dev: /dev/sdc
     stage3_url: http://gentoo.mirrors.easynews.com/linux/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160331.tar.bz2
 
   tasks:
