@@ -7,7 +7,7 @@
 
   tasks:
     - name: Run mount-stage3.sh script.
-      script: scripts/mount-stage3.sh
+      script: scripts/script.sh mount-stage3
       environment:
         LUKS_PASS: "{{ lookup('password', 'credentials/luks.' + inventory_hostname) }}"
         BOOT_DEV: "{{ boot_dev }}"
@@ -15,7 +15,7 @@
         ROOT_DEV: "{{ root_dev }}"
         STAGE3_URL: "{{ stage3_url }}"
         WIPE: "yes"
-      when: 0
+      when: 1
 
     - name: Get root uuid
       command: blkid -s UUID -o value /dev/mapper/root
@@ -31,3 +31,8 @@
       rtemplate: src=templates dest=/mnt/gentoo
       when: 1
 
+    - name: Run emerge.sh script.
+      script: scripts/script.sh emerge
+      environment:
+        CHROOT: /mnt/gentoo
+      when: 1
