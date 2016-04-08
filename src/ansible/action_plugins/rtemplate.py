@@ -1,7 +1,10 @@
+from ansible import constants as C
 from ansible.plugins.action import ActionBase
-from ansible.utils.unicode import to_unicode
+from ansible.utils.unicode import to_bytes, to_unicode
 from collections import OrderedDict
+import datetime
 import yaml
+import time
 import os
 import re
 import stat
@@ -89,8 +92,9 @@ class ActionModule(ActionBase):
         for path, tfile in tfiles.items():
             if tfile.template_path is not None:
                 remote_path = os.path.join(dest, path)
-                with open(os.path.join(src, tfile.template_path), 'r') as fp:
-                    content = self._templar.template(to_unicode(fp.read()))
+                source = os.path.join(src, tfile.template_path)
+                content = self._fill_template(source, task_vars)
+
                 symlink = tfile.upstream_path in tfile.info and stat.S_ISLNK(
                     tfile.info[tfile.upstream_path][
                         "st_mode"])
@@ -115,6 +119,53 @@ class ActionModule(ActionBase):
                        push_result=push_result,
                        changed=push_result["changed"])
         return results
+
+
+    def _fill_template(self, source, task_vars):
+            # Copied from https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/template.py
+            with open(source, 'r') as f:
+                template_data = to_unicode(f.read())
+
+            try:
+                template_uid = pwd.getpwuid(os.stat(source).st_uid).pw_name
+            except:
+                template_uid = os.stat(source).st_uid
+
+            temp_vars = task_vars.copy()
+            temp_vars['template_host']     = os.uname()[1]
+            temp_vars['template_path']     = source
+            temp_vars['template_mtime']    = datetime.datetime.fromtimestamp(os.path.getmtime(source))
+            temp_vars['template_uid']      = template_uid
+            temp_vars['template_fullpath'] = os.path.abspath(source)
+            temp_vars['template_run_date'] = datetime.datetime.now()
+
+            managed_default = C.DEFAULT_MANAGED_STR
+            managed_str = managed_default.format(
+                host = temp_vars['template_host'],
+                uid  = temp_vars['template_uid'],
+                file = to_bytes(temp_vars['template_path'])
+            )
+            temp_vars['ansible_managed'] = time.strftime(
+                managed_str,
+                time.localtime(os.path.getmtime(source))
+            )
+
+            # Create a new searchpath list to assign to the templar environment's file
+            # loader, so that it knows about the other paths to find template files
+            searchpath = [self._loader._basedir, os.path.dirname(source)]
+            if self._task._role is not None:
+                if C.DEFAULT_ROLES_PATH:
+                    searchpath[:0] = C.DEFAULT_ROLES_PATH
+                searchpath.insert(1, self._task._role._role_path)
+
+            self._templar.environment.loader.searchpath = searchpath
+
+            old_vars = self._templar._available_variables
+            self._templar.set_available_variables(temp_vars)
+            resultant = self._templar.template(template_data, preserve_trailing_newlines=True, escape_backslashes=False, convert_data=False)
+            self._templar.set_available_variables(old_vars)
+
+            return resultant
 
 
 # From http://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
