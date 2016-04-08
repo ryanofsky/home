@@ -38,7 +38,7 @@
       when: 0
 
     - name: Make kernel.
-      script: scripts/script.sh emerge
+      script: scripts/script.sh make-kernel
       environment:
         CHROOT: /mnt/gentoo
       when: 1
