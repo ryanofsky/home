@@ -25,7 +25,6 @@ cryptsetup -d /dev/urandom create swap "$SWAP_DEV"
 # Set up filesystems.
 if [ "$WIPE" = yes ]; then
     mkfs.btrfs /dev/mapper/root
-    mkswap /dev/mapper/swap
     yes | mke2fs "$BOOT_DEV"
 fi
 mkdir /mnt/root
@@ -55,18 +54,19 @@ if [ "$WIPE" = yes ]; then
 fi
 
 # Set up runtime.
+mkswap /dev/mapper/swap
 swapon /dev/mapper/swap
 mount --bind /mnt/root/portage /mnt/root/root/usr/portage
 mount -o noatime "$BOOT_DEV" /mnt/root/root/boot
-mount -t proc proc /mnt/gentoo/proc
-mount --rbind /sys /mnt/gentoo/sys
-mount --make-rslave /mnt/gentoo/sys
+mount -t proc proc /mnt/root/root/proc
+mount --rbind /sys /mnt/root/root/sys
+mount --make-rslave /mnt/root/root/sys
 if [ -L /dev/shm ]; then
     mount -t tmpfs -o nosuid,nodev,noexec shm /dev/shm
     chmod 1777 /dev/shm
 fi
-mount --rbind /dev /mnt/gentoo/dev
-mount --make-rslave /mnt/gentoo/dev
+mount --rbind /dev /mnt/root/root/dev
+mount --make-rslave /mnt/root/root/dev
 mount --rbind /tmp /mnt/root/root/tmp
 cp -Lnv /etc/resolv.conf /mnt/root/root/etc/resolv.conf
 mkdir /mnt/gentoo
