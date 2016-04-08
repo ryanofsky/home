@@ -53,9 +53,11 @@ def main():
                     content = os.readlink(upstream_path)
                 else:
                     content = open(upstream_path).read()
-                pull_results.append(
-                    (key, content, s.st_mode, s.st_uid, s.st_gid, s.st_atime,
-                     s.st_mtime, s.st_ctime, temp_upstream_path))
+                pull_results.append((key, content, (
+                    s.st_mode, s.st_uid, s.st_gid, s.st_atime, s.st_mtime,
+                    s.st_ctime), temp_upstream_path))
+            else:
+                pull_results.append((key, None, None, None))
     elif mode == "push":
         for path, content, symlink, delete in files:
             if delete:
@@ -80,7 +82,6 @@ def main():
 def glob_escape(pathname):
     # From python3 glob.escape.
     return re.sub('([*?[])', r'[\1]', pathname)
-
 
 # this is magic, see lib/ansible/module_common.py
 from ansible.module_utils.basic import *

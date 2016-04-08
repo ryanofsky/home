@@ -71,19 +71,22 @@ class ActionModule(ActionBase):
         if "exception" in pull_result:
             raise Exception(pull_result["exception"])
 
-        for (key, content, st_mode, st_uid, st_gid, st_atime, st_mtime,
-             st_ctime, temp_upstream_path) in pull_result["pull_results"]:
+        for (key, content, st,
+             temp_upstream_path) in pull_result["pull_results"]:
             tfile = tfiles[key]
             tfile.temp_upstream_path = temp_upstream_path
-            with open(os.path.join(src, tfile.upstream_path), "wb") as fp:
-                fp.write(content)
+            if content is not None:
+                with open(os.path.join(src, tfile.upstream_path), "wb") as fp:
+                    fp.write(content)
             info = tfile.info.setdefault(tfile.upstream_path, OrderedDict())
-            info["st_mode"] = st_mode
-            info["st_uid"] = st_uid
-            info["st_gid"] = st_gid
-            info["st_atime"] = st_atime
-            info["st_mtime"] = st_mtime
-            info["st_ctime"] = st_ctime
+            if st is not None:
+                st_mode, st_uid, st_gid, st_atime, st_mtime, st_ctime = st
+                info["st_mode"] = st_mode
+                info["st_uid"] = st_uid
+                info["st_gid"] = st_gid
+                info["st_atime"] = st_atime
+                info["st_mtime"] = st_mtime
+                info["st_ctime"] = st_ctime
             with open(os.path.join(src, tfile.info_path), "wb") as fp:
                 ordered_dump(tfile.info, fp, yaml.SafeDumper)
             ordered_dump(info, Dumper=yaml.SafeDumper)
@@ -96,8 +99,7 @@ class ActionModule(ActionBase):
                 content = self._fill_template(source, task_vars)
 
                 symlink = tfile.upstream_path in tfile.info and stat.S_ISLNK(
-                    tfile.info[tfile.upstream_path][
-                        "st_mode"])
+                    tfile.info[tfile.upstream_path].get("st_mode", 0))
                 delete = False
                 changes.append((remote_path, content, symlink, delete))
 
