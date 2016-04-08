@@ -14,7 +14,7 @@
         SWAP_DEV: "{{ swap_dev }}"
         ROOT_DEV: "{{ root_dev }}"
         STAGE3_URL: "{{ stage3_url }}"
-        WIPE: yes
+        WIPE: "yes"
       when: 0
 
     - name: Get root uuid
