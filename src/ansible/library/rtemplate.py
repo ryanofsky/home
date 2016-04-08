@@ -61,13 +61,17 @@ def main():
             if delete:
                 assert content is None
                 os.unlink(path)
-            elif symlink:
-                if os.path.exists(path) or os.path.islink(path):
-                    os.unlink(path)
-                os.symlink(content, path)
             else:
-                with open(path, "wb") as fp:
-                    fp.write(content)
+                dirname = os.path.dirname(path)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+                if symlink:
+                    if os.path.exists(path) or os.path.islink(path):
+                        os.unlink(path)
+                    os.symlink(content, path)
+                else:
+                    with open(path, "wb") as fp:
+                        fp.write(content)
         ret["changed"] = True
 
     module.exit_json(**ret)
