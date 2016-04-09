@@ -56,6 +56,8 @@ mount-stage3() {
     mount --rbind /sys /mnt/root/root/sys
     mount --make-rslave /mnt/root/root/sys
     if [ -L /dev/shm ]; then
+        rm /dev/shm
+        mkdir /dev/shm
         mount -t tmpfs -o nosuid,nodev,noexec shm /dev/shm
         chmod 1777 /dev/shm
     fi
