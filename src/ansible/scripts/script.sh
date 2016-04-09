@@ -42,7 +42,6 @@ mount-stage3() {
 
         # Create snapshot post-stage3.
         mkdir /mnt/root/.snapshots
-        sdate() { date -u +"%Y%m%dT%H%M%SZ"; }
         btrfs su snapshot -r /mnt/root/root /mnt/root/.snapshots/root@$(sdate)
 
         mkdir /mnt/root/root/usr/portage
@@ -303,6 +302,10 @@ kconfig() {
       -e CFS_BANDWIDTH \
       -e RT_GROUP_SCHED \
       -d AUDIT
+}
+
+sdate() {
+    date -u +"%Y%m%dT%H%M%SZ";
 }
 
 if [ -n "$CHROOT" ]; then
