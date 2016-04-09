@@ -1,2 +1,2 @@
 # {{ansible_managed}}
-swap UUID={{ swap_dev }} /dev/urandom swap
+swap {{ swap_dev }} /dev/urandom swap

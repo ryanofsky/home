@@ -71,17 +71,44 @@ mount-stage3() {
 }
 
 emerge() {
+    # Update system
     emerge-webrsync
+    USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
+    emerge -q --update --newuse --deep --with-bdeps=y @world
+    emerge -q --depclean
+    gcc-config 1
+    . /etc/profile
+    emerge -qe --update --newuse --deep --with-bdeps=y @world
 
-    USE="-systemd -udev" emerge -1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
-    emerge -e world
-    emerge sys-kernel/hardened-sources
+    # Add needed packages.
+    emerge -qn sys-kernel/hardened-sources app-editors/vim sys-kernel/dracut sys-fs/btrfs-progs sys-boot/grub app-portage/gentoolkit app-portage/eix app-portage/genlop sys-apps/gptfdisk app-misc/screen
 
-    cd /usr/src/linux
-    make defconfig
+    # Set timezone.
+    emerge --config sys-libs/timezone-data
+
+    # Set up locales.
+    locale-gen
+    eselect locale set en_US.utf8
+
+    # Set up networking.
+    systemctl enable systemd-networkd.service
+    ln -snf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+    # Set up ssh.
+    systemctl enable sshd
+    mkdir /root/.ssh
+    chmod 700 /root/.ssh
+    cat >> /root/.ssh/authorized_keys <<EOF
+ssh-rsa XXX
+EOF
+    chmod 600 /root/.ssh/authorized_keys
 }
 
 make-kernel() {
+    . /etc/profile
+    if ! mountpoint -q /boot; then
+        mount /boot
+    fi
     cd /usr/src/linux
     make defconfig
     kconfig
@@ -89,9 +116,23 @@ make-kernel() {
     cp .config .config-normalized
     kconfig
     diff -u .config-normalized .config || true
+    rm .config-normalized
     make
     make modules_install
     make install
+    V=$(<include/config/kernel.release)
+    dracut -a crypt --force /boot/initramfs-$V.img $V
+
+    ROOT_DEV=$(findmnt -vno source /)
+    ROOT_DEV_UUID=$(blkid -s UUID -o value $ROOT_DEV)
+    # Needed otherwise /etc/grub.d/10_linux ignores GRUB_DEVICE_UUID
+    if [ ! -e /dev/disk/by-uuid/"$ROOT_DEV_UUID" ]; then
+        ln -snv $ROOT_DEV /dev/disk/by-uuid/"$ROOT_DEV_UUID"
+    fi
+
+    mkdir -p /boot/grub
+    grub2-mkconfig -o /boot/grub/grub.cfg
+    grub2-install -v "$BOOT_MBR_DEV"
 }
 
 kconfig() {
