@@ -42,7 +42,7 @@ mount-stage3() {
 
         # Create snapshot post-stage3.
         mkdir /mnt/root/.snapshots
-        btrfs su snapshot -r /mnt/root/root /mnt/root/.snapshots/root@$(sdate)
+        btrfs su snapshot -r /mnt/root/root /mnt/root/.snapshots/root@$(sdate).stage3
 
         mkdir /mnt/root/root/usr/portage
     fi
@@ -352,6 +352,11 @@ root-passwd() {
   chpasswd <<EOF
 root:$ROOT_PASSWD
 EOF
+}
+
+install-snapshot() {
+  rm -rf /mnt/gentoo/var/tmp/portage
+  btrfs su snapshot -r /mnt/root/root /mnt/root/.snapshots/root@$(sdate).install
 }
 
 sdate() {

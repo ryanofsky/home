@@ -51,3 +51,7 @@
         ROOT_PASSWD: "{{ lookup('password', 'credentials/root.' + inventory_hostname) }}"
         CHROOT: /mnt/gentoo
       when: 1
+
+    - name: Save btrfs snapshot.
+      script: scripts/script.sh install-snapshot
+      when: 1
