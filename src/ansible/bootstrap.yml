@@ -16,7 +16,7 @@
         ROOT_DEV: "{{ root_dev }}"
         STAGE3_URL: "{{ stage3_url }}"
         WIPE: "yes"
-      when: 0
+      when: 1
 
     - name: Get root uuid
       command: blkid -s UUID -o value /dev/mapper/root
@@ -30,13 +30,13 @@
 
     - name: config
       rtemplate: src=templates dest=/mnt/gentoo
-      when: 0
+      when: 1
 
     - name: Run emerge script.
       script: scripts/script.sh emerge
       environment:
         CHROOT: /mnt/gentoo
-      when: 0
+      when: 1
 
     - name: Make kernel.
       script: scripts/script.sh make-kernel
