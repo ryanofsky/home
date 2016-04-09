@@ -348,6 +348,12 @@ kconfig() {
       -d AUDIT
 }
 
+root-passwd() {
+  chpasswd <<EOF
+root:$ROOT_PASSWD
+EOF
+}
+
 sdate() {
     date -u +"%Y%m%dT%H%M%SZ";
 }

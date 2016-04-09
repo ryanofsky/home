@@ -44,3 +44,10 @@
         CHROOT: /mnt/gentoo
         BOOT_MBR_DEV: "{{ boot_mbr_dev }}"
       when: 1
+
+    - name: Set root password
+      script: scripts/script.sh root-passwd
+      environment:
+        ROOT_PASSWD: "{{ lookup('password', 'credentials/root.' + inventory_hostname) }}"
+        CHROOT: /mnt/gentoo
+      when: 1
