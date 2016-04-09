@@ -64,6 +64,7 @@ mount-stage3() {
     mount --rbind /dev /mnt/root/root/dev
     mount --make-rslave /mnt/root/root/dev
     mount --rbind /tmp /mnt/root/root/tmp
+    rm -fv /mnt/root/root/etc/resolv.conf
     cp -Lnv /etc/resolv.conf /mnt/root/root/etc/resolv.conf
     mkdir /mnt/gentoo
     mount --rbind /mnt/root/root /mnt/gentoo
