@@ -33,7 +33,7 @@
       when: 1
 
     - name: Run emerge script.
-      script: scripts/script.sh emerge
+      script: scripts/script.sh emerge-world
       environment:
         CHROOT: /mnt/gentoo
       when: 1

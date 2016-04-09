@@ -70,7 +70,7 @@ mount-stage3() {
     mount --rbind /mnt/root/root /mnt/gentoo
 }
 
-emerge() {
+emerge-world() {
     # Update system
     emerge-webrsync
     USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
