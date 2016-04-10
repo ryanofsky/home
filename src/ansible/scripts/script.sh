@@ -139,28 +139,51 @@ make-kernel() {
     V=$(<include/config/kernel.release)
     dracut -a crypt --force /boot/initramfs-$V.img $V
 
-    ROOT_DEV=$(findmnt -vno source /)
-    ROOT_DEV_UUID=$(blkid -s UUID -o value $ROOT_DEV)
-    # Needed otherwise /etc/grub.d/10_linux ignores GRUB_DEVICE_UUID
-    if [ ! -e /dev/disk/by-uuid/"$ROOT_DEV_UUID" ]; then
-        ln -snv $ROOT_DEV /dev/disk/by-uuid/"$ROOT_DEV_UUID"
+    ROOT_FS_DEV=$(findmnt -vno source /)
+    ROOT_FS_UUID=$(blkid -s UUID -o value $ROOT_FS_DEV)
+    if [ -n "$BOOT_MBR_DEV" ]; then
+        # Needed otherwise /etc/grub.d/10_linux ignores GRUB_DEVICE_UUID
+        if [ ! -e /dev/disk/by-uuid/"$ROOT_FS_UUID" ]; then
+            ln -snv $ROOT_FS_DEV /dev/disk/by-uuid/"$ROOT_FS_UUID"
+        fi
+
+        mkdir -p /boot/grub
+        grub2-mkconfig -o /boot/grub/grub.cfg
+        grub2-install -v "$BOOT_MBR_DEV"
+    else
+        BOOT_DEV=$(findmnt -vno source /boot)
+        regex='^(/dev/[a-z]+)([0-9]+)$'
+        if [[ "$BOOT_DEV" =~ $regex ]]; then
+            BOOT_DISK_DEV="${BASH_REMATCH[1]}"
+            BOOT_PART_NUM="${BASH_REMATCH[2]}"
+            echo "'$BOOT_DEV' '$BOOT_DISK_DEV' '$BOOT_PART_NUM'"
+        else
+            echo "Bad boot device '$BOOT_DEV'"
+            exit 1
+        fi
+
+        ROOT_DEV=$(cryptsetup status $ROOT_FS_DEV | sed -n 's/ *device: *\(.*\)/\1/p')
+        test -n "$ROOT_DEV"
+        ROOT_DEV_UUID=$(blkid -s UUID -o value "$ROOT_DEV")
+        test -n "$ROOT_DEV_UUID"
+
+        # UEFI/secure boot setup
+        # https://wiki.gentoo.org/wiki/EFI_stub_kernel
+        # https://wiki.gentoo.org/wiki/Efibootmgr
+        # https://wiki.gentoo.org/wiki/Sakaki%27s_EFI_Install_Guide
+        # https://github.com/sakaki-/buildkernel/blob/master/buildkernel
+        # http://kroah.com/log/blog/2013/09/02/booting-a-self-signed-linux-kernel/
+        # efibootmgr command lines: https://bbs.archlinux.org/viewtopic.php?id=147965
+        efibootmgr -c -d "$BOOT_DISK_DEV" -p Y -L "linux-%V" -l "\\vmlinuz-%V" -u "initrd=\\initramfs-%V.img ro root=UUID=$ROOT_FS_UID rd.luks.uuid=$ROOT_DEV_UUID rootflags=subvol=root,noatime"
     fi
 
-    mkdir -p /boot/grub
-    grub2-mkconfig -o /boot/grub/grub.cfg
-    grub2-install -v "$BOOT_MBR_DEV"
-
-    # FIXME: UEFI/secure boot setup
-    # https://wiki.gentoo.org/wiki/EFI_stub_kernel
-    # https://wiki.gentoo.org/wiki/Efibootmgr
-    # https://wiki.gentoo.org/wiki/Sakaki%27s_EFI_Install_Guide
-    # https://github.com/sakaki-/buildkernel/blob/master/buildkernel
-    # http://kroah.com/log/blog/2013/09/02/booting-a-self-signed-linux-kernel/
-    # efibootmgr command lines: https://bbs.archlinux.org/viewtopic.php?id=147965
-    #   efibootmgr -c -d /dev/sdX -p Y -L "Title Here" -l '\kernel\here.efi' -u 'root=/dev/sda3 initrd=\\initramfs\\here.img ro add_efi_memmap quiet'
 }
 
 kconfig() {
+    if [ -z "$BOOT_MBR_DEV" ]; then
+        -e EFI -e EFI_STUB -e EFI_MIXED -e EFI_PARTITION -m EFI_VARS -m EFIVAR_FS
+    fi
+
     if [ "$INVENTORY_HOSTNAME" = think ]; then
         # lspci -k -nn
         # Host bridge [0600]: Intel Corporation 3rd Gen Core processor DRAM Controller [8086:0154] (rev 09)
