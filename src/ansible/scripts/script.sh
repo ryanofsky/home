@@ -89,7 +89,11 @@ emerge-world() {
     emerge -qe --update --newuse --deep --with-bdeps=y @world
 
     # Add needed packages.
-    emerge -qn sys-kernel/hardened-sources app-editors/vim sys-kernel/dracut sys-fs/btrfs-progs sys-boot/grub app-portage/gentoolkit app-portage/eix app-portage/genlop sys-apps/gptfdisk app-misc/screen
+    PKG="sys-kernel/hardened-sources app-editors/vim sys-kernel/dracut sys-fs/btrfs-progs app-portage/gentoolkit app-portage/eix app-portage/genlop sys-apps/gptfdisk app-misc/screen"
+    if [ -n "$BOOT_DEV" ]; then
+        PKG="$PKG sys-boot/grub"
+    fi
+    emerge -qn $PKG
 
     # Set timezone.
     emerge --config sys-libs/timezone-data

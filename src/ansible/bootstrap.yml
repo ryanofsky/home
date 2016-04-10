@@ -33,6 +33,7 @@
       script: scripts/script.sh emerge-world
       environment:
         CHROOT: /mnt/gentoo
+        BOOT_DEV: "{{ boot_dev }}"
       when: 1
 
     - name: Make kernel.
