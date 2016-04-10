@@ -70,6 +70,8 @@ class ActionModule(ActionBase):
                                            task_vars=task_vars)
         if "exception" in pull_result:
             raise Exception(pull_result["exception"])
+        elif "module_stderr" in pull_result:
+            raise Exception(pull_result["module_stderr"])
 
         for (key, exists, content, st,
              temp_upstream_path) in pull_result["pull_results"]:
@@ -120,6 +122,8 @@ class ActionModule(ActionBase):
                                            task_vars=task_vars)
         if "exception" in push_result:
             raise Exception(push_result["exception"])
+        elif "module_stderr" in push_result:
+            raise Exception(push_result["module_stderr"])
 
         results.update(pull_result=pull_result,
                        push_result=push_result,
