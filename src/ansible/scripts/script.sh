@@ -92,6 +92,7 @@ emerge-world() {
 
     # Set up networking.
     systemctl enable systemd-networkd.service
+    systemctl enable systemd-resolved.service
     ln -snf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
     # Set up ssh.
