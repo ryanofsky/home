@@ -80,8 +80,8 @@ mount-stage3() {
 
 emerge-world() {
     # Update system
-    emerge-webrsync
-    USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
+    #emerge-webrsync
+    #USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
     emerge -q --update --newuse --deep --with-bdeps=y @world
     emerge -q --depclean
     gcc-config 1
@@ -218,11 +218,37 @@ kconfig() {
         # Documentation/laptops/thinkpad-acpi.txt
         scripts/config -m THINKPAD_ACPI -e THINKPAD_ACPI_ALSA_SUPPORT -e THINKPAD_ACPI_VIDEO -e SENSORS_HDAPS
 
+        # lsusb -v
+        #   idVendor           0x0a5c Broadcom Corp.
+        #   idProduct          0x21e6 BCM20702 Bluetooth 4.0 [ThinkPad]
+        #   bcdDevice            1.12
+        #   iManufacturer           1 Broadcom Corp
+        #   iProduct                2 BCM20702A0
+        #   iSerial                 3 689423ED600F
         # http://www.thinkwiki.org/wiki/How_to_setup_Bluetooth
         # http://www.thinkwiki.org/wiki/Bluetooth_Daughter_Card_(14_pins)
         # https://download.lenovo.com/parts/ThinkPad/t530_fru_bom_20131007.pdf
         # https://wiki.gentoo.org/wiki/Bluetooth
         scripts/config -m BT -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP
+        #   idVendor           0x04f2 Chicony Electronics Co., Ltd
+        #   idProduct          0xb2ea Integrated Camera [ThinkPad]
+        #   bcdDevice            5.18
+        #   iManufacturer           1 Chicony Electronics Co., Ltd.
+        #   iProduct                2 Integrated Camera
+        #   iSerial                 0
+        scripts/config -m MEDIA_SUPPORT -e MEDIA_USB_SUPPORT -e MEDIA_CAMERA_SUPPORT -m VIDEO_V4L2 -m USB_VIDEO_CLASS -e USB_VIDEO_CLASS_INPUT_EVDEV
+        #   idVendor           0x147e Upek
+        #   idProduct          0x2020 TouchChip Fingerprint Coprocessor (WBF advanced mode)
+        #   bcdDevice            0.01
+        #   iManufacturer           1 Auth
+        #   iProduct                2 Biometric Coprocessor
+        #   iSerial                 0
+        # http://www.thinkwiki.org/wiki/Integrated_Fingerprint_Reader
+        # https://wiki.archlinux.org/index.php/Fprint
+        true
+
+        # Sabrent USB audio adapter (from amazon 2015-08-29)
+        scripts/config -m SND_USB_AUDIO
     fi
 
     if [ "$INVENTORY_HOSTNAME" = mini ]; then
@@ -293,9 +319,14 @@ kconfig() {
         # Subsystem: Hewlett-Packard Company BCM43142 802.11b/g/n [103c:804a]
         # Kernel driver in use: bcma-pci-bridge
         # Kernel modules: bcma
+        # lsusb -v
+        #   idVendor           0x0a5c Broadcom Corp.
+        #   idProduct          0x216d
+        #   bcdDevice            1.12
+        #   iManufacturer           1 Broadcom Corp
+        #   iProduct                2 BCM43142A0
+        #   iSerial                 3 2C337AEE0604
         scripts/config -m B43 -m BCMA -m BT -m BT_BCM -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP
-        # Sabrent USB audio adapter (from amazon 2015-08-29)
-        scripts/config -m SND_USB_AUDIO
     fi
 
     # Support for /proc/config.gz, fanotify, virtual networking/filesystems
