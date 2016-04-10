@@ -59,22 +59,34 @@ def main():
             else:
                 pull_results.append((key, exists, None, None, None))
     elif mode == "push":
+        ret["changed"] = False
         for path, content, symlink, delete in files:
             if delete:
                 assert content is None
                 os.unlink(path)
             else:
+                prev_content = None
+                prev_symlink = False
+                if os.path.islink(path):
+                    prev_content = os.readlink(path)
+                    prev_symlink = True
+                elif os.path.exists(path):
+                    prev_content = open(path).read()
+
+                if content == prev_content and symlink == prev_symlink:
+                    continue
+
                 dirname = os.path.dirname(path)
                 if not os.path.exists(dirname):
                     os.makedirs(dirname)
                 if symlink:
-                    if os.path.exists(path) or os.path.islink(path):
+                    if prev_content is not None:
                         os.unlink(path)
                     os.symlink(content, path)
                 else:
                     with open(path, "wb") as fp:
                         fp.write(content)
-        ret["changed"] = True
+            ret["changed"] = True
 
     module.exit_json(**ret)
 
