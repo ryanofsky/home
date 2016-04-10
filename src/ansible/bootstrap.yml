@@ -34,6 +34,7 @@
       environment:
         CHROOT: /mnt/gentoo
         BOOT_DEV: "{{ boot_dev }}"
+        UEFI_DEV: "{{ uefi_dev }}"
       when: 1
 
     - name: Make kernel.

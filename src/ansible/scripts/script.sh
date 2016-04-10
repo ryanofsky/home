@@ -93,6 +93,9 @@ emerge-world() {
     if [ -n "$BOOT_DEV" ]; then
         PKG="$PKG sys-boot/grub"
     fi
+    if [ -n "$UEFI_DEV" ]; then
+        PKG="$PKG sys-boot/efibootmgr"
+    fi
     emerge -qn $PKG
 
     # Set timezone.
