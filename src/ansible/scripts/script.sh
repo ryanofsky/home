@@ -80,8 +80,8 @@ mount-stage3() {
 
 emerge-world() {
     # Update system
-    #emerge-webrsync
-    #USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
+    emerge-webrsync
+    USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
     emerge -q --update --newuse --deep --with-bdeps=y @world
     emerge -q --depclean
     gcc-config 1
