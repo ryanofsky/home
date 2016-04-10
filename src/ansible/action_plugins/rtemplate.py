@@ -71,28 +71,32 @@ class ActionModule(ActionBase):
         if "exception" in pull_result:
             raise Exception(pull_result["exception"])
 
-        for (key, content, st,
+        for (key, exists, content, st,
              temp_upstream_path) in pull_result["pull_results"]:
             tfile = tfiles[key]
+            tfile.exists = exists
             tfile.temp_upstream_path = temp_upstream_path
             if content is not None:
                 with open(os.path.join(src, tfile.upstream_path), "wb") as fp:
                     fp.write(content)
-            info = tfile.info.setdefault(tfile.upstream_path, OrderedDict())
+            upstream_info = tfile.info.setdefault(tfile.upstream_path,
+                                                  OrderedDict())
             if st is not None:
                 st_mode, st_uid, st_gid, st_atime, st_mtime, st_ctime = st
-                info["st_mode"] = st_mode
-                info["st_uid"] = st_uid
-                info["st_gid"] = st_gid
-                info["st_atime"] = st_atime
-                info["st_mtime"] = st_mtime
-                info["st_ctime"] = st_ctime
+                upstream_info["st_mode"] = st_mode
+                upstream_info["st_uid"] = st_uid
+                upstream_info["st_gid"] = st_gid
+                upstream_info["st_atime"] = st_atime
+                upstream_info["st_mtime"] = st_mtime
+                upstream_info["st_ctime"] = st_ctime
             with open(os.path.join(src, tfile.info_path), "wb") as fp:
                 ordered_dump(tfile.info, fp, yaml.SafeDumper)
-            ordered_dump(info, Dumper=yaml.SafeDumper)
 
         changes = []
         for path, tfile in tfiles.items():
+            local_info = tfile.info.get("info") or OrderedDict()
+            if local_info.get("require_existing") and not tfile.exists:
+                continue
             if tfile.template_path is not None:
                 remote_path = os.path.join(dest, path)
                 source = os.path.join(src, tfile.template_path)

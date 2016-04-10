@@ -36,8 +36,8 @@ def main():
         pull_results = ret["pull_results"] = []
         for path, pushed_prev, key in files:
             upstream_path = temp_upstream_path = None
-            if not pushed_prev and (os.path.exists(path) or
-                                    os.path.islink(path)):
+            exists = os.path.exists(path) or os.path.islink(path)
+            if not pushed_prev and exists:
                 upstream_path = path
             else:
                 dirname, basename = os.path.split(path)
@@ -53,11 +53,11 @@ def main():
                     content = os.readlink(upstream_path)
                 else:
                     content = open(upstream_path).read()
-                pull_results.append((key, content, (
+                pull_results.append((key, exists, content, (
                     s.st_mode, s.st_uid, s.st_gid, s.st_atime, s.st_mtime,
                     s.st_ctime), temp_upstream_path))
             else:
-                pull_results.append((key, None, None, None))
+                pull_results.append((key, exists, None, None, None))
     elif mode == "push":
         for path, content, symlink, delete in files:
             if delete:
