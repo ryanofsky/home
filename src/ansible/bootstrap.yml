@@ -1,9 +1,5 @@
-- hosts: jumpy
+- hosts: mini
   vars:
-    boot_mbr_dev: /dev/sda
-    boot_dev: /dev/sda2
-    swap_dev: /dev/sdb
-    root_dev: /dev/sdc
     stage3_url: https://lug.mtu.edu/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160407.tar.bz2
 
   tasks:
@@ -14,6 +10,7 @@
         BOOT_DEV: "{{ boot_dev }}"
         SWAP_DEV: "{{ swap_dev }}"
         ROOT_DEV: "{{ root_dev }}"
+        UEFI_DEV: "{{ uefi_dev }}"
         STAGE3_URL: "{{ stage3_url }}"
         WIPE: "yes"
       when: 1

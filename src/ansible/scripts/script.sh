@@ -15,12 +15,17 @@ mount-stage3() {
         cryptsetup --verbose --batch-mode luksFormat "$ROOT_DEV" <<<"$LUKS_PASS"
     fi
     cryptsetup --verbose --batch-mode open --type luks "$ROOT_DEV" root <<<"$LUKS_PASS"
-    cryptsetup -d /dev/urandom create swap "$SWAP_DEV"
+    test -z "$SWAP_DEV" || cryptsetup -d /dev/urandom create swap "$SWAP_DEV"
 
     # Set up filesystems.
     if [ "$WIPE" = yes ]; then
         mkfs.btrfs /dev/mapper/root
-        yes | mke2fs "$BOOT_DEV"
+        if [ -n "$BOOT_DEV" ]; then
+            yes | mke2fs "$BOOT_DEV"
+        fi
+        if [ -n "$UEFI_DEV" ]; then
+            mkfs.vfat -F32 "$UEFI_DEV"
+        fi
     fi
     mkdir /mnt/root
     mount -o noatime /dev/mapper/root /mnt/root
@@ -48,10 +53,13 @@ mount-stage3() {
     fi
 
     # Set up runtime.
-    mkswap /dev/mapper/swap
-    swapon /dev/mapper/swap
+    if [ -n "$SWAP_DEV" ]; then
+        mkswap /dev/mapper/swap
+        swapon /dev/mapper/swap
+    fi
     mount --bind /mnt/root/portage /mnt/root/root/usr/portage
-    mount -o noatime "$BOOT_DEV" /mnt/root/root/boot
+    test -z "$BOOT_DEV" || mount -o noatime "$BOOT_DEV" /mnt/root/root/boot
+    test -z "$UEFI_DEV" || mount "$UEFI_DEV" /mnt/root/root/boot
     mount -t proc proc /mnt/root/root/proc
     mount --rbind /sys /mnt/root/root/sys
     mount --make-rslave /mnt/root/root/sys
