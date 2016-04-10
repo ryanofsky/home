@@ -149,6 +149,15 @@ make-kernel() {
     mkdir -p /boot/grub
     grub2-mkconfig -o /boot/grub/grub.cfg
     grub2-install -v "$BOOT_MBR_DEV"
+
+    # FIXME: UEFI/secure boot setup
+    # https://wiki.gentoo.org/wiki/EFI_stub_kernel
+    # https://wiki.gentoo.org/wiki/Efibootmgr
+    # https://wiki.gentoo.org/wiki/Sakaki%27s_EFI_Install_Guide
+    # https://github.com/sakaki-/buildkernel/blob/master/buildkernel
+    # http://kroah.com/log/blog/2013/09/02/booting-a-self-signed-linux-kernel/
+    # efibootmgr command lines: https://bbs.archlinux.org/viewtopic.php?id=147965
+    #   efibootmgr -c -d /dev/sdX -p Y -L "Title Here" -l '\kernel\here.efi' -u 'root=/dev/sda3 initrd=\\initramfs\\here.img ro add_efi_memmap quiet'
 }
 
 kconfig() {
