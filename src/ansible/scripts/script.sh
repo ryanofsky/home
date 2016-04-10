@@ -152,6 +152,152 @@ make-kernel() {
 }
 
 kconfig() {
+    if [ "$INVENTORY_HOSTNAME" = think ]; then
+        # lspci -k -nn
+        # Host bridge [0600]: Intel Corporation 3rd Gen Core processor DRAM Controller [8086:0154] (rev 09)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: ivb_uncore
+        scripts/config -e PERF_EVENTS_INTEL_UNCORE
+        # VGA compatible controller [0300]: Intel Corporation 3rd Gen Core processor Graphics Controller [8086:0166] (rev 09)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: i915
+        scripts/config -m DRM_I915 -e SND_HDA_I915
+        # USB controller [0c03]: Intel Corporation 7 Series/C210 Series Chipset Family USB xHCI Host Controller [8086:1e31] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        scripts/config -m USB_XHCI_HCD
+        # Communication controller [0780]: Intel Corporation 7 Series/C210 Series Chipset Family MEI Controller #1 [8086:1e3a] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        scripts/config -e WATCHDOG_CORE -m INTEL_MEI -m INTEL_MEI_ME
+        # Serial controller [0700]: Intel Corporation 7 Series/C210 Series Chipset Family KT Controller [8086:1e3d] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: serial
+        scripts/config -e SERIAL_8250 -e SERIAL_8250_CONSOLE
+        # Ethernet controller [0200]: Intel Corporation 82579LM Gigabit Network Connection [8086:1502] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f3]
+        # Kernel driver in use: e1000e
+        # Kernel modules: e1000e
+        scripts/config -m E1000E
+        # USB controller [0c03]: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #1 [8086:1e26] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: ehci-pci
+        # USB controller [0c03]: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #2 [8086:1e2d] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: ehci-pci
+        scripts/config -e USB_EHCI_PCI
+        # Audio device [0403]: Intel Corporation 7 Series/C210 Series Chipset Family High Definition Audio Controller [8086:1e20] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: snd_hda_intel
+        scripts/config -m SND_HDA_INTEL
+        # PCI bridge [0604]: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 1 [8086:1e10] (rev c4)
+        # Kernel driver in use: pcieport
+        # PCI bridge [0604]: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 2 [8086:1e12] (rev c4)
+        # Kernel driver in use: pcieport
+        # PCI bridge [0604]: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 3 [8086:1e14] (rev c4)
+        # Kernel driver in use: pcieport
+        scripts/config -e PCIEPORTBUS
+        # ISA bridge [0601]: Intel Corporation QM77 Express Chipset LPC Controller [8086:1e55] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        scripts/config -m LPC_ICH
+        # SATA controller [0106]: Intel Corporation 7 Series Chipset Family 6-port SATA Controller [AHCI mode] [8086:1e03] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: ahci
+        scripts/config -e SATA_AHCI
+        # SMBus [0c05]: Intel Corporation 7 Series/C210 Series Chipset Family SMBus Controller [8086:1e22] (rev 04)
+        # Subsystem: Lenovo Device [17aa:21f6]
+        # Kernel driver in use: i801_smbus
+        scripts/config -m I2C_I801
+        # System peripheral [0880]: Ricoh Co Ltd PCIe SDXC/MMC Host Controller [1180:e823] (rev 04)
+        # Subsystem: Lenovo PCIe SDXC/MMC Host Controller [17aa:21f6]
+        scripts/config -m MMC -m MMC_SDHCI -m MMC_SDHCI_PCI
+        # Network controller [0280]: Intel Corporation Centrino Advanced-N 6205 [Taylor Peak] [8086:0085] (rev 34)
+        # Subsystem: Intel Corporation Centrino Advanced-N 6205 AGN [8086:1311]
+        # Kernel driver in use: iwlwifi
+        # Kernel modules: iwlwifi
+        scripts/config -m IWLWIFI -m IWLDVM
+
+        # Documentation/laptops/thinkpad-acpi.txt
+        scripts/config -m THINKPAD_ACPI -e THINKPAD_ACPI_ALSA_SUPPORT -e THINKPAD_ACPI_VIDEO -e SENSORS_HDAPS
+
+        # http://www.thinkwiki.org/wiki/How_to_setup_Bluetooth
+        # http://www.thinkwiki.org/wiki/Bluetooth_Daughter_Card_(14_pins)
+        # https://download.lenovo.com/parts/ThinkPad/t530_fru_bom_20131007.pdf
+        # https://wiki.gentoo.org/wiki/Bluetooth
+        scripts/config -m BT -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP
+    fi
+
+    if [ "$INVENTORY_HOSTNAME" = mini ]; then
+        # lspci -k -nn
+        # VGA compatible controller [0300]: Intel Corporation Haswell-ULT Integrated Graphics Controller [8086:0a06] (rev 0b)
+        # DeviceName: Onboard IGD
+        # Subsystem: Hewlett-Packard Company Haswell-ULT Integrated Graphics Controller [103c:2b38]
+        # Kernel driver in use: i915
+        # Kernel modules: i915
+        scripts/config -m DRM_I915 -e SND_HDA_I915
+        # Audio device [0403]: Intel Corporation Haswell-ULT HD Audio Controller [8086:0a0c] (rev 0b)
+        # Subsystem: Hewlett-Packard Company Haswell-ULT HD Audio Controller [103c:2b38]
+        scripts/config -m SND_HDA_INTEL
+        # USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
+        # Subsystem: Hewlett-Packard Company 8 Series USB xHCI HC [103c:2b38]
+        # Kernel driver in use: xhci_hcd
+        scripts/config -m USB_XHCI_HCD
+        # Communication controller [0780]: Intel Corporation 8 Series HECI #0 [8086:9c3a] (rev 04)
+        # Subsystem: Hewlett-Packard Company 8 Series HECI [103c:2b38]
+        # Kernel driver in use: mei_me
+        # Kernel modules: mei_me
+        scripts/config -e WATCHDOG_CORE -m INTEL_MEI -m INTEL_MEI_ME
+        # Audio device [0403]: Intel Corporation 8 Series HD Audio Controller [8086:9c20] (rev 04)
+        # DeviceName: Onboard Audio
+        # Subsystem: Hewlett-Packard Company 8 Series HD Audio Controller [103c:2b38]
+        scripts/config -e SND_HDA_INTEL
+        # PCI bridge [0604]: Intel Corporation 8 Series PCI Express Root Port 1 [8086:9c10] (rev e4)
+        # Kernel driver in use: pcieport
+        # Kernel modules: shpchp
+        # PCI bridge [0604]: Intel Corporation 8 Series PCI Express Root Port 3 [8086:9c14] (rev e4)
+        # Kernel driver in use: pcieport
+        # Kernel modules: shpchp
+        # PCI bridge [0604]: Intel Corporation 8 Series PCI Express Root Port 4 [8086:9c16] (rev e4)
+        # Kernel driver in use: pcieport
+        # Kernel modules: shpchp
+        # PCI bridge [0604]: Intel Corporation 8 Series PCI Express Root Port 5 [8086:9c18] (rev e4)
+        # Kernel driver in use: pcieport
+        # Kernel modules: shpchp
+        scripts/config -e PCIEPORTBUS -m HOTPLUG_PCI_SHPC
+        # USB controller [0c03]: Intel Corporation 8 Series USB EHCI #1 [8086:9c26] (rev 04)
+        # Subsystem: Hewlett-Packard Company 8 Series USB EHCI [103c:2b38]
+        # Kernel driver in use: ehci-pci
+        scripts/config -e USB_EHCI_PCI
+        # ISA bridge [0601]: Intel Corporation 8 Series LPC Controller [8086:9c45] (rev 04)
+        # Subsystem: Hewlett-Packard Company 8 Series LPC Controller [103c:2b38]
+        # Kernel driver in use: lpc_ich
+        # Kernel modules: lpc_ich
+        scripts/config -m LPC_ICH
+        # SATA controller [0106]: Intel Corporation 8 Series SATA Controller 1 [AHCI mode] [8086:9c03] (rev 04)
+        # Subsystem: Hewlett-Packard Company 8 Series SATA Controller 1 [AHCI mode] [103c:2b38]
+        # Kernel driver in use: ahci
+        scripts/config -e SATA_AHCI
+        # SMBus [0c05]: Intel Corporation 8 Series SMBus Controller [8086:9c22] (rev 04)
+        # Subsystem: Hewlett-Packard Company 8 Series SMBus Controller [103c:2b38]
+        # Kernel modules: i2c_i801
+        scripts/config -m I2C_I801
+        # Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller [10ec:8168] (rev 0c)
+        # Subsystem: Hewlett-Packard Company RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller [103c:2b38]
+        # Kernel driver in use: r8169
+        # Kernel modules: r8169
+        scripts/config -m R8169
+        # Unassigned class [ff00]: Realtek Semiconductor Co., Ltd. RTS5229 PCI Express Card Reader [10ec:5229] (rev 01)
+        # Subsystem: Hewlett-Packard Company RTS5229 PCI Express Card Reader [103c:2b38]
+        # Kernel driver in use: rtsx_pci
+        # Kernel modules: rtsx_pci
+        scripts/config -m MFD_RTSX_PCI
+        # Network controller [0280]: Broadcom Corporation BCM43142 802.11b/g/n [14e4:4365] (rev 01)
+        # Subsystem: Hewlett-Packard Company BCM43142 802.11b/g/n [103c:804a]
+        # Kernel driver in use: bcma-pci-bridge
+        # Kernel modules: bcma
+        scripts/config -m B43 -m BCMA -m BT -m BT_BCM -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP
+        # Sabrent USB audio adapter (from amazon 2015-08-29)
+        scripts/config -m SND_USB_AUDIO
+    fi
+
     # Support for /proc/config.gz, fanotify, virtual networking/filesystems
     scripts/config \
       -m IKCONFIG \
