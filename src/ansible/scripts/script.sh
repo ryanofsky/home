@@ -181,7 +181,7 @@ make-kernel() {
 
 kconfig() {
     if [ -z "$BOOT_MBR_DEV" ]; then
-        -e EFI -e EFI_STUB -e EFI_MIXED -e EFI_PARTITION -m EFI_VARS -m EFIVAR_FS
+        scripts/config -e EFI -e EFI_STUB -e EFI_MIXED -e EFI_PARTITION -m EFI_VARS -m EFIVAR_FS
     fi
 
     if [ "$INVENTORY_HOSTNAME" = think ]; then
