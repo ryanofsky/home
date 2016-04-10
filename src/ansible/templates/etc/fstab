@@ -18,5 +18,12 @@
 # NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
 UUID={{root_fs_uuid.stdout}}		/		btrfs		noatime,subvol=root		0 1
 UUID={{root_fs_uuid.stdout}}		/usr/portage		btrfs		noatime,subvol=portage		0 1
+{% if boot_dev %}
 UUID={{boot_dev_uuid.stdout}}		/boot		ext2		noauto,noatime	0 2
+{% endif %}
+{% if uefi_dev %}
+{{uefi_dev}}		/boot		vfat		noauto	0 2
+{% endif %}
+{% if swap_dev %}
 /dev/mapper/swap		none		swap		sw		0 0
+{% endif %}

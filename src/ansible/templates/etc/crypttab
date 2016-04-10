@@ -1,2 +1,4 @@
 # {{ansible_managed}}
+{% if swap_dev %}
 swap {{ swap_dev }} /dev/urandom swap
+{% endif %}
