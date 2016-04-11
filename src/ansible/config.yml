@@ -1,21 +1,14 @@
 - hosts: jumpy
-  vars:
-    boot_mbr_dev: /dev/sda
-    boot_dev: /dev/sda2
-    swap_dev: /dev/sdb
-    root_dev: /dev/sdc
 
   tasks:
     - name: Get root uuid
       command: "bash -c 'blkid -s UUID -o value $(findmnt -vno source /)'"
       register: root_fs_uuid
     - name: Get boot uuid
-      command: blkid -s UUID -o value {{ boot_dev }}
+      command: "blkid -s UUID -o value {{ boot_dev }}"
       register: boot_dev_uuid
     - name: Get root uuid
-      command: blkid -s UUID -o value {{ root_dev }}
+      command: "blkid -s UUID -o value {{ root_dev }}"
       register: root_dev_uuid
-
     - name: config
       rtemplate: src=templates dest=/
-      when: 1
