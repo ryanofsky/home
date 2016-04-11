@@ -102,7 +102,7 @@ emerge-world() {
     emerge -qe --update --newuse --deep --with-bdeps=y @world
 
     # Add needed packages.
-    PKG="sys-kernel/hardened-sources app-editors/vim sys-kernel/dracut sys-fs/btrfs-progs app-portage/gentoolkit app-portage/eix app-portage/genlop sys-apps/gptfdisk app-misc/screen"
+    PKG="sys-kernel/hardened-sources app-editors/vim sys-kernel/dracut sys-fs/btrfs-progs app-portage/gentoolkit app-portage/eix app-portage/genlop sys-apps/gptfdisk app-misc/screen app-portage/cpuinfo2cpuflags"
     if [ -n "$BOOT_DEV" ]; then
         PKG="$PKG sys-boot/grub"
     fi
