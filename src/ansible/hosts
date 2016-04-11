@@ -1,5 +1,5 @@
 [jumpy]
-jumpy ansible_user=root boot_mbr_dev=/dev/sda boot_dev=/dev/sda2 swap_dev=/dev/sdb root_dev=/dev/sdc uefi_dev=
+jumpy ansible_user=root boot_mbr_dev=/dev/sda boot_dev=/dev/sda2 swap_dev=/dev/sdb root_dev=/dev/sdc uefi_dev= ansible_python_interpreter=/usr/bin/python2
 
 [mini]
-mini ansible_user=root boot_mbr_dev= boot_dev= swap_dev= root_dev=/dev/sda2 uefi_dev=/dev/sda1
+mini ansible_user=root boot_mbr_dev= boot_dev= swap_dev= root_dev=/dev/sda2 uefi_dev=/dev/sda1 ansible_python_interpreter=/usr/bin/python2
