@@ -2,3 +2,6 @@
 {% if swap_dev %}
 swap {{ swap_dev }} /dev/urandom swap
 {% endif %}
+{% if inventory_hostname == "mini" %}
+fort UUID=cec0afd8-69d0-4b50-82d6-d26707b5a341 none noauto,luks
+{% endif %}

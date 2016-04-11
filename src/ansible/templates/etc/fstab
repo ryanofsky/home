@@ -27,3 +27,6 @@ UUID={{boot_dev_uuid.stdout}}		/boot		ext2		noauto,noatime	0 2
 {% if swap_dev %}
 /dev/mapper/swap		none		swap		sw		0 0
 {% endif %}
+{% if inventory_hostname == "mini" %}
+/dev/mapper/fort		/mnt/fort		btrfs		noauto,noatime		0 0
+{% endif %}
