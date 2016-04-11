@@ -81,7 +81,20 @@ mount-stage3() {
 emerge-world() {
     # Update system
     emerge-webrsync
-    USE="-systemd -udev" emerge -q1 sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup
+
+    # Deal with recursive dependencies by temporarily turning off use flags.
+    local tmpuse="-systemd -udev"
+    local tmppkg="sys-apps/util-linux sys-fs/lvm2 sys-fs/cryptsetup"
+    if grep -q gnome /usr/local/portage/profiles/local/parent; then
+        # (app-crypt/gnupg-2.1.11-r1:0/0::gentoo, ebuild scheduled for merge) depends on
+        #  (app-crypt/pinentry-0.9.7:0/0::gentoo, ebuild scheduled for merge) (buildtime)
+        #   (app-crypt/gcr-3.18.0:0/1::gentoo, ebuild scheduled for merge) (runtime)
+        #    (app-crypt/gnupg-2.1.11-r1:0/0::gentoo, ebuild scheduled for merge) (buildtime)
+        tmpuse="$tmpuse -gnome-keyring -gtk -qt4"
+        tmppkg="$tmppkg app-crypt/pinentry"
+    fi
+    USE="$tmpuse" emerge -q1n $tmppkg
+
     emerge -q --update --newuse --deep --with-bdeps=y @world
     emerge -q --depclean
     gcc-config 1

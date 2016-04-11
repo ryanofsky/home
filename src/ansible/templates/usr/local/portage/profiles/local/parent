@@ -1,2 +1,5 @@
 /usr/portage/profiles/hardened/linux/amd64
 /usr/portage/profiles/targets/systemd
+{% if inventory_hostname == "mini" %}
+/usr/portage/profiles/targets/desktop/gnome
+{% endif %}
