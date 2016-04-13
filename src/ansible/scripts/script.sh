@@ -232,7 +232,7 @@ kconfig() {
         # Audio device [0403]: Intel Corporation 7 Series/C210 Series Chipset Family High Definition Audio Controller [8086:1e20] (rev 04)
         # Subsystem: Lenovo Device [17aa:21f6]
         # Kernel driver in use: snd_hda_intel
-        scripts/config -m SND_HDA_INTEL
+        scripts/config -m SND_HDA_INTEL -e SND_HDA_RECONFIG -e SND_HDA_INPUT_BEEP -e SND_HDA_PATCH_LOADER -m SND_HDA_CODEC_REALTEK -m SND_HDA_CODEC_ANALOG -m SND_HDA_CODEC_SIGMATEL -m SND_HDA_CODEC_VIA -m SND_HDA_CODEC_HDMI -m SND_HDA_CODEC_CIRRUS -m CONFIG_SND_HDA_CODEC_CA0110 -m SND_HDA_CODEC_CONEXANT -m SND_HDA_CODEC_CA0132 -e SND_HDA_CODEC_CA0132_DSP -m SND_HDA_CODEC_CMEDIA -m SND_HDA_CODEC_SI3054 -m SND_HDA_GENERIC
         # PCI bridge [0604]: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 1 [8086:1e10] (rev c4)
         # Kernel driver in use: pcieport
         # PCI bridge [0604]: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 2 [8086:1e12] (rev c4)
@@ -306,7 +306,10 @@ kconfig() {
         scripts/config -m DRM_I915 -e SND_HDA_I915
         # Audio device [0403]: Intel Corporation Haswell-ULT HD Audio Controller [8086:0a0c] (rev 0b)
         # Subsystem: Hewlett-Packard Company Haswell-ULT HD Audio Controller [103c:2b38]
-        scripts/config -m SND_HDA_INTEL
+        # Audio device [0403]: Intel Corporation 8 Series HD Audio Controller [8086:9c20] (rev 04)
+        # DeviceName: Onboard Audio
+        # Subsystem: Hewlett-Packard Company 8 Series HD Audio Controller [103c:2b38]
+        scripts/config -m SND_HDA_INTEL -e SND_HDA_RECONFIG -e SND_HDA_INPUT_BEEP -e SND_HDA_PATCH_LOADER -m SND_HDA_CODEC_REALTEK -m SND_HDA_CODEC_ANALOG -m SND_HDA_CODEC_SIGMATEL -m SND_HDA_CODEC_VIA -m SND_HDA_CODEC_HDMI -m SND_HDA_CODEC_CIRRUS -m CONFIG_SND_HDA_CODEC_CA0110 -m SND_HDA_CODEC_CONEXANT -m SND_HDA_CODEC_CA0132 -e SND_HDA_CODEC_CA0132_DSP -m SND_HDA_CODEC_CMEDIA -m SND_HDA_CODEC_SI3054 -m SND_HDA_GENERIC
         # USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
         # Subsystem: Hewlett-Packard Company 8 Series USB xHCI HC [103c:2b38]
         # Kernel driver in use: xhci_hcd
@@ -316,10 +319,6 @@ kconfig() {
         # Kernel driver in use: mei_me
         # Kernel modules: mei_me
         scripts/config -e WATCHDOG_CORE -m INTEL_MEI -m INTEL_MEI_ME
-        # Audio device [0403]: Intel Corporation 8 Series HD Audio Controller [8086:9c20] (rev 04)
-        # DeviceName: Onboard Audio
-        # Subsystem: Hewlett-Packard Company 8 Series HD Audio Controller [103c:2b38]
-        scripts/config -e SND_HDA_INTEL
         # PCI bridge [0604]: Intel Corporation 8 Series PCI Express Root Port 1 [8086:9c10] (rev e4)
         # Kernel driver in use: pcieport
         # Kernel modules: shpchp
