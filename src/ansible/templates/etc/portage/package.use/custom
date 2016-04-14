@@ -32,7 +32,7 @@ net-misc/curl http2 idn rtmp ssh
 # prevent desktop use flags requiring gd
 dev-lang/php -truetype -exif
 
-=dev-lang/php-4* cgi -berkdb -gdbm -sqlite
+=dev-lang/php-4* cgi -berkdb -gdbm -sqlite -ssl
 
 # required by media-video/miro
 net-dns/avahi mdnsresponder-compat

@@ -122,13 +122,13 @@ DEPEND="${DEPEND}
 # Additional features
 #
 # They are in PDEPEND because we need PHP installed first!
-PDEPEND="doc? ( app-doc/php-docs )
-		java-external? ( dev-php4/php-java-bridge )
-		java-internal? ( !dev-php4/php-java-bridge )
-		sqlite? ( dev-php4/pecl-sqlite )
-		suhosin? ( dev-php4/suhosin )
-		yaz? ( dev-php4/pecl-yaz )
-		zip? ( dev-php4/pecl-zip )"
+# PDEPEND="doc? ( app-doc/php-docs )
+# 		java-external? ( dev-php4/php-java-bridge )
+# 		java-internal? ( !dev-php4/php-java-bridge )
+# 		sqlite? ( dev-php4/pecl-sqlite )
+# 		suhosin? ( dev-php4/suhosin )
+# 		yaz? ( dev-php4/pecl-yaz )
+# 		zip? ( dev-php4/pecl-zip )"
 
 
 # ========================================================================
@@ -143,7 +143,7 @@ PHP_INI_UPSTREAM="php.ini-dist"
 # @ECLASS-VARIABLE: PHP_PATCHSET_REV
 # @DESCRIPTION:
 # Provides PHP patchsets support.
-SRC_URI="${SRC_URI} http://gentoo.longitekk.com/php-patchset-${MY_PHP_PV}-r${PHP_PATCHSET_REV}.tar.bz2"
+#SRC_URI="${SRC_URI} http://gentoo.longitekk.com/php-patchset-${MY_PHP_PV}-r${PHP_PATCHSET_REV}.tar.bz2"
 
 # @ECLASS-VARIABLE: SUHOSIN_PATCH
 # @DESCRIPTION:
@@ -376,8 +376,8 @@ php4_4-sapi_src_unpack() {
 
 	# eaclocal doesn't accept --force, so we try to force re-generation
 	# this way
-	rm aclocal.m4
-	eautoreconf --force -W no-cross
+	#rm aclocal.m4
+	#eautoreconf --force -W no-cross
 }
 
 # @FUNCTION: php4_4-sapi_src_compile

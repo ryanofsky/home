@@ -29,15 +29,14 @@ CONCURRENTMODPHP_PATCH="${MY_PHP_PV}/opt/php${MY_PHP_PV}-concurrent_apache_modul
 
 inherit php4_4-sapi apache-module
 
-SRC_URI="http://gentoo.longitekk.com/${P}.tar.bz2
-http://gentoo.longitekk.com/php-patchset-${PV}-r${PHP_PATCHSET_REV}.tar.bz2"
+SRC_URI="http://museum.php.net/php4/${P}.tar.bz2"
 
 [[ -n "${SUHOSIN_PATCH}" ]] && SRC_URI="${SRC_URI} suhosin? (
 http://gentoo.longitekk.com/${SUHOSIN_PATCH} )"
 
 DESCRIPTION="The PHP language runtime engine: CLI, CGI and Apache2 SAPIs."
 
-DEPEND="app-admin/php-toolkit"
+DEPEND="" #"app-admin/php-toolkit"
 RDEPEND="${DEPEND}"
 
 want_apache
