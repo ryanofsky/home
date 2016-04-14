@@ -1,0 +1,5 @@
+# required by media-video/vlc
+media-libs/fdk-aac FraunhoferFDK
+
+# required by www-client/chromium[widevine]
+www-plugins/chrome-binary-plugins google-chrome

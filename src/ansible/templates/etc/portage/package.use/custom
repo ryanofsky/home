@@ -1,0 +1,71 @@
+# svn apache/viewvc support
+dev-vcs/subversion apache2 ctypes-python python
+
+# media player codecs
+media-libs/xine-lib aalib bluray -dvb -dxr3 -fbcon fusion imagemagick -jack -libav libcaca modplug musepack -oss speex theora v4l vaapi vcd -vdpau vdr vpx wavpack xvmc
+
+media-sound/pulseaudio equalizer -jack -libressl libsamplerate -lirc native-headset ofono-headset orc realtime sox -xen -zeroconf
+
+media-tv/kodi airplay avahi bluray caps cec css -debug -gles -java -joystick midi -mysql nfs rtmp sftp upnp vaapi -vdpau webserver
+
+# vpx temporarily disabled because mythtv requires older version
+media-video/ffmpeg aacplus amr amrenc bluray bs2b cdio celt cpudetection faac fdk flite -fontconfig frei0r fribidi gme -gnutls gsm ec61883 iec61883 ieee1394 -jack jpeg2k ladspa libass libcaca -libressl librtmp libsoxr libv4l modplug openal -openssl opus -oss quvi schroedinger snappy speex ssh -static-libs theora twolame v4l vaapi -vdpau -vpx wavpack webp x265 zvbi
+
+media-video/miro musepack
+
+media-video/mplayer aalib bidi bluray bs2b cddb cdparanoia cpudetection dv -dvb faac faad ftp  gsm jpeg2k libmpeg2 live nas nut openal pnm pvr radio rtc speex tga theora toolame tremor twolame v4l vcd xanim xvmc yuv4mpeg -zoran
+
+media-video/mpv archive bluray -doc drm -dvb -gbm -jack -libav libcaca libguess libmpv openal -oss rubberband -sdl uchardet v4l vaapi -vdpau vf-dlopen -wayland
+
+media-tv/mythtv -autostart avahi bluray cec crystalhd -debug -dvb -egl fftw ieee1394 -jack -lcd libass -lirc -perl vaapi -vdpau xmltv
+
+media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad fdk fluidsynth -fontconfig gme -gnutls growl httpd ieee1394 -jack kate -kde libass -libav libcaca libtar libtiger linsys -lirc live lua matroska modplug mtp musepack omxil opencv -optimisememory opus postproc projectm -qt5 rdp rtsp -run-as-root schroedinger sdl-image sftp shout sid skins speex taglib theora tremor twolame upnp v4l vaapi vcdx -vdpau vlm vnc vpx wma-fixed x265 zeroconf zvbi
+
+media-video/xine-ui aalib curl libcaca -lirc vdr
+
+# font size fix, netflix support
+www-client/chromium hidpi widevine
+
+# maybe useful curl protocol options
+net-misc/curl http2 idn rtmp ssh
+
+# prevent desktop use flags requiring gd
+dev-lang/php -truetype -exif
+
+=dev-lang/php-4* cgi -berkdb -gdbm -sqlite
+
+# required by media-video/miro
+net-dns/avahi mdnsresponder-compat
+
+# required by media-video/vlc
+net-fs/samba client
+
+# required by media-video/vlc
+sys-libs/zlib minizip
+
+# required by app-emulation/docker
+sys-libs/libseccomp static-libs
+
+# doesn't support python 3.5 yet
+x11-apps/intel-gpu-tools -python test-programs
+
+# doesn't support python 3.5 yet
+# dependency required by www-client/chromium
+app-accessibility/speech-dispatcher -python
+
+# required by media-tv/mythtv-0.27.6_p20160318::gentoo
+# required by mythtv (argument)
+>=dev-qt/qtsql-4.8.7-r1:4 mysql
+
+# required by media-gfx/gnome-photos-3.18.3::gentoo
+# required by gnome-base/gnome-extra-apps-3.18.0-r1::gentoo[tracker]
+# required by gnome-base/gnome-3.18.0::gentoo[extras]
+# required by gnome-base/gnome (argument)
+>=media-plugins/grilo-plugins-0.2.17 upnp-av
+# required by media-tv/kodi-16.0::gentoo[webserver]
+# required by media-tv/kodi (argument)
+>=net-libs/libmicrohttpd-0.9.48 messages
+
+# required by dev-qt/qtcore-5.5.1-r1::gentoo
+# required by dev-qt/qtcore (argument)
+>=dev-libs/libpcre-8.38-r1 pcre16
