@@ -1,0 +1,8 @@
+- hosts: mini
+  tasks:
+    - name: Make kernel.
+      script: scripts/script.sh make-kernel
+      environment:
+        INVENTORY_HOSTNAME: "{{ inventory_hostname }}"
+        BOOT_MBR_DEV: "{{ boot_mbr_dev }}"
+      when: 1
