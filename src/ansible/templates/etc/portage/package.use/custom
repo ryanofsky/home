@@ -28,10 +28,11 @@ www-client/chromium hidpi widevine
 # maybe useful curl protocol options
 net-misc/curl http2 idn rtmp ssh
 
-# prevent desktop use flags requiring gd
-dev-lang/php -truetype -exif
+# enable php for apache, prevent desktop use flags requiring gd
+>dev-lang/php-4 apache2 -truetype -exif
+app-eselect/eselect-php apache2
 
-=dev-lang/php-4* cgi -berkdb -gdbm -sqlite -ssl
+=dev-lang/php-4* -apache2 cgi -berkdb -exif -gdbm -sqlite -ssl -truetype
 
 # required by media-video/miro
 net-dns/avahi mdnsresponder-compat
