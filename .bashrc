@@ -11,6 +11,9 @@ export EDITOR=vim
 umask u=rwx,g=,o=
 export LC_COLLATE=C
 
+if tty -s; then
+  export GPG_TTY=$(tty)
+fi
 
 # Test for an interactive shell.  There is no need to set anything
 # past this point for scp and rcp, and it's important to refrain from
