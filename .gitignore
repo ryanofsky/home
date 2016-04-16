@@ -41,3 +41,5 @@
 .viminfo
 src/bup/
 src/etc/
+src/google_appengine/
+src/torrent/
