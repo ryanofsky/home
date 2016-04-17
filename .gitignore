@@ -53,6 +53,10 @@
 .config/xfce4/
 .config/xfe/
 .dbus/
+.electrum/blockchain_headers
+.electrum/certs/
+.electrum/config
+.electrum/recent_servers
 .emacs-places
 .emacs.d/
 .fontconfig/
@@ -61,6 +65,7 @@
 .gnome/
 .gnome2/
 .gnucash/
+.gnupg/crls.d/
 .gnupg/openpgp-revocs.d/
 .gnupg/private-keys-v1.d/
 .gnupg/pubring.kbx
