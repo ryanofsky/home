@@ -86,6 +86,16 @@ class Find:
             help="String or regex replacement pattern to replace "
             "matching symlinks with.")
         parser.add_argument(
+            "-A",
+            "--absolute",
+            action="store_true",
+            help="Convert relative symlink to absolute symlink.")
+        parser.add_argument(
+            "-R",
+            "--relative",
+            action="store_true",
+            help="Convert absolute symlink to relative symlink.")
+        parser.add_argument(
             "directory",
             help="Directory to recursively search for symlinks.")
         parser.add_argument("pattern",
@@ -95,7 +105,8 @@ class Find:
     def run(self, args):
         sep = "\0" if getattr(args, "0") else "\n"
         for root, dirs, files in os.walk(args.directory):
-            root_st = os.stat(root or os.curdir) if args.sub else None
+            root_st = os.stat(root or os.curdir) if (
+                args.sub or args.absolute or args.relative) else None
             root_modified = False
             for f in files:
                 path = os.path.join(root, f)
@@ -112,9 +123,17 @@ class Find:
                         break
                 if not match:
                     continue
-                if sub:
+
+                new_link = link if sub is None else match.expand(
+                    sub) if args.regex else sub
+
+                if args.absolute and not os.path.isabs(new_link):
+                    new_link = os.path.abspath(os.path.join(root, new_link))
+                if args.relative and os.path.isabs(new_link):
+                    new_link = os.path.relpath(new_link, root)
+
+                if new_link != link:
                     root_modified = True
-                    new_link = match.expand(sub) if args.regex else sub
                     attr = path_attr(path, follow_symlinks=False)
                     args.pretend or os.unlink(path)
                     symlink(new_link, path, args.pretend,

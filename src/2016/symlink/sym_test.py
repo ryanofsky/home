@@ -16,6 +16,8 @@ class MupTests(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
         self.namespace = argparse.Namespace()
         self.namespace.pretend = False
+        self.namespace.absolute = False
+        self.namespace.relative = False
 
     def tearDown(self):
         1 or shutil.rmtree(self.tempdir)
