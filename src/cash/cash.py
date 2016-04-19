@@ -2680,9 +2680,11 @@ class GnuCash:
         acct_map = self.acct_map(True)
 
         c = self.conn.cursor()
-        c.execute("SELECT guid, post_date, description FROM transactions "
-                  "ORDER BY post_date, rowid")
-        for guid, post_date_str, description in c.fetchall():
+        c.execute("SELECT t.guid, t.post_date, t.description, s.string_val "
+                  "FROM transactions AS t "
+                  "LEFT JOIN slots AS s ON obj_guid = guid AND s.name = 'notes' "
+                  "ORDER BY t.post_date, t.rowid")
+        for guid, post_date_str, description, note in c.fetchall():
             post_date = self.date(post_date_str)
 
             d = self.conn.cursor()
@@ -2709,6 +2711,8 @@ class GnuCash:
                     print(header)
                     header = None
                 print(post_date, guid[:7], description)
+                if note:
+                    print("  Note: {}".format(note))
                 for split, account, memo, action, value in splits:
                   print(" {:9.2f} {} {}{}{}{}{}".format(
                       value/100.0, split[:7], acct_map.get(account, account),
