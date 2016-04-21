@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Audacious song change plugin setting:
 #
@@ -6,8 +6,21 @@
 #
 # Log string can be split with python shlex.split.
 
+# urldecode from https://gist.github.com/cdown/1163649
+urldecode() {
+    local url_encoded="${1//+/ }"
+    printf '%b' "${url_encoded//%/\\x}"
+}
+
 s="$(date -Ins)"
 for arg in "$@"; do
-  s="$s $(printf "%q" "$arg")"
+    if [[ "$arg" == file=file://* ]]; then
+        file="${arg#file=file://}"
+        file="$(urldecode "$file")"
+        file="$(readlink -f "$file")"
+        s="$s file-size=$(stat --printf=%s "$file")"
+        s="$s file-mtime=$(printf "%q" "$(stat --printf=%y "$file")")"
+    fi
+    s="$s $(printf "%q" "$arg")"
 done
 echo "$s" >> /home/russ/russ/2016/audacious.log
