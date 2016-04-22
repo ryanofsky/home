@@ -346,7 +346,7 @@ def compute_sums(json_dir, torrent_dir):
         for i, (rel_path, file_length) in enumerate(get_torrent_files(info)):
             assert total_bytes % piece_length == piece_bytes
             abs_path = os.path.join(torrent_dir, torrent_id, rel_path)
-            size = os.path.getsize(abs_path)
+            size = os.path.getsize(abs_path) if os.path.exists(abs_path) else None
             file_skip_bytes = 0  # Number of bytes to skip from reading current file.
             piece_skip_bytes = 0  # Above plus number of bytes in skipped piece before file if file begins at odd piece boundary.
             if size != file_length:
