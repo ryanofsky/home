@@ -34,7 +34,8 @@ def import_torrents(in_dir, out_dir):
             check(torrent_name == torrent_id, torrent_name)
         t = torrents.setdefault(torrent_id, OrderedDict())
         t["data"] = data
-        t.setdefault("download", OrderedDict())["mtime"] = os.path.getmtime(torrent_path)
+        t.setdefault("download", OrderedDict()).setdefault(
+            "mtime", os.path.getmtime(torrent_path))
 
     state_file = os.path.join(in_dir, "torrents.state")
     if os.path.exists(state_file):
