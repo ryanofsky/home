@@ -270,12 +270,6 @@ def find_files(json_dir, src_dir, torrent_dir):
                             src_path = ascii_new_path
                             break
 
-            if not src_path:
-                if priorities and priorities[i] == 0:
-                    src_path = "/dev/zero"
-                else:
-                    src_path = os.devnull
-
             # Create parent dirs and save paths for later call to touch.
             torrent_dirname = os.path.dirname(os.path.join(torrent_id, path))
             torrent_dir_parts = torrent_dirname.split(os.sep)
@@ -289,13 +283,21 @@ def find_files(json_dir, src_dir, torrent_dir):
             # Create symlink.
             torrent_path = os.path.join(torrent_dir, torrent_id, path)
             if os.path.islink(torrent_path):
+                if not src_path:
+                    continue
                 old_src_path = os.readlink(torrent_path)
                 if old_src_path == src_path:
                     continue
-                check(old_src_path, os.devnull)
+                check(old_src_path == os.devnull)
                 os.unlink(torrent_path)
             elif os.path.exists(torrent_path):
                 continue
+
+            if not src_path:
+                if priorities and priorities[i] == 0:
+                    src_path = "/dev/zero"
+                else:
+                    src_path = os.devnull
             os.symlink(src_path, torrent_path)
             touch_paths.add(torrent_path)
 
