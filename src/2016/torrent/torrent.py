@@ -441,73 +441,11 @@ def compute_sums(json_dir, torrent_dir):
         save_json_torrent(torrent, json_dir, torrent_id)
 
 
-def make_symlink_tree(src_dir, dst_dir):
-    """Create symlink directory tree at dst_mirroring src_dir tree.
-
-    This function is generic and doesn't assume anything about json or
-    torrent files. It can a create a symlink tree mirroring any arbitrary
-    source directory.
-
-    This function isn't meant to run incrementally and will fail if
-    anything already exists at paths where symlinks would be created."""
-    for src_root, dirs, files in os.walk(src_dir, topdown=False):
-        rel = os.path.relpath(src_root, src_dir)
-        dst_root = os.path.join(dst_dir, rel)
-        if not os.path.exists(dst_root): os.makedirs(dst_root)
-        for f in files:
-            src_file = os.path.join(src_root, f)
-            dst_file = os.path.join(dst_root, f)
-            if os.path.islink(src_file):
-                subprocess.check_call(["cp", "-an", "--reflink", src_file, dst_file])
-            else:
-                subprocess.check_call(["ln", "-s", src_file, dst_file])
-                subprocess.check_call(["touch", "-hr", src_file, dst_file])
-        subprocess.check_call(["touch", "-r", src_root, dst_root])
-
-
-def move_torrents(src_dir, torrent_dir):
-    """Move any torrent files out of src_dir into torrent_dir.
-
-    This function replaces any symlinks in torrent_dir pointing into
-    src_dir with the actual file content from src_dir (moving that
-    content from src_dir to torrent_dir), and replaces the content
-    moved out of src_dir with /mnt/download/torrent symlinks.
-
-    Can run incrementally. Doesn't modify any file in torrent_dir
-    that is not a symlink into src_dir, and doesn't modify any files
-    in src_dir not pointed to by a symlink in torrent_dir."""
-    subprocess.check_call(["touch", "/tmp/torrent_dir_mtime"])
-    subprocess.check_call(["touch", "/tmp/src_dir_mtime"])
-
-    for torrent_dir_path, dirs, files in os.walk(torrent_dir):
-        rel = os.path.relpath(torrent_dir_path, torrent_dir)
-        subprocess.check_call(["touch", "-hr", torrent_dir_path, "/tmp/torrent_dir_mtime"])
-
-        for f in files:
-            torrent_file_path = os.path.join(torrent_dir_path, f)
-            if not os.path.islink(torrent_file_path):
-                continue
-
-            src_file_path = os.readlink(torrent_file_path)
-            if not starts(src_file_path, src_dir):
-                continue
-
-            src_dir_path = os.path.dirname(src_file_path)
-            subprocess.check_call(["touch", "-hr", src_dir_path, "/tmp/src_dir_mtime"])
-            os.rename(src_file_path, torrent_file_path)
-            os.symlink(os.path.join("/mnt/download/torrent", rel, f), src_file_path)
-            subprocess.check_call(["touch", "-hr", torrent_file_path, src_file_path])
-            subprocess.check_call(["touch", "-hr", "/tmp/src_dir_mtime", src_dir_path])
-
-        subprocess.check_call(["touch", "-hr", "/tmp/torrent_dir_mtime", torrent_dir_path])
-
-    os.unlink("/tmp/torrent_dir_mtime")
-    os.unlink("/tmp/src_dir_mtime")
-
 def save_torrents(torrents, json_dir):
     make_unicode(torrents)
     for torrent_id, t in torrents.iteritems():
         save_json_torrent(t, json_dir, torrent_id)
+
 
 def load_torrents(json_dir):
     torrents = {}
