@@ -184,7 +184,7 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None):
         print("Wrote to {!r}, {!r}".format(json_dir, deluge_dir))
 
 
-def find_files(json_dir, src_dir, torrent_dir):
+def find_files(json_dir, src_dir, torrent_dir, skip_empty=False):
     """Populate torrent_dir with symlinks to downloaded files in src_dirs.
 
     Doesn't change json_dir or src_dirs content, only creates/updates symlinks
@@ -193,7 +193,11 @@ def find_files(json_dir, src_dir, torrent_dir):
     Can run incrementally. New symlinks will be added besides existing ones,
     and existing ones will only be replaced if they point to /dev/null.
     If a new symlink would conflict with an existing one this will throw an
-    exception."""
+    exception.
+
+    If skip_empty is True, will avoid creating torrent directories
+    full of /dev/null symlinks when no matching files at all for a
+    torrent are found."""
 
     torrents = load_torrents(json_dir)
     base_idx = {}  # File basename -> torrent_id, file name
@@ -242,6 +246,8 @@ def find_files(json_dir, src_dir, torrent_dir):
         touch_paths = set()
 
         priorities = field(torrent, "state", "file_priorities")
+        paths = []
+        found_src = False
         for i, (path, length) in enumerate(get_torrent_files(info)):
             # Look for direct match when file has unique basename.
             src_path = file_idx.get((torrent_id, path))
@@ -270,6 +276,13 @@ def find_files(json_dir, src_dir, torrent_dir):
                             src_path = ascii_new_path
                             break
 
+            paths.append((i, path, length, src_path))
+            found_src = found_src or src_path is not None
+
+        if skip_empty and not found_src:
+            continue
+
+        for (i, path, length, src_path) in paths:
             # Create parent dirs and save paths for later call to touch.
             torrent_dirname = os.path.dirname(os.path.join(torrent_id, path))
             torrent_dir_parts = torrent_dirname.split(os.sep)
