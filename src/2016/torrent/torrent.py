@@ -89,11 +89,10 @@ def export_torrents(torrents, out_dir):
         fp.write(bencode.bencode(fr))
 
 
-def select_torrents(json_dir, torrent_dir, deluge_dir=None):
+def select_torrents(json_dir, torrent_dir, deluge_dir=None, ro_download_path=None, rw_download_path=None):
     """Print selected torrent info and optionally export to deluge dir."""
     torrents = load_torrents(json_dir)
     print_torrents = []
-    deluge_torrents = {}
     for torrent_id, torrent in torrents.items():
         tags = []
         if "data" in torrent:
@@ -110,18 +109,17 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None):
                 tags.append("vuze")
 
             # SITUATIONAL: Begin conditions for including torrents.
-            if "vuze" in tags:
-                continue
+            #if "vuze" in tags:
+            #    continue
             #if not md5s or any(not md5 for md5 in md5s):
             #    continue
-            if not md5s or all(md5s):
-                continue
-            if "fastresume" not in torrent or "state" not in torrent:
-                continue
+            #if not md5s or all(md5s):
+            #    continue
+            #if "fastresume" not in torrent or "state" not in torrent:
+            #    continue
             # SITUATIONAL: End conditions for including torrents.
 
             for i, (path, length) in enumerate(get_torrent_files(info)):
-
                 total_files += 1
 
                 if priorities and priorities[i] == 0:
@@ -145,11 +143,17 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None):
             name = None
 
         # SITUATIONAL: Begin conditions for including torrents.
-        if name is None:
-            continue
-        if sym_files:
-            continue
-        if skip_files:
+        #if name is None:
+        #   continue
+        #if sym_files:
+        #    continue
+        #if skip_files:
+        #    continue
+        if torrent_id == "d20428b15019aac7a6e3c31aa1448a01cf3247f2":
+            tags.append("rw")
+        elif torrent_id == "7e0d8d17699c2deb17a9ce845ff15194ea06ce07":
+            pass
+        else:
             continue
         # SITUATIONAL: End conditions for including torrents.
 
@@ -158,30 +162,34 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None):
             tags.append("state")
         if "fastresume" in torrent:
             tags.append("fastresume")
-        print_torrents.append((timestamp, name, torrent_id, counts, tags))
-        deluge_torrents[torrent_id] = torrent
+        print_torrents.append((timestamp, name, torrent_id, counts, tags, torrent))
 
     print_torrents.sort()
-    print("Date       Hash     Total  Phys/Sym/Missing  Good/Bad/Skip  Name  Tags")
-    for timestamp, name, torrent_id, counts, tags in print_torrents:
-        tags = " [{}]".format(", ".join(tags)) if tags else ""
-        print("{:%Y-%m-%d} {} {:20} {!r}{}".format(
-            datetime.datetime.fromtimestamp(timestamp), torrent_id[:8], counts, name, tags))
+    print >> sys.stderr, ("Date       Hash     Total  Phys/Sym/Missing  Good/Bad/Skip  Name  Tags")
+    deluge_torrents = {}
+    for timestamp, name, torrent_id, counts, tags, torrent in print_torrents:
+        tag_str = " [{}]".format(", ".join(tags)) if tags else ""
+        print >> sys.stderr, ("{:%Y-%m-%d} {} {:20} {!r}{}".format(
+            datetime.datetime.fromtimestamp(timestamp), torrent_id[:8], counts, name, tag_str))
+
+        deluge_torrents[torrent_id] = torrent
+        if "rw" in tags:
+            dst_dir = os.path.join(rw_download_path, torrent_id)
+            print(torrent_id)
+        else:
+            dst_dir = os.path.join(ro_download_path, torrent_id)
+        torrent["state"]["save_path"] = dst_dir
+        torrent["fastresume"]["save_path"] = dst_dir
+        torrent["state"].pop("move_completed_path", None)
+        torrent["state"].pop("move_completed", None)
+        # FIXME: set mtimes
+        #file_infos = field(torrent, u"fastresume", u"file sizes")
+        #if file_infos:
+        #    for file_info in file_infos:
+        #        file_info[1] = 0
 
     if deluge_dir:
-        for torrent_id, torrent in deluge_torrents.items():
-            dst_dir = os.path.join("/home/pia/torrent", torrent_id)
-            torrent["state"]["save_path"] = dst_dir
-            torrent["fastresume"]["save_path"] = dst_dir
-            torrent["state"].pop("move_completed_path", None)
-            torrent["state"].pop("move_completed", None)
-            file_infos = field(torrent, u"fastresume", u"file sizes")
-            if file_infos:
-                for file_info in file_infos:
-                    file_info[1] = 0
-        save_torrents(copy.deepcopy(deluge_torrents), json_dir)
         export_torrents(deluge_torrents, deluge_dir)
-        print("Wrote to {!r}, {!r}".format(json_dir, deluge_dir))
 
 
 def find_files(json_dir, src_dir, torrent_dir, skip_empty=False):
