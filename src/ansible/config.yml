@@ -1,4 +1,4 @@
-- hosts: jumpy
+- hosts: think
 
   tasks:
     - name: Get root uuid
