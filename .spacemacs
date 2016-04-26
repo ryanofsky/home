@@ -28,7 +28,7 @@ values."
      emacs-lisp
      ;; git
      ;; markdown
-     ;; org
+     org
      ;; (shell :variables
      ;;        shell-default-height 30
      ;;        shell-default-position 'bottom)
@@ -249,6 +249,69 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
+  (with-eval-after-load 'org (setq org-agenda-files
+                                   (quote
+                                    ("~/russ/log.org" "~/russ/todo.org" "~/russ/todo.org_archive")))
+                             (setq org-agenda-custom-commands
+                                   (quote
+                                     (("n" "Agenda and all TODO's"
+                                       ((agenda "" nil)
+                                       (alltodo "" nil))
+                                       nil)
+                                     ("t" "Todo Agenda" agenda ""
+                                       ((org-agenda-overriding-header "Todo Agenda")
+                                       (org-agenda-view-columns-initially nil)
+                                       (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}")
+                                       (org-agenda-use-time-grid nil)
+                                       (org-agenda-span
+                                         (quote month))))
+                                     ("r" "Russ Agenda" agenda ""
+                                       ((org-agenda-overriding-header "Russ Agenda")
+                                       (org-agenda-view-columns-initially nil)
+                                       (org-agenda-overriding-columns-format "%80ITEM %TAGS %7TODO %5Effort{:} %6CLOCKSUM{Total}")
+                                       (org-agenda-start-with-log-mode
+                                         (quote
+                                         (closed clock state)))
+                                       (org-agenda-span
+                                         (quote month))))
+                                     ("q" "Russ Todos" alltodo ""
+                                       ((org-agenda-view-columns-initially t)
+                                       (org-agenda-overriding-columns-format "%66ITEM %TAGS %7TODO %20SCHEDULED %5Effort{:}")
+                                       (org-agenda-skip-function
+                                         (quote
+                                         (org-agenda-skip-entry-if
+                                           (quote todo)
+                                           (quote
+                                           ("DEFERRED")))))
+                                       (org-agenda-sorting-strategy
+                                         (quote
+                                         (scheduled-up effort-up))))))))
+                             (add-to-list 'auto-mode-alist '("\\.org_archive$" . org-mode))
+                             (setq org-agenda-log-mode-add-notes t)
+                             (setq org-agenda-skip-deadline-if-done t)
+                             (setq org-agenda-start-on-weekday nil)
+                             (setq org-archive-location "%s_archive::datetree/")
+                             (setq org-archive-save-context-info (quote (time file category todo itags olpath)))
+                             (setq org-clock-continuously t)
+                             (setq org-clock-into-drawer "LOGBOOK")
+                             (setq org-clock-mode-line-total (quote current))
+                             (setq org-clock-persist t)
+                             (setq org-clock-persist-query-resume nil)
+                             (setq org-datetree-add-timestamp (quote inactive))
+                             (setq org-global-properties
+                               (quote
+                                 (("Effort_ALL" . "0 0:10 0:30 1:00 2:00 3:00 4:00 8:00 16:00 24:00 40:00"))))
+                             (setq org-hide-leading-stars t)
+                             (setq org-link-search-must-match-exact-headline nil)
+                             (setq org-log-into-drawer t)
+                             (setq org-log-note-clock-out t)
+                             (setq org-log-states-order-reversed nil)
+                             (setq org-odd-levels-only t)
+                             (setq org-time-clocksum-use-fractional t)
+                             (setq org-todo-keywords
+                               (quote
+                                 ((sequence "NEXT(n)" "WAIT(w@/@)" "PROJ(p)" "GOAL(g)" "|" "DONE(d@/@)" "NVM(v@/@)" "DEAD(x@/@)" "EXPORTED(e@/@)"))))
+                        )
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
