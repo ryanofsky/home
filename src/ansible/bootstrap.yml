@@ -1,6 +1,6 @@
 - hosts: think
   vars:
-    stage3_url: https://lug.mtu.edu/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160407.tar.bz2
+    stage3_url: https://lug.mtu.edu/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160421.tar.bz2
 
   tasks:
     - name: Run mount-stage3 script.
