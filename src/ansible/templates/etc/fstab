@@ -31,3 +31,6 @@ UUID={{root_fs_uuid.stdout}}		/mnt/root		btrfs		noatime		0 1
 {% if inventory_hostname == "mini" %}
 /dev/mapper/fort		/mnt/fort		btrfs		noauto,noatime		0 0
 {% endif %}
+{% if inventory_hostname == "think" %}
+/dev/mapper/hd		/mnt/hd		btrfs		noauto,noatime		0 0
+{% endif %}
