@@ -93,6 +93,8 @@ emerge-world() {
         tmpuse="$tmpuse -gnome-keyring -gtk -qt4"
         tmppkg="$tmppkg app-crypt/pinentry"
     fi
+    # Unstable python-exec package conflicts with stable python packages, so update them first.
+    USE="$tmpuse" emerge -q1 dev-lang/python:2.7 dev-lang/python:3.4
     USE="$tmpuse" emerge -q1n $tmppkg
 
     emerge -q --update --newuse --deep --with-bdeps=y @world
