@@ -11,18 +11,11 @@ NEW=/mnt/hd/pia
 DRE="$(python -c "import re, sys; sys.stdout.write(re.escape(sys.stdin.read()))" <<<"$D")"
 
 download() {
-    if false; then
     mkdir deluge.download torrent torrent.rw
     remote export-torrents
-    fi
-
-    exit 0
-
-    # FIXME: following code is not tested yet
     rsync -av --remove-source-files "$R:$D/new/deluge.download/" deluge.download/
     sudo mv -ivT deluge.download "$S"
-    sudo chown pia:pia "$S"
-
+    sudo chown -R pia:pia "$S"
     sshfs -o allow_root,ro "$R:$D/torrent" torrent
     sshfs -o allow_root "$R:$D/new/torrent.rw" torrent.rw
 
@@ -46,6 +39,7 @@ save() {
 
     sudo mv -ivT "$S" deluge.save
     sudo chown -R "$USER" deluge.save
+    ssh "$R" mkdir -p "$D/new"
     rsync -av --remove-source-files --ignore-existing deluge.save/ "$R:$D/new/deluge.save/"
     rmdir deluge.save
 
@@ -72,7 +66,7 @@ remote() {
 
 export-torrents() {
     mkdir "$D/new"
-    mkdir "$D/new"/{deluge,torrent.rw}
+    mkdir "$D/new"/{deluge.download,torrent.rw}
     python2 -c "import torrent; torrent.select_torrents('$D/torrent.json', '$D/torrent', '$D/new/deluge.download', '$RO', '$RW')" | while read ID; do
         cp -aLiv --reflink=always "$D/torrent/$ID" "$D/new/torrent.rw/$ID"
         find "$D/new/torrent.rw/$ID" -type c -print0 | xargs -r0 rm -v
@@ -80,6 +74,7 @@ export-torrents() {
 }
 
 import-torrents() {
+    rmdir -v "$D/new/deluge.download" || true
     mkdir "$D/new/deluge.save.json" "$D/new/torrent.save"
 
     # Update torrent folder with new torrents.
@@ -99,6 +94,7 @@ import-torrents() {
     (
         cd "$D"
         local id old new
+        mkdir -p "$D/new/torrent.rw"
         ls -1A "$D/new/torrent.rw" | while read id; do
             find "$D/new/torrent.rw/$id" -type f -printf '%P\n' | while read f; do
                 old="torrent/$id/$f"
@@ -142,5 +138,7 @@ symlinks() {
 
 set -e
 set -x
+set -o pipefail
+
 cd $(dirname $0)
 "$@"

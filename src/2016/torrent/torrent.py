@@ -149,8 +149,10 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None, ro_download_path=Non
         #    continue
         #if skip_files:
         #    continue
-        if torrent_id == "d20428b15019aac7a6e3c31aa1448a01cf3247f2":
+        if torrent_id == "690ca6f1308ff383711d989a195e2e5ca6d0f5ba":
             tags.append("rw")
+        elif torrent_id == "d20428b15019aac7a6e3c31aa1448a01cf3247f2":
+            pass
         elif torrent_id == "7e0d8d17699c2deb17a9ce845ff15194ea06ce07":
             pass
         else:
