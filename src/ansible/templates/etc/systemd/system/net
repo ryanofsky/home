@@ -1,0 +1,56 @@
+#!/bin/sh
+
+PNS=pia
+PDEV0=pia0
+PDEV1=pia1
+PIP0=192.168.39.1
+PIP1=192.168.39.100
+PIPM=/24
+
+rx() {
+  echo "$@"
+  "$@"
+}
+
+nx() {
+  echo ip netns exec "$PNS" "$@"
+  ip netns exec "$PNS" "$@"
+}
+
+# Called from pia.ovpn after connecting
+pia_up() {
+  mkdir -p /etc/netns/"$PNS"
+  echo nameserver 209.222.18.222 >  /etc/netns/"$PNS"/resolv.conf
+  echo nameserver 209.222.18.218 >> /etc/netns/"$PNS"/resolv.conf
+  rx ip netns add "$PNS"
+  rx ip link add "$PDEV0" type veth peer name "$PDEV1"
+  rx ip addr add "$PIP0$PIPM" dev "$PDEV0"
+  rx ip link set dev "$PDEV0" up
+  rx ip link set "$PDEV1" netns "$PNS"
+  rx ip link set "$dev" netns "$PNS"
+  nx ip addr add "$PIP1$PIPM" dev "$PDEV1"
+  nx ip link set dev "$PDEV1" up
+  nx ip link set dev lo up
+  nx ip addr add "$ifconfig_local" dev "$dev"
+  nx ip link set dev "$dev" up
+  nx ip route add dev "$dev" src "$ifconfig_local" "$ifconfig_remote"
+  nx ip route add default via "$route_gateway_1" dev "$dev"
+}
+
+pia_down() {
+  nx ip link set "$dev" netns 1
+  nx ip link del "$PDEV1"
+  rx ip netns del "$PNS"
+}
+
+pia_x11() {
+  if [ "$1" -ge 6000 -a "$1" -lt 6100 ]; then
+    exec socat TCP-LISTEN:"$1",bind=$PIP0,fork,reuseaddr,nodelay TCP:localhost:"$1",nodelay
+  fi
+}
+
+CMD="$1"
+ARG="$2"
+shift
+shift
+"${CMD}_${ARG}" "$@"

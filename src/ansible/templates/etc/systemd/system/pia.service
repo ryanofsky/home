@@ -1,0 +1,9 @@
+[Unit]
+Description=pia openvpn
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/openvpn /etc/systemd/system/pia.ovpn
+
+[Install]
+WantedBy=multi-user.target

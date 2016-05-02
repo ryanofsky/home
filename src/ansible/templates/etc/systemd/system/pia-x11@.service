@@ -1,0 +1,9 @@
+[Unit]
+Description=pia x11 port %i forwarding
+After=network.target
+
+[Service]
+ExecStart=/etc/systemd/system/net pia x11 %i
+
+[Install]
+WantedBy=multi-user.target
