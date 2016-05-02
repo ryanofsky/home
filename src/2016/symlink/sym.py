@@ -142,8 +142,8 @@ class Find:
                                                   attr,
                                                   follow_symlinks=False)
                 else:
-                    sys.stdout.write(path)
-                    sys.stdout.write(sep)
+                    bprint(path)
+                    bprint(sep)
             if root_modified:
                 args.pretend or os.utime(
                     root or os.curdir,
@@ -236,13 +236,13 @@ class CommandParser(argparse.ArgumentParser):
 
 
 def symlink(src, dst, pretend, note=""):
-    print("ln -s {} {}{}".format(shlex.quote(src), shlex.quote(dst), note))
+    bprint("ln -s {} {}{}".format(shlex.quote(src), shlex.quote(dst), note))
     if not pretend:
         os.symlink(src, dst)
 
 
 def rename(src, dst, pretend, note=""):
-    print("mv {} {}{}".format(shlex.quote(src), shlex.quote(dst), note))
+    bprint("mv {} {}{}".format(shlex.quote(src), shlex.quote(dst), note))
     if not pretend:
         os.rename(src, dst)
 
@@ -280,6 +280,11 @@ def set_path_attr(path, attr, follow_symlinks):
 def check(cond, *args, **kwargs):
     if not cond:
         raise Exception(*args, **kwargs)
+
+
+def bprint(str):
+    sys.stdout.buffer.write(str.encode("utf-8", "surrogateescape"))
+    sys.stdout.buffer.write(b'\n')
 
 
 if __name__ == "__main__":
