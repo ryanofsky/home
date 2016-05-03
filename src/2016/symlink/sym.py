@@ -141,9 +141,8 @@ class Find:
                     args.pretend or set_path_attr(path,
                                                   attr,
                                                   follow_symlinks=False)
-                else:
-                    bprint(path)
-                    bprint(sep)
+                elif sub is None:
+                    bprint(path + sep)
             if root_modified:
                 args.pretend or os.utime(
                     root or os.curdir,
