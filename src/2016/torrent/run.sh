@@ -127,13 +127,22 @@ sums() {
     python2 -c "import torrent; torrent.compute_sums('$D/torrent.json', '$D/torrent')"
 }
 
-symlinks() {
-    # FIXME: make sketch code below work
-    exit 0
-    find share -type -l -print0 | xargs -r0 readlink -f > 1
-    find share.save -type -l -print0 | xargs -r0 readlink -f > 1
-    find torrent -printf '%P\n' > 2
-    comm -23 1 2
+# create share.new dir with symlinks to torrent files not present in share dir
+add-links() {
+    find "$D/share" -type l -print0 | xargs -0 readlink -v -f | sort -u > /tmp/1
+    find "$D/torrent" -type f -print0 | xargs -0 readlink -v -f | sort -u > /tmp/2
+    mkdir "$D/share.new"
+    comm -13 /tmp/1 /tmp/2 | tr '\n' '\0' | xargs -0 cp -sR -t "$D/share.new"
+    ls -1A "$D/share.new" | while read f; do
+       touch -hr "$(readlink "$D/share.new/$f")" "$D/share.new/$f"
+    done
+    ./sym.py find -r -R "$D/share.new" '.*'
+}
+
+# fix broken torrent links after manual moves
+fix-links() {
+   ./sym.py find -r -R -s "$D/old/\\1" $D/share '^(?:\.\./)+old/(.*)$'
+   ./sym.py find -r -R -s "$D/torrent/\\1" $D/share '^(?:\.\./)+torrent/(.*)$'
 }
 
 set -e
