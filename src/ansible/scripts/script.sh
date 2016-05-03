@@ -276,7 +276,7 @@ kconfig() {
         # http://www.thinkwiki.org/wiki/Bluetooth_Daughter_Card_(14_pins)
         # https://download.lenovo.com/parts/ThinkPad/t530_fru_bom_20131007.pdf
         # https://wiki.gentoo.org/wiki/Bluetooth
-        scripts/config -m BT -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP
+        scripts/config -m BT -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP -m BT_BNEP
         #   idVendor           0x04f2 Chicony Electronics Co., Ltd
         #   idProduct          0xb2ea Integrated Camera [ThinkPad]
         #   bcdDevice            5.18
@@ -372,7 +372,7 @@ kconfig() {
         #   iManufacturer           1 Broadcom Corp
         #   iProduct                2 BCM43142A0
         #   iSerial                 3 2C337AEE0604
-        scripts/config -m B43 -m BCMA -m BT -m BT_BCM -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP
+        scripts/config -m B43 -m BCMA -m BT -m BT_BCM -m BT_HCIBTUSB -m BT_RFCOMM -m BT_HIDP -m BT_BNEP
     fi
 
     # Support for /proc/config.gz, fanotify, virtual networking/filesystems
