@@ -28,6 +28,8 @@ www-client/chromium hidpi widevine
 # maybe useful curl protocol options
 net-misc/curl http2 idn rtmp ssh
 
+x11-wm/xpra csc dec_av2 lz4 lzo server sound vpx webp x265
+
 # enable php for apache, prevent desktop use flags requiring gd
 >dev-lang/php-4 apache2 -truetype -exif
 app-eselect/eselect-php apache2
@@ -65,3 +67,15 @@ app-accessibility/speech-dispatcher -python
 # required by dev-qt/qtcore-5.5.1-r1::gentoo
 # required by dev-qt/qtcore (argument)
 >=dev-libs/libpcre-8.38-r1 pcre16
+
+# required by net-misc/chrome-remote-desktop-50.0.2661.22::gentoo
+# required by net-misc/chrome-remote-desktop (argument)
+>=x11-base/xorg-server-1.18.3 xvfb
+
+# required by net-analyzer/ntop-5.0.1-r1::gentoo
+# required by ntop (argument)
+>=net-analyzer/rrdtool-1.6.0-r1 graph
+
+# required by app-emulation/lxd-2.0.0::gentoo[daemon]
+# required by lxd (argument)
+>=app-emulation/lxc-1.1.5 cgmanager

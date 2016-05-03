@@ -1,3 +1,9 @@
+# Mask overlay packages
+*/*::bitcoin
+*/*::tranquility
+*/*::hnaparst
+*/*::ultrabug
+
 # https://bugs.gentoo.org/show_bug.cgi?id=578482
 =x11-libs/gtkglext-1.2.0-r3
 
@@ -6,3 +12,4 @@ dev-db/mariadb
 
 # https://bugs.gentoo.org/show_bug.cgi?id=576910
 =net-libs/rb_libtorrent-1.0.9
+=net-libs/rb_libtorrent-1.0.9-r1
