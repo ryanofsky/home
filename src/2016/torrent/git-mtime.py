@@ -100,20 +100,22 @@ def get_files(root, buf_size=16384):
     command = ["git", "ls-files", "--full-name", "-z", root]
     process = subprocess.Popen(command, stdout=subprocess.PIPE)
     buf = b""
+    buf_pos = 0
     filename = b""
     while True:
-        if not buf:
+        if buf_pos >= len(buf):
             buf = process.stdout.read()
+            pos_pos = 0
             if not buf:
                 break
-        p = buf.find(b"\0")
+        p = buf.find(b"\0", buf_pos)
         if p < 0:
-            filename += buf
+            filename += buf[buf_pos:]
         else:
-            filename += buf[:p]
+            filename += buf[buf_pos:p]
             yield filename.decode("utf-8", "surrogateescape")
             filename = b""
-            buf = buf[p + 1:]
+            buf_pos = p + 1
     if filename:
         yield filename.decode("utf-8", "surrogateescape")
     retcode = process.wait()
