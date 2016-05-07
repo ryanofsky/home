@@ -94,5 +94,4 @@
 .vim/
 .viminfo
 src/bup/
-src/etc/
 src/google_appengine/
