@@ -6,3 +6,6 @@ media-libs/fdk-aac FraunhoferFDK
 
 # required by www-client/chromium[widevine]
 www-plugins/chrome-binary-plugins google-chrome
+
+# required by app-emulation/virtualbox-extpack-oracle (argument)
+app-emulation/virtualbox-extpack-oracle PUEL
