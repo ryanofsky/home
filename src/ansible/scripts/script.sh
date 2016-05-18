@@ -432,7 +432,6 @@ kconfig() {
       -e USER_NS \
       -e SECCOMP \
       -e CGROUP_PIDS \
-      -e MEMCG_KMEM \
       -e MEMCG_SWAP \
       -e MEMCG_SWAP_ENABLED \
       -e CGROUP_NET_PRIO \
