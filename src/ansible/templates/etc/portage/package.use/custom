@@ -50,6 +50,11 @@ sys-libs/zlib minizip
 # required by app-emulation/docker
 sys-libs/libseccomp static-libs
 
+# required by app-text/calibre
+app-text/poppler qt5
+dev-qt/qtwebkit printsupport
+dev-python/PyQt5 webkit
+
 # doesn't support python 3.5 yet
 x11-apps/intel-gpu-tools -python test-programs
 
