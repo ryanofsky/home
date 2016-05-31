@@ -693,3 +693,5 @@ default_transport = error:External delivery disabled
 smtpd_sasl_auth_enable = yes
 smtpd_tls_security_level = may
 smtpd_relay_restrictions = permit_sasl_authenticated reject
+smtpd_tls_cert_file=/etc/letsencrypt/archive/jumpy.yanofsky.org/fullchain1.pem
+smtpd_tls_key_file=/etc/letsencrypt/archive/jumpy.yanofsky.org/privkey1.pem
