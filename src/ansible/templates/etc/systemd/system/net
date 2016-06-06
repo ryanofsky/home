@@ -22,7 +22,7 @@ pia_up() {
   mkdir -p /etc/netns/"$PNS"
   echo nameserver 209.222.18.222 >  /etc/netns/"$PNS"/resolv.conf
   echo nameserver 209.222.18.218 >> /etc/netns/"$PNS"/resolv.conf
-  rx ip netns add "$PNS"
+  rx ip netns add "$PNS" || true # Expected to fail if already exists.
   rx ip link add "$PDEV0" type veth peer name "$PDEV1"
   rx ip addr add "$PIP0$PIPM" dev "$PDEV0"
   rx ip link set dev "$PDEV0" up
@@ -40,7 +40,7 @@ pia_up() {
 pia_down() {
   nx ip link set "$dev" netns 1
   nx ip link del "$PDEV1"
-  rx ip netns del "$PNS"
+  # rx ip netns del "$PNS" # Keep namespace so it can be reused.
 }
 
 pia_x11() {
