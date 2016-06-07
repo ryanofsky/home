@@ -10,7 +10,11 @@
 # possible, but leave them commented.  Uncommented options override the
 # default value.
 
+{% if inventory_hostname == "jumpy" %}
+Port XXX
+{% else %}
 #Port 22
+{% endif %}
 #AddressFamily any
 #ListenAddress 0.0.0.0
 #ListenAddress ::

@@ -10,7 +10,7 @@
 #               (yes)   (yes)   (no)    (never) (100)
 # ==========================================================================
 {% if inventory_hostname == "jumpy" %}
-smtp      inet  n       -       n       -       -       smtpd
+XXX      inet  n       -       n       -       -       smtpd
 {% endif %}
 #smtp      inet  n       -       n       -       1       postscreen
 #smtpd     pass  -       -       n       -       -       smtpd
