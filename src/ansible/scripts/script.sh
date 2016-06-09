@@ -658,6 +658,9 @@ kconfig() {
       -m NETFILTER_XT_MATCH_TCPMSS \
       -m NETFILTER_XT_MATCH_TIME \
       -m NETFILTER_XT_MATCH_U32
+
+    # Make USB printer support into module instead of builtin (conflicts with CUPS).
+    scripts/config -m USB_PRINTER
 }
 
 root-passwd() {
