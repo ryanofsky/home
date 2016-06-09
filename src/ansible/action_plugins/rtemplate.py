@@ -8,6 +8,7 @@ import time
 import os
 import re
 import stat
+import base64
 
 
 class TemplateFile:
@@ -79,6 +80,7 @@ class ActionModule(ActionBase):
             tfile.exists = exists
             tfile.temp_upstream_path = temp_upstream_path
             if content is not None:
+                content = base64.b64decode(content)
                 with open(os.path.join(src, tfile.upstream_path), "wb") as fp:
                     fp.write(content)
             upstream_info = tfile.info.setdefault(tfile.upstream_path,

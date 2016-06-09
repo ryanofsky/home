@@ -52,7 +52,8 @@ def main():
                 if stat.S_ISLNK(s.st_mode):
                     content = os.readlink(upstream_path)
                 else:
-                    content = open(upstream_path).read()
+                    content = open(upstream_path, "rb").read()
+                content = base64.b64encode(content)
                 pull_results.append((key, exists, content, (
                     s.st_mode, s.st_uid, s.st_gid, s.st_atime, s.st_mtime,
                     s.st_ctime), temp_upstream_path))
@@ -98,6 +99,7 @@ def glob_escape(pathname):
 # this is magic, see lib/ansible/module_common.py
 from ansible.module_utils.basic import *
 import glob
+import base64
 
 if __name__ == "__main__":
     main()
