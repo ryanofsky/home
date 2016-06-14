@@ -55,7 +55,7 @@ proxywrite unix -       -       n       -       1       proxymap
 {% if inventory_hostname == "jumpy" %}
 ysmtp     unix  -       -       n       -       -       smtp -o smtp_tls_security_level=encrypt -o smtp_helo_name=yanofsky.org
 {% else %}
-ysmtp     unix  -       -       n       -       -       smtp -o smtp_tls_security_level=encrypt -o smtp_sasl_auth_enable=yes smtp_sasl_password_maps=static:yuser@yrealm:XXX
+ysmtp     unix  -       -       n       -       -       smtp -o smtp_tls_security_level=encrypt -o smtp_sasl_auth_enable=yes -o smtp_sasl_password_maps=static:yuser@yrealm:XXX
 {% endif %}
 showq     unix  n       -       n       -       -       showq
 error     unix  -       -       n       -       -       error

@@ -686,7 +686,8 @@ shlib_directory = /usr/lib64/postfix/${mail_version}
 {% if inventory_hostname == "jumpy" %}
 sender_dependent_default_transport_maps = inline:{ @yanofsky.org=ysmtp:[smtp-relay.gmail.com]:587 }
 {% else %}
-sender_dependent_default_transport_maps = inline:{ @yanofsky.org=ysmtp:[jumpy.yanofsky.org] }
+sender_dependent_default_transport_maps = inline:{ @yanofsky.org=ysmtp:[jumpy.yanofsky.org]:XXX }
+smtp_sasl_tls_security_options =
 {% endif %}
 
 default_transport = error:External delivery disabled
