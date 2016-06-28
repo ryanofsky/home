@@ -1,6 +1,9 @@
 # svn apache/viewvc support
 dev-vcs/subversion apache2 ctypes-python python
 
+# git-svn support
+dev-vcs/subversion -dso perl
+
 # media player codecs
 media-libs/xine-lib aalib bluray -dvb -dxr3 -fbcon fusion imagemagick -jack -libav libcaca modplug musepack -oss speex theora v4l vaapi vcd -vdpau vdr vpx wavpack xvmc
 
@@ -24,6 +27,11 @@ media-video/xine-ui aalib curl libcaca -lirc vdr
 
 # font size fix, netflix support
 www-client/chromium hidpi widevine
+
+dev-vcs/git subversion
+
+# needed for atom
+dev-libs/libgit2 ssh
 
 # maybe useful curl protocol options
 net-misc/curl http2 idn rtmp ssh
