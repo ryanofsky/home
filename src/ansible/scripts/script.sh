@@ -296,6 +296,9 @@ kconfig() {
 
         # Sabrent USB audio adapter (from amazon 2015-08-29)
         scripts/config -m SND_USB_AUDIO
+
+        # Mac HFS+ file system
+        scripts/config -m HFSPLUS_FS
     fi
 
     if [ "$INVENTORY_HOSTNAME" = mini ]; then
