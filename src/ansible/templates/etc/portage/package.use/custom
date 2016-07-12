@@ -33,6 +33,8 @@ dev-vcs/git subversion
 # needed for atom
 dev-libs/libgit2 ssh
 
+dev-vcs/cvs server
+
 # maybe useful curl protocol options
 net-misc/curl http2 idn rtmp ssh
 

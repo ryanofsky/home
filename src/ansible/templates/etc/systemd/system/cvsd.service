@@ -1,0 +1,10 @@
+[Unit]
+Description=cvsd
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/cvsd
+PIDFile=/var/run/cvsd.pid
+
+[Install]
+WantedBy=multi-user.target
