@@ -1,6 +1,7 @@
 DocumentRoot /var/www/russ.yanofsky.org/htdocs
 
 Alias /docroot /var/www/russ.yanofsky.org/viewvc/templates/docroot
+Redirect /horde https://mail.google.com/a/yanofsky.org
 
 <IfModule mod_dav_svn.c>
   <Location /svn>
