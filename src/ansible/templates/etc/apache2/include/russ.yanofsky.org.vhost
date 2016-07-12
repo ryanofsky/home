@@ -16,6 +16,11 @@ Alias /docroot /var/www/russ.yanofsky.org/viewvc/templates/docroot
   </Location>
 </IfModule>
 
+<Location /twofish/twofish.html>
+  SetOutputFilter SUBSTITUTE
+  Substitute "s|alert|//$0"
+</Location>
+
 TransferLog /var/www/russ.yanofsky.org/log/access_log
 ErrorLog /var/www/russ.yanofsky.org/log/error_log
 

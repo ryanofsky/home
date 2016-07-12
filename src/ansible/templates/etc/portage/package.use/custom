@@ -48,7 +48,7 @@ app-eselect/eselect-php -apache2 fpm
 
 =dev-lang/php-4* -apache2 cgi -berkdb -exif -gdbm -sqlite -ssl -truetype
 
-www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi
+www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modules_substitute
 
 # required by media-video/miro
 net-dns/avahi mdnsresponder-compat
