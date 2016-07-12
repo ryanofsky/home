@@ -454,7 +454,8 @@ kconfig() {
       -m BTRFS_FS \
       -m BLK_DEV_DM \
       -m DM_THIN_PROVISIONING \
-      -m OVERLAY_FS
+      -m OVERLAY_FS \
+      -m IP_VS
 
     # lxc-checkpoint options
     scripts/config \
