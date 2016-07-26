@@ -689,7 +689,7 @@ if [ -z "$SCRIPT_STARTED" ]; then
     for ARG in "$@"; do
         CMD="$CMD $(printf "%q" "$ARG")"
     done
-    exec script -f -c "$CMD" "$(tempfile -p scrpt)"
+    exec script -e -f -c "$CMD" "$(tempfile -p scrpt)"
 fi
 
 if [ -n "$CHROOT" ]; then
