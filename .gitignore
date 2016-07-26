@@ -10,6 +10,7 @@
 .cache/
 .config/Bitcoin/
 .config/GIMP/
+.config/Mist/
 .config/QtProject.conf
 .config/Rygel/
 .config/Thunar/
@@ -20,6 +21,7 @@
 .config/calibre/
 .config/chrome-remote-desktop/chrome-profile/
 .config/chrome-remote-desktop/pulseaudio#54c84b40e9/
+.config/chromium-ether/
 .config/chromium/
 .config/dconf/
 .config/deluge/
@@ -92,5 +94,7 @@
 .thunderbird/
 .vim/
 .viminfo
+ethash-testnet/
+ethereum-testnet/
 src/bup/
 src/google_appengine/
