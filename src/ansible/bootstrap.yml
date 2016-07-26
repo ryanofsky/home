@@ -3,7 +3,7 @@
     stage3_url: https://lug.mtu.edu/gentoo/releases/amd64/autobuilds/current-stage3-amd64-hardened/stage3-amd64-hardened-20160721.tar.bz2
 
   tasks:
-    - name: Run mount-stage3 script.
+    - name: mount-stage3 script
       script: scripts/script.sh mount-stage3
       environment:
         LUKS_PASS: "{{ lookup('password', 'credentials/luks.' + inventory_hostname) }}"
@@ -31,7 +31,7 @@
         bootstrap_config: 0
       when: 1
 
-    - name: Run emerge script.
+    - name: emerge-world script
       script: scripts/script.sh emerge-world
       environment:
         CHROOT: /mnt/gentoo
@@ -39,7 +39,7 @@
         UEFI_DEV: "{{ uefi_dev }}"
       when: 1
 
-    - name: Make kernel.
+    - name: make-kernel script
       script: scripts/script.sh make-kernel
       environment:
         CHROOT: /mnt/gentoo
