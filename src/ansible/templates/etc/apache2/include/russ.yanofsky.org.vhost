@@ -3,6 +3,16 @@ DocumentRoot /var/www/russ.yanofsky.org/htdocs
 Alias /docroot /var/www/russ.yanofsky.org/viewvc/templates/docroot
 Redirect /horde https://mail.google.com/a/yanofsky.org
 
+<Location /ssh>
+  ProxyPass        http://127.0.0.1:5487/ssh
+  ProxyPassReverse http://127.0.0.1:5487/ssh
+</Location>
+
+<Location /ssh/ws>
+  ProxyPass        ws://127.0.0.1:5487/ssh/ws
+  ProxyPassReverse ws://127.0.0.1:5487/ssh/ws
+</Location>
+
 <IfModule mod_dav_svn.c>
   <Location /svn>
     DAV svn
