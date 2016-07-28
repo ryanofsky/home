@@ -79,8 +79,15 @@
 .keys/
 .lesshst
 .links/
+.local/share/evolution/
+.local/share/gnome-settings-daemon/input-sources-converted
+.local/share/gsettings-data-convert
+.local/share/gvfs-metadata/
+.local/share/icc/
 .local/share/keyrings/login.keyring
 .local/share/keyrings/user.keystore
+.local/share/telepathy/
+.local/share/tracker/data/
 .local/tmp/
 .mozilla/
 .npm/
