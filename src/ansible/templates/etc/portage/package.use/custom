@@ -34,6 +34,7 @@ dev-vcs/git subversion
 dev-libs/libgit2 ssh
 
 dev-vcs/cvs server
+dev-vcs/cvsgraph gif jpeg png truetype
 
 # maybe useful curl protocol options
 net-misc/curl http2 idn rtmp ssh
