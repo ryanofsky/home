@@ -54,10 +54,10 @@
         CHROOT: /mnt/gentoo
       when: 1
 
-    - name: Save btrfs snapshot.
-      script: scripts/script.sh install-snapshot
-      when: 1
-
     - name: post bootstrap config
       rtemplate: src=templates dest=/mnt/gentoo
+      when: 1
+
+    - name: Save btrfs snapshot.
+      script: scripts/script.sh install-snapshot
       when: 1
