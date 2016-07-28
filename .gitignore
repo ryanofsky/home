@@ -79,7 +79,9 @@
 .keys/
 .lesshst
 .links/
-.local
+.local/share/keyrings/login.keyring
+.local/share/keyrings/user.keystore
+.local/tmp/
 .mozilla/
 .npm/
 .nx/
