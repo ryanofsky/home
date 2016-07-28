@@ -12,7 +12,7 @@
         ROOT_DEV: "{{ root_dev }}"
         UEFI_DEV: "{{ uefi_dev }}"
         STAGE3_URL: "{{ stage3_url }}"
-        WIPE: "yes"
+        WIPE: "no"
       when: 1
 
     - name: Get root uuid
