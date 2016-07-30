@@ -45,6 +45,8 @@ mail-mta/postfix sasl
 
 app-emulation/docker btrfs overlay
 
+net-fs/openafs fuse
+
 # enable php for apache, prevent desktop use flags requiring gd
 >dev-lang/php-4 -apache2 fpm -truetype -exif
 app-eselect/eselect-php -apache2 fpm
