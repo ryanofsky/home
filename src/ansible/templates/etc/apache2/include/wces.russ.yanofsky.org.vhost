@@ -1,0 +1,26 @@
+DocumentRoot /var/www/wces.russ.yanofsky.org/www
+
+TransferLog /var/www/wces.russ.yanofsky.org/log/access_log
+ErrorLog /var/www/wces.russ.yanofsky.org/log/error_log
+
+# /var/www/wces.russ.yanofsky.org/php/php-4.4.9/sapi/cgi/php
+# /usr/lib64/php4/bin/php-cgi
+
+ScriptAlias /php4-cgi-alias /var/www/wces.russ.yanofsky.org/php/php-4.4.9/sapi/cgi/php
+Action php4-cgi-action /php4-cgi-alias
+AddHandler php4-cgi-action .php
+
+<Directory /var/www/wces.russ.yanofsky.org/www>
+  Options Indexes
+  DirectoryIndex index.php index.html index.htm
+  AllowOverride AuthConfig Options FileInfo Indexes
+  Require all granted
+</Directory>
+
+<Directory /usr/lib64/php4/bin>
+  Require all granted
+</Directory>
+
+<Directory /var/www/wces.russ.yanofsky.org/php/php-4.4.9/sapi/cgi>
+  Require all granted
+</Directory>
