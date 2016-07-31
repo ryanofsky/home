@@ -47,11 +47,8 @@ app-emulation/docker btrfs overlay
 
 net-fs/openafs fuse
 
-# enable php for apache, prevent desktop use flags requiring gd
->dev-lang/php-4 -apache2 fpm -truetype -exif
+# enable php for apache
 app-eselect/eselect-php -apache2 fpm
-
-=dev-lang/php-4* -apache2 cgi -berkdb -exif -gdbm -sqlite -ssl -truetype
 
 www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modules_substitute apache2_modules_proxy_http apache2_modules_proxy_wstunnel
 
