@@ -1,1 +1,3 @@
-/home/russ/src/bup/bup
+#!/bin/sh
+
+exec "$HOME/src/bup/bup" "$@"
