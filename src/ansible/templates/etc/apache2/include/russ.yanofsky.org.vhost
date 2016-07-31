@@ -32,9 +32,6 @@ Redirect /horde https://mail.google.com/a/yanofsky.org
   Substitute "s|alert|//$0"
 </Location>
 
-TransferLog /var/www/russ.yanofsky.org/log/access_log
-ErrorLog /var/www/russ.yanofsky.org/log/error_log
-
 <Directory /var/www/russ.yanofsky.org/htdocs>
   Options Indexes Includes FollowSymLinks ExecCGI
   SetEnv PYTHONPATH /var/www/russ.yanofsky.org

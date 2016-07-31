@@ -1,8 +1,5 @@
 DocumentRoot /var/www/wces.russ.yanofsky.org/www
 
-TransferLog /var/www/wces.russ.yanofsky.org/log/access_log
-ErrorLog /var/www/wces.russ.yanofsky.org/log/error_log
-
 # /var/www/wces.russ.yanofsky.org/php/php-4.4.9/sapi/cgi/php
 # /usr/lib64/php4/bin/php-cgi
 
