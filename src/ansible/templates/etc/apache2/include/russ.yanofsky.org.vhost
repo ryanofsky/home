@@ -1,4 +1,4 @@
-DocumentRoot /var/www/russ.yanofsky.org/htdocs
+DocumentRoot /var/www/russ/htdocs
 
 Alias /docroot /var/www/russ.yanofsky.org/viewvc/templates/docroot
 Redirect /horde https://mail.google.com/a/yanofsky.org
@@ -27,14 +27,10 @@ Redirect /horde https://mail.google.com/a/yanofsky.org
   </Location>
 </IfModule>
 
-<Location /twofish/twofish.html>
-  SetOutputFilter SUBSTITUTE
-  Substitute "s|alert|//$0"
-</Location>
-
-<Directory /var/www/russ.yanofsky.org/htdocs>
+<Directory /var/www/russ/htdocs>
   Options Indexes Includes FollowSymLinks ExecCGI
-  SetEnv PYTHONPATH /var/www/russ.yanofsky.org
+  SetEnv EPYTHON python2.7
+  SetEnv PYTHONPATH /var/www/russ
   AddHandler cgi-script .py
   <FilesMatch "\.php$">
     SetHandler "proxy:unix:/run/php-fpm.sock|fcgi://php-fpm"
