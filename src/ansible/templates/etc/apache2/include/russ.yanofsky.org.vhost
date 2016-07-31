@@ -13,19 +13,17 @@ Redirect /horde https://mail.google.com/a/yanofsky.org
   ProxyPassReverse ws://127.0.0.1:5487/ssh/ws
 </Location>
 
-<IfModule mod_dav_svn.c>
-  <Location /svn>
-    DAV svn
-    SVNParentPath /var/www/russ.yanofsky.org/svnroots
-    SVNListParentPath on
-    AuthType Basic
-    AuthName "Subversion repository"
-    AuthUserFile /var/www/russ.yanofsky.org/svnroots/svnusers
-    <LimitExcept GET PROPFIND OPTIONS REPORT>
-      Require valid-user
-    </LimitExcept>
-  </Location>
-</IfModule>
+<Location /svn>
+  DAV svn
+  SVNParentPath /var/lib/svn
+  SVNListParentPath on
+  AuthType Basic
+  AuthName "Subversion repository"
+  AuthUserFile /var/lib/svn/svnusers
+  <LimitExcept GET PROPFIND OPTIONS REPORT>
+    Require valid-user
+  </LimitExcept>
+</Location>
 
 <Directory /var/www/russ/htdocs>
   Options Indexes Includes FollowSymLinks ExecCGI
