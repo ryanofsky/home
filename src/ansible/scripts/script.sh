@@ -589,6 +589,43 @@ kconfig() {
       -e RT_GROUP_SCHED \
       -d AUDIT
 
+    # nf_tables modules
+    scripts/config \
+        -m NF_TABLES \
+        -m NF_TABLES_INET \
+        -m NFT_EXTHDR \
+        -m NFT_META \
+        -m NFT_CT \
+        -m NFT_RBTREE \
+        -m NFT_HASH \
+        -m NFT_COUNTER \
+        -m NFT_LOG \
+        -m NFT_LIMIT \
+        -m NFT_MASQ \
+        -m NFT_REDIR \
+        -m NFT_NAT \
+        -m NFT_QUEUE \
+        -m NFT_REJECT \
+        -m NFT_REJECT_INET \
+        -m NFT_COMPAT \
+        -m NF_TABLES_NETDEV \
+        -m NF_DUP_NETDEV \
+        -m NFT_DUP_NETDEV \
+        -m NFT_FWD_NETDEV \
+        -m NF_TABLES_BRIDGE \
+        -m NFT_BRIDGE_META \
+        -m NFT_BRIDGE_REJECT \
+        -m NF_LOG_BRIDGE \
+        -m NF_TABLES_IPV4 \
+        -m NFT_CHAIN_ROUTE_IPV4 \
+        -m NFT_REJECT_IPV4 \
+        -m NFT_DUP_IPV4 \
+        -m NF_TABLES_ARP \
+        -m NF_TABLES_IPV6 \
+        -m NFT_CHAIN_ROUTE_IPV6 \
+        -m NFT_REJECT_IPV6 \
+        -m NFT_DUP_IPV6
+
     # netfilter modules
     scripts/config \
       -m NETFILTER_XT_TARGET_CHECKSUM \
