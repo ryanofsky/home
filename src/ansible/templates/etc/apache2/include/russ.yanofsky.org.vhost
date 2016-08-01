@@ -5,13 +5,13 @@ Redirect /horde https://mail.google.com/a/yanofsky.org
 ScriptAlias /viewvc.py /var/www/viewvc/bin/cgi/viewvc.cgi
 
 <Location /ssh>
-  ProxyPass        http://127.0.0.1:5487/ssh
-  ProxyPassReverse http://127.0.0.1:5487/ssh
+  ProxyPass        http://127.0.0.1:10443/ssh
+  ProxyPassReverse http://127.0.0.1:10443/ssh
 </Location>
 
 <Location /ssh/ws>
-  ProxyPass        ws://127.0.0.1:5487/ssh/ws
-  ProxyPassReverse ws://127.0.0.1:5487/ssh/ws
+  ProxyPass        ws://127.0.0.1:10443/ssh/ws
+  ProxyPassReverse ws://127.0.0.1:10443/ssh/ws
 </Location>
 
 <Location /svn>
