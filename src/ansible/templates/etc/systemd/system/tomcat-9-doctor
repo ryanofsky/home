@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+
+CLASSPATH="/usr/share/tomcat-9/bin/bootstrap.jar"
+CLASSPATH+=":/usr/share/tomcat-9/bin/tomcat-juli.jar"
+CLASSPATH+=":$(java-config -p jdbc-postgresql)"
+DEPEND=$(java-config --query DEPEND --package tomcat-9)
+GCLASSPATH=$(java-config -dp "${DEPEND//:/,}")
+
+set -x
+
+exec java \
+    -Dcatalina.base=/var/lib/tomcat-9-doctor \
+    -Dcatalina.home=/usr/share/tomcat-9 \
+    -Djava.io.tmpdir=/var/tmp/tomcat-9-doctor \
+    -Dgentoo.classpath="${GCLASSPATH//:/,}" \
+    -classpath "${CLASSPATH}" \
+    org.apache.catalina.startup.Bootstrap \
+    start

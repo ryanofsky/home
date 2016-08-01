@@ -1,0 +1,10 @@
+[Unit]
+Description=Tomcat doc.russ.yanofsky.org
+
+[Service]
+Type=simple
+ExecStart=/etc/systemd/system/tomcat-9-doctor
+User=tomcat
+
+[Install]
+WantedBy=multi-user.target
