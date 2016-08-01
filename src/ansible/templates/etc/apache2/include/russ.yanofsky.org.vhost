@@ -1,7 +1,8 @@
 DocumentRoot /var/www/russ/htdocs
 
-Alias /docroot /var/www/russ.yanofsky.org/viewvc/templates/docroot
+Alias /docroot /var/www/viewvc/templates/default/docroot
 Redirect /horde https://mail.google.com/a/yanofsky.org
+ScriptAlias /viewvc.py /var/www/viewvc/bin/cgi/viewvc.cgi
 
 <Location /ssh>
   ProxyPass        http://127.0.0.1:5487/ssh
@@ -38,6 +39,10 @@ Redirect /horde https://mail.google.com/a/yanofsky.org
   Require all granted
 </Directory>
 
-<Directory /var/www/russ.yanofsky.org/viewvc/templates/docroot>
+<Directory /var/www/viewvc/templates/default/docroot>
+  Require all granted
+</Directory>
+
+<Directory /var/www/viewvc/bin/cgi>
   Require all granted
 </Directory>
