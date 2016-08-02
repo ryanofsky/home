@@ -4,7 +4,7 @@ Description=Web-based terminal
 [Service]
 Type=simple
 PIDFile=/tmp/gateone.pid
-ExecStart=/var/www/gateone/bin/gateone --settings_dir=/etc/gateone/conf.d
+ExecStart=/var/www/gateone/bin/gateone --settings_dir=/etc/gateone/conf.d --log_to_stderr=false
 Restart=on-abort
 User=gateone
 
