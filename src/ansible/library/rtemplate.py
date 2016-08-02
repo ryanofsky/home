@@ -85,6 +85,9 @@ def main():
                         os.unlink(path)
                     os.symlink(content, path)
                 else:
+                    # Potential race condition here, as seen on hacker news:
+                    # http://akat1.pl/?id=2. Unprivileged user creating
+                    # symlink could cause write to arbitrary path as root.
                     with open(path, "wb") as fp:
                         fp.write(content)
             ret["changed"] = True
