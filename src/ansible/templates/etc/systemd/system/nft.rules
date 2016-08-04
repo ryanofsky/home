@@ -1,0 +1,19 @@
+#!/sbin/nft -f
+
+{% if inventory_hostname == "jumpy" %}
+flush ruleset
+
+table inet firewall {
+  chain incoming {
+    type filter hook input priority 0
+    ct state established,related accept
+    iifname lo accept
+    tcp dport {XXX} accept
+    meta nfproto ipv4 icmp type { echo-request } accept
+    meta nfproto ipv6 icmpv6 type { nd-neighbor-solicit, echo-request, nd-router-advert, nd-neighbor-advert } accept
+    ip saddr XXX accept
+    ip6 saddr XXX/64 accept
+    reject
+  }
+}
+{% endif %}

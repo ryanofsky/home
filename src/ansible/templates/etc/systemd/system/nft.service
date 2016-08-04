@@ -1,0 +1,11 @@
+[Unit]
+Description=Load nftables firewall rules
+Before=network.target
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/nft -f etc/systemd/system/nft.rules
+
+[Install]
+WantedBy=basic.target
