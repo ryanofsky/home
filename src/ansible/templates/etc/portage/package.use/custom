@@ -48,7 +48,9 @@ app-emulation/docker btrfs overlay
 net-fs/openafs fuse
 
 # enable php for apache
+# avoid truetype and exif dependencies which pull in gd library
 app-eselect/eselect-php -apache2 fpm
+dev-lang/php fpm -truetype -exif
 
 www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modules_substitute apache2_modules_proxy_http apache2_modules_proxy_wstunnel suexec
 
