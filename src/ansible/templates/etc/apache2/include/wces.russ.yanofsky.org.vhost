@@ -1,5 +1,7 @@
 DocumentRoot /var/www/wces/var/www
 
+SuexecUserGroup wces wces
+
 Alias /wces/upload /var/lib/wces/upload
 
 ScriptAlias /php4-cgi-alias /var/www/wces/bin/php
