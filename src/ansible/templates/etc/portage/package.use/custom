@@ -28,6 +28,9 @@ media-video/xine-ui aalib curl libcaca -lirc vdr
 # font size fix, netflix support
 www-client/chromium hidpi widevine
 
+# journald http support
+sys-apps/systemd http
+
 dev-vcs/git subversion
 
 # needed for atom
