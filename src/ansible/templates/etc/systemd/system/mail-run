@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Usage: mail-run <subject> <command line...>
+
+SUBJECT="$1"
+shift
+
+LOG=$(tempfile run)
+"$@" | tee "$LOG"
+STATUS=${PIPESTATUS[0]}
+
+if [ -s "$LOG" -o "$STATUS" -ne 0 ]; then
+  mail -s "$SUBJECT" russ+systemd@yanofsky.org -- -f russ+systemd@yanofsky.org <<EOS
+Command line: $@
+Status: $STATUS
+Output ($(stat --printf "%s" "$LOG") bytes):
+$(<"$LOG")
+EOS
+fi
+
+rm "$LOG"
+exit "$STATUS"

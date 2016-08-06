@@ -1,0 +1,8 @@
+[Unit]
+Description=Run archive.service weekly
+
+[Timer]
+OnCalendar=Sat *-*-* 00:00:00 UTC
+
+[Install]
+WantedBy=timers.target
