@@ -13,7 +13,7 @@ if [ -s "$LOG" -o "$STATUS" -ne 0 ]; then
   mail -s "$SUBJECT" russ+systemd@yanofsky.org -- -f russ+systemd@yanofsky.org <<EOS
 Command line: $@
 Status: $STATUS
-Output ($(stat --printf "%s" "$LOG") bytes):
+Output ($(stat --printf "%s" $LOG) bytes):
 $(<"$LOG")
 EOS
 fi
