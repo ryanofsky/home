@@ -1,0 +1,6 @@
+[Unit]
+Description=Rotate log files to /var/archive
+
+[Service]
+ExecStart=/etc/systemd/system/mail-run "%H %n" /etc/systemd/system/www-reset
+User=www

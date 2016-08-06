@@ -1,0 +1,29 @@
+#!/bin/bash
+
+rsync -rlptD --delete /var/www/wces/var/www/wces/upload/ /var/lib/wces/upload/
+chown www:wces /var/lib/wces/upload
+chmod -R ug=rwX,o=rX /var/lib/wces/upload
+
+echo "
+  DROP DATABASE code; CREATE DATABASE code;
+  DROP DATABASE projects; CREATE DATABASE projects;
+  ALTER DATABASE projects SET default_with_oids='on';
+
+  DROP DATABASE doctor; CREATE DATABASE doctor;
+  ALTER DATABASE doctor SET default_with_oids='on';
+
+  DROP DATABASE wces; CREATE DATABASE wces;
+  ALTER DATABASE wces SET standard_conforming_strings='off';
+  ALTER DATABASE wces SET escape_string_warning='off';
+  ALTER DATABASE wces SET dynamic_library_path='/var/www/wces/lib:\$libdir';
+" | psql -Upostgres
+
+psql -Upostgres code -f /var/www/russ/htdocs/data.sql
+psql -Upostgres projects -f /var/www/russ/htdocs/data.sql
+psql -Upostgres doctor -f /var/www/doc/WEB-INF/classes/doctor.sql
+cd /var/www/wces/var
+psql -Upostgres wces -f etc/postgres/install.sql
+psql -Upostgres wces -f etc/postgres2/install.sql
+psql -Upostgres wces -f include/wbes/schema.sql
+psql -Upostgres wces -f include/wces/classes.sql
+python2 etc/fakedata/fakedata.py > /dev/null
