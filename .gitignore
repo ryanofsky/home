@@ -44,7 +44,8 @@
 .config/nemo/
 .config/pavucontrol.ini
 .config/pcmanfm/
-.config/pulse/
+.config/pulse/9ab722*
+.config/pulse/cookie
 .config/ranger/
 .config/session/
 .config/teamviewer10/
