@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# Top level functions of script are download and save.
+#
+# Download pulls information about previously downloaded torrents from
+# _download dir to ~pia homedir.
+#
+# Save pushes information about newly downloaded torrents from
+# ~pia homedir to _download dir.
+#
+# Steps for download:
+# - Create _download/new folder.
+# - Fill _download/new/deluge.download with deluge state for selected torrents.
+# - Fill _download/new/torrent.rw with reflinked copy of selected torrents.
+# - Move _download/new/deluge.download to ~pia/.config/deluge/state
+# - Create read & write sshfs mounts in ~pia homedir to _download/torrent
+#   and _download/new/torrent.rw.
+#
+# Steps for save:
+# - Move ~pia/.config/deluge/state to _download/new/deluge.save.
+# - Move /mnt/hd/pia               to _download/new/share.save.
+# - Populate new _download/new/torrent.save folder with symlinks to
+#   _download/new/share.save files, then reverse the symlinks to point in
+#   opposite direction. Use deluge.save info to create directory structure.
+# - Move symlinks from _download/new/share.save   to _download/share.save,
+# - Move files    from _download/new/torrent.save to _download/torrent
+# - Move files    from _download/new/torrent.rw   to _download/torrent
+# - Import state  from _download/new/deluge.save  to _download/torrent.json.
+# - Remove _download/new folder.
+
 R=mini
 D=/mnt/fort/_download
 S=/home/pia/.config/deluge/state
@@ -104,6 +132,7 @@ import-torrents() {
                     if cmp "$old" "$new"; then
                         rm -v "$new"
                     else
+                        # git rm to force git-annex reimport
                         git rm -f --cached "$old"
                         rm -v "$old"
                         mv -ivT "$new" "$old"
