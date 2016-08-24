@@ -8,7 +8,7 @@ table inet firewall {
     type filter hook input priority 0
     ct state established,related accept
     iifname lo accept
-    tcp dport { 80, 443, 2401, XXX, XXX } accept
+    tcp dport { 80, 443, 2401, {{ lookup('password', 'credentials/smtp_port.jumpy') }}, {{ lookup('password', 'credentials/sshd_port.jumpy') }} } accept
     meta nfproto ipv4 icmp type { echo-request } accept
     meta nfproto ipv6 icmpv6 type { nd-neighbor-solicit, echo-request, nd-router-advert, nd-neighbor-advert } accept
     #ip saddr XXX accept

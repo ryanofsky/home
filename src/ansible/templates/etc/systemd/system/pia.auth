@@ -1,2 +1,2 @@
-XXX
-XXX
+{{ lookup('password', 'credentials/pia_user') }}
+{{ lookup('password', 'credentials/pia_pass') }}

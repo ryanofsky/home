@@ -6,6 +6,7 @@
     - name: mount-stage3 script
       script: scripts/script.sh mount-stage3
       environment:
+        RUSS_PUBKEY: "{{ lookup('password', 'credentials/russ.pubkey') }}"
         LUKS_PASS: "{{ lookup('password', 'credentials/luks.' + inventory_hostname) }}"
         BOOT_DEV: "{{ boot_dev }}"
         SWAP_DEV: "{{ swap_dev }}"

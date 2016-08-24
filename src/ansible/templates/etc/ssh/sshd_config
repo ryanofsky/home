@@ -11,7 +11,7 @@
 # default value.
 
 {% if inventory_hostname == "jumpy" %}
-Port XXX
+Port {{ lookup('password', 'credentials/sshd_port.jumpy') }}
 {% else %}
 #Port 22
 {% endif %}

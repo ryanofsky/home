@@ -129,9 +129,7 @@ emerge-world() {
     systemctl enable sshd
     mkdir /root/.ssh
     chmod 700 /root/.ssh
-    cat >> /root/.ssh/authorized_keys <<EOF
-ssh-rsa XXX
-EOF
+    cat >> /root/.ssh/authorized_keys <<<"$RUSS_PUBKEY"
     chmod 600 /root/.ssh/authorized_keys
 }
 
