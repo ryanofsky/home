@@ -6,11 +6,14 @@ mkpar() {
     test -z "$d" || test "$d" = "$1" || mkdir -vp "$d"
 }
 
+ARCHIVE_SRC="/var/log"
+ARCHIVE_DST="/var/archive/$(hostname)"
+
 # generate unique destination filename using optional timestamp from reference file
 archive-name() {
   local base="$1"
   local ref="$2"
-  local dest="/var/archive/$(hostname)/$base"
+  local dest="$ARCHIVE_DST/$base"
   if [ -n "$ref" ]; then
     local dest="$dest.$(date -u +"%Y-%m-%d-%H%M%S" -d@$(stat --printf '%Y' "$ref"))"
   fi
@@ -36,7 +39,7 @@ archive-journal() {
   local host="$1"
   local journal="$2"
   (
-    cd "/var/log/journal/$host"
+    cd "$ARCHIVE_SRC/journal/$host"
     test -e "$journal" || return 0
     mkdir tmp || return 1
     mv -i "$journal" tmp/
@@ -52,11 +55,11 @@ archive-journal() {
 }
 
 archive-ls() {
-    find /var/log -path '/var/log/journal/*/archive' -prune \
-                  -o -path '/var/log/wtmp' -prune \
-                  -o -path '/var/log/btmp' -prune \
-                  -o -path '/var/log/lastlog' -prune \
-                  -o -path '/var/log/tallylog' -prune \
-                  -o -name '.keep_*' -prune \
-                  -o -type f -print
+    find "$ARCHIVE_SRC" -path "$ARCHIVE_SRC/journal/*/archive" -prune \
+                        -o -path "$ARCHIVE_SRC/wtmp" -prune \
+                        -o -path "$ARCHIVE_SRC/btmp" -prune \
+                        -o -path "$ARCHIVE_SRC/lastlog" -prune \
+                        -o -path "$ARCHIVE_SRC/tallylog" -prune \
+                        -o -name '.keep_*' -prune \
+                        -o -type f -print
 }
