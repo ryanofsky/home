@@ -700,6 +700,9 @@ kconfig() {
 
     # Make USB printer support into module instead of builtin (conflicts with CUPS).
     scripts/config -m USB_PRINTER
+
+    # NBD support
+    scripts/config -m BLK_DEV_NBD
 }
 
 root-passwd() {
