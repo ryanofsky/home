@@ -19,6 +19,7 @@ Checkout:
     [else]
       <code>svn co https://russ.yanofsky.org/svn/[rootname][if-any where]/[where][else][is rootname "cfree"][else]/trunk[end][end] [is where "trunk"][rootname][else][for nav_path][if-index nav_path last][nav_path.name][end][end][end]</code>
     [end]
+    (<a href="https://github.com/ryanofsky/[rootname]">github mirror</a>)
 </div>
 <div class="inline">
 [include "include/pathrev_form.ezt"]
