@@ -1,3 +1,5 @@
+sys-devel/llvm clang multitarget
+
 # svn apache/viewvc support
 dev-vcs/subversion apache2 ctypes-python python
 
@@ -27,6 +29,9 @@ media-video/xine-ui aalib curl libcaca -lirc vdr
 
 # font size fix, netflix support
 www-client/chromium hidpi widevine
+
+# for ethereum-cpp
+media-libs/mesa opencl
 
 # journald http support
 sys-apps/systemd http
