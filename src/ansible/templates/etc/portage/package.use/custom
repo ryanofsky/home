@@ -27,6 +27,8 @@ media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad
 
 media-video/xine-ui aalib curl libcaca -lirc vdr
 
+gnome-base/gvfs mtp
+
 # font size fix, netflix support
 www-client/chromium hidpi widevine
 
