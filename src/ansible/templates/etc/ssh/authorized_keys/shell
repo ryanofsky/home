@@ -1,0 +1,3 @@
+{% if inventory_hostname == "jumpy" %}
+{{ lookup('password', 'credentials/shell.pubkey') }}
+{% endif %}
