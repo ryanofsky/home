@@ -94,27 +94,27 @@ app-accessibility/speech-dispatcher -python
 # required by net-mail/notmuch
 dev-libs/gmime smime
 
-# required by media-gfx/gnome-photos-3.18.3::gentoo
-# required by gnome-base/gnome-extra-apps-3.18.0-r1::gentoo[tracker]
-# required by gnome-base/gnome-3.18.0::gentoo[extras]
-# required by gnome-base/gnome (argument)
->=media-plugins/grilo-plugins-0.2.17 upnp-av
 # required by media-tv/kodi-16.0::gentoo[webserver]
-# required by media-tv/kodi (argument)
->=net-libs/libmicrohttpd-0.9.48 messages
-
-# required by dev-qt/qtcore-5.5.1-r1::gentoo
-# required by dev-qt/qtcore (argument)
->=dev-libs/libpcre-8.38-r1 pcre16
-
-# required by net-misc/chrome-remote-desktop-50.0.2661.22::gentoo
-# required by net-misc/chrome-remote-desktop (argument)
->=x11-base/xorg-server-1.18.3 xvfb
-
-# required by net-analyzer/ntop-5.0.1-r1::gentoo
-# required by ntop (argument)
->=net-analyzer/rrdtool-1.6.0-r1 graph
-
-# required by app-emulation/lxd-2.0.0::gentoo[daemon]
-# required by lxd (argument)
->=app-emulation/lxc-1.1.5 cgmanager
+# required by @selected
+# required by @world (argument)
+>=net-libs/libmicrohttpd-0.9.51 messages
+# required by dev-scheme/guile-2.0.12-r1::gentoo
+# required by sys-devel/autogen-5.18.12::gentoo
+# required by net-libs/gnutls-3.4.15::gentoo[tools]
+# required by net-libs/gtk-vnc-0.6.0::gentoo
+# required by net-misc/vinagre-3.20.2::gentoo
+# required by gnome-base/gnome-extra-apps-3.20.0::gentoo
+# required by gnome-base/gnome-3.20.0::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=dev-libs/boehm-gc-7.4.2 threads
+# required by www-client/chromium-54.0.2840.27::gentoo
+# required by @selected
+# required by @world (argument)
+>=media-libs/libvpx-1.6.0 svc
+# required by media-gfx/gnome-photos-3.20.3::gentoo
+# required by gnome-base/gnome-extra-apps-3.20.0::gentoo[tracker]
+# required by gnome-base/gnome-3.20.0::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=media-libs/gegl-0.3.8 raw jpeg2k
