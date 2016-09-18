@@ -15,8 +15,6 @@ media-tv/kodi airplay avahi bluray caps cec css -debug -gles -java -joystick mid
 
 media-video/ffmpeg aacplus amr amrenc bluray bs2b cdio celt cpudetection faac fdk flite -fontconfig frei0r fribidi gme -gnutls gsm ec61883 iec61883 ieee1394 -jack jpeg2k ladspa libass libcaca -libressl librtmp libsoxr libv4l modplug openal -openssl opus -oss quvi schroedinger snappy speex ssh -static-libs theora twolame v4l vaapi -vdpau vpx wavpack webp x265 zvbi
 
-media-video/miro musepack
-
 media-video/mplayer aalib bidi bluray bs2b cddb cdparanoia cpudetection dv -dvb faac faad ftp  gsm jpeg2k libmpeg2 live nas nut openal pnm pvr radio rtc speex tga theora toolame tremor twolame v4l vcd xanim xvmc yuv4mpeg -zoran
 
 media-video/mpv archive bluray -doc drm -dvb -gbm -jack -libav libcaca libguess libmpv openal -oss rubberband -sdl uchardet v4l vaapi -vdpau vf-dlopen -wayland
@@ -66,9 +64,6 @@ www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modu
 
 # required by (gnome-extra/gnome-user-share-3.18.1-r1:0/0::gentoo
 www-servers/apache apache2_modules_auth_digest
-
-# required by media-video/miro
-net-dns/avahi mdnsresponder-compat
 
 # required by media-video/vlc
 net-fs/samba client
