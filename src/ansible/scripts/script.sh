@@ -408,7 +408,6 @@ kconfig() {
       -e PID_NS \
       -e IPC_NS \
       -e UTS_NS \
-      -e DEVPTS_MULTIPLE_INSTANCES \
       -e CGROUPS \
       -e CGROUP_CPUACCT \
       -e CGROUP_DEVICE \
