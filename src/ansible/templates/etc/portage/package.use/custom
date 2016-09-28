@@ -89,6 +89,10 @@ app-accessibility/speech-dispatcher -python
 # required by net-mail/notmuch
 dev-libs/gmime smime
 
+# required for media-libs/phonon-gstreamer
+# https://forums.gentoo.org/viewtopic-t-1048642.html
+<dev-qt/qtwebkit-4.10.4:4 -gstreamer
+
 # required by media-tv/kodi-16.0::gentoo[webserver]
 # required by @selected
 # required by @world (argument)
@@ -113,3 +117,45 @@ dev-libs/gmime smime
 # required by @selected
 # required by @world (argument)
 >=media-libs/gegl-0.3.8 raw jpeg2k
+
+# required by kde-apps/ktp-common-internals-16.08.1::gentoo
+# required by kde-apps/ktp-call-ui-16.08.1::gentoo
+# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo[gstreamer]
+# required by plasma-telepathy-meta (argument)
+>=net-libs/telepathy-qt-0.9.7 farstream qt5
+# required by media-libs/phonon-4.9.0::gentoo[gstreamer]
+# required by media-libs/phonon-vlc-0.9.0::gentoo
+>=media-libs/phonon-gstreamer-4.9.0 qt5
+# required by media-libs/phonon-4.9.0::gentoo[vlc]
+# required by media-libs/phonon-gstreamer-4.9.0::gentoo
+>=media-libs/phonon-vlc-0.9.0 qt5
+# required by kde-apps/ktp-auth-handler-16.08.1::gentoo
+# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo
+# required by plasma-telepathy-meta (argument)
+>=app-crypt/qca-2.1.1-r1 qt5
+# required by kde-plasma/polkit-kde-agent-5.7.5::gentoo
+# required by kde-frameworks/kauth-5.26.0::gentoo[policykit]
+# required by kde-frameworks/kdelibs4support-5.26.0::gentoo
+# required by kde-plasma/kde-cli-tools-5.7.5::gentoo[X]
+# required by kde-apps/kaccounts-integration-16.08.1::gentoo
+# required by kde-apps/ktp-common-internals-16.08.1::gentoo[sso]
+# required by kde-apps/ktp-call-ui-16.08.1::gentoo
+# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo[gstreamer]
+# required by plasma-telepathy-meta (argument)
+>=sys-auth/polkit-qt-0.112.0-r1 qt5
+# required by media-libs/phonon-gstreamer-4.9.0::gentoo
+>=media-libs/phonon-4.9.0 qt5
+# required by kde-apps/ktp-text-ui-16.08.1::gentoo
+# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo
+# required by plasma-telepathy-meta (argument)
+>=kde-apps/ktp-common-internals-16.08.1 otr
+# required by kde-apps/ktp-call-ui-16.08.1::gentoo
+# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo[gstreamer]
+# required by plasma-telepathy-meta (argument)
+>=media-libs/qt-gstreamer-1.2.0-r2 qt5
+# required by kde-frameworks/knotifications-5.26.0::gentoo[dbus]
+# required by kde-frameworks/plasma-5.26.0::gentoo
+# required by kde-apps/ktp-desktop-applets-16.08.1::gentoo
+# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo
+# required by plasma-telepathy-meta (argument)
+>=dev-libs/libdbusmenu-qt-0.9.3_pre20160218 qt5
