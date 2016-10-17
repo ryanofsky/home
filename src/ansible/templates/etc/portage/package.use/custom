@@ -1,161 +1,91 @@
-sys-devel/llvm clang multitarget
-
-# svn apache/viewvc support
-dev-vcs/subversion apache2 ctypes-python python
-
-# git-svn support
-dev-vcs/subversion -dso perl
-
 # media player codecs
 media-libs/xine-lib aalib bluray -dvb -dxr3 -fbcon fusion imagemagick -jack -libav libcaca modplug musepack -oss speex theora v4l vaapi vcd -vdpau vdr vpx wavpack xvmc
-
 media-sound/pulseaudio equalizer -jack -libressl libsamplerate -lirc native-headset ofono-headset orc realtime sox -xen -zeroconf
-
 media-tv/kodi airplay avahi bluray caps cec css -debug -gles -java -joystick midi -mysql nfs rtmp sftp upnp vaapi -vdpau webserver
-
 media-video/ffmpeg aacplus amr amrenc bluray bs2b cdio celt cpudetection faac fdk flite -fontconfig frei0r fribidi gme -gnutls gsm ec61883 iec61883 ieee1394 -jack jpeg2k ladspa libass libcaca -libressl librtmp libsoxr libv4l modplug openal -openssl opus -oss quvi schroedinger snappy speex ssh -static-libs theora twolame v4l vaapi -vdpau vpx wavpack webp x265 zvbi
-
 media-video/mplayer aalib bidi bluray bs2b cddb cdparanoia cpudetection dv -dvb faac faad ftp  gsm jpeg2k libmpeg2 live nas nut openal pnm pvr radio rtc speex tga theora toolame tremor twolame v4l vcd xanim xvmc yuv4mpeg -zoran
-
 media-video/mpv archive bluray -doc drm -dvb -gbm -jack -libav libcaca libguess libmpv openal -oss rubberband -sdl uchardet v4l vaapi -vdpau vf-dlopen -wayland
-
 media-tv/mythtv -autostart avahi bluray cec crystalhd -debug -dvb -egl fftw ieee1394 -jack -lcd libass -lirc -perl vaapi -vdpau xmltv
-
 media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad fdk fluidsynth -fontconfig gme -gnutls growl httpd ieee1394 -jack kate -kde libass -libav libcaca libtar libtiger linsys -lirc live lua matroska modplug mtp musepack omxil opencv -optimisememory opus postproc projectm -qt5 rdp rtsp -run-as-root schroedinger sdl-image sftp shout sid skins speex taglib theora tremor twolame upnp v4l vaapi vcdx -vdpau vlm vnc vpx wma-fixed x265 zeroconf zvbi
-
 media-video/xine-ui aalib curl libcaca -lirc vdr
 
+# clang compiler
+sys-devel/llvm clang
+
+# android mtp support
 gnome-base/gvfs mtp
 
 # font size fix, netflix support
 www-client/chromium hidpi widevine
 
-# for ethereum-cpp
-media-libs/mesa opencl
-
-# journald http support
-sys-apps/systemd http
-
-dev-vcs/git subversion
-
-# needed for atom
-dev-libs/libgit2 ssh
-
-dev-vcs/cvs server
-dev-vcs/cvsgraph gif jpeg png truetype
-
-# maybe useful curl protocol options
-net-misc/curl http2 idn rtmp ssh
-
-x11-wm/xpra csc dec_av2 lz4 lzo server sound vpx webp x265
-
-mail-mta/postfix sasl
-
+# docker features
 app-emulation/docker btrfs overlay
 
+# curl features
+net-misc/curl http2 idn rtmp ssh
+
+# xpra features
+x11-wm/xpra csc dec_av2 lz4 lzo server sound vpx webp x265
+
+# afs mounting
 net-fs/openafs fuse
 
-# enable php for apache
-# avoid truetype and exif dependencies which pull in gd library
+# git-svn support
+dev-vcs/git subversion
+dev-vcs/subversion -dso perl
+
+# yanofsky.org postfix setup
+mail-mta/postfix sasl
+
+# yanofsky.org viewvc/cvs/svn setup
+dev-vcs/cvs server
+dev-vcs/cvsgraph gif jpeg png truetype
+dev-vcs/subversion apache2 ctypes-python python
+
+# yanofsky.org apache setup
+# avoid php truetype and exif dependencies which pull in gd library
+www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modules_substitute apache2_modules_proxy_http apache2_modules_proxy_wstunnel suexec
 app-eselect/eselect-php -apache2 fpm
 dev-lang/php fpm -truetype -exif
 
-www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modules_substitute apache2_modules_proxy_http apache2_modules_proxy_wstunnel suexec
+##### required ebuild use flags ####
 
-# required by (gnome-extra/gnome-user-share-3.18.1-r1:0/0::gentoo
-www-servers/apache apache2_modules_auth_digest
-
-# required by media-video/vlc
-net-fs/samba client
-
-# required by media-video/vlc
+# required by www-client/chromium
+# required by dev-util/electron
 sys-libs/zlib minizip
 
-# required by app-emulation/docker
-sys-libs/libseccomp static-libs
+# required by dev-lang/rust
+sys-devel/llvm multitarget
+
+# required by net-misc/chrome-remote-desktop
+x11-base/xorg-server xvfb
+
+# required by app-misc/anki
+dev-python/PyQt4 webkit
 
 # required by app-text/calibre
 app-text/poppler qt5
-dev-qt/qtwebkit printsupport
-dev-python/PyQt5 webkit
 
-# doesn't support python 3.5 yet
-x11-apps/intel-gpu-tools -python test-programs
+# required by dev-qt/qtcore
+dev-libs/libpcre pcre16
 
-# doesn't support python 3.5 yet
-# dependency required by www-client/chromium
-app-accessibility/speech-dispatcher -python
+# required by www-client/chromium
+media-libs/libvpx svc
+
+# required by app-office/libreoffice
+dev-libs/liborcus -python
+
+# required by dev-libs/liborcus
+# required by app-office/libreoffice
+dev-libs/libixion -python
+
+# required by gnome-base/gvfs
+# required by media-video/vlc
+# required by gnome-base/gnome-control-center
+net-fs/samba client
+
+# required by media-gfx/gnome-photos
+media-plugins/grilo-plugins upnp-av
 
 # required by net-mail/notmuch
 dev-libs/gmime smime
-
-# required for media-libs/phonon-gstreamer
-# https://forums.gentoo.org/viewtopic-t-1048642.html
-<dev-qt/qtwebkit-4.10.4:4 -gstreamer
-
-# required by media-tv/kodi-16.0::gentoo[webserver]
-# required by @selected
-# required by @world (argument)
->=net-libs/libmicrohttpd-0.9.51 messages
-# required by dev-scheme/guile-2.0.12-r1::gentoo
-# required by sys-devel/autogen-5.18.12::gentoo
-# required by net-libs/gnutls-3.4.15::gentoo[tools]
-# required by net-libs/gtk-vnc-0.6.0::gentoo
-# required by net-misc/vinagre-3.20.2::gentoo
-# required by gnome-base/gnome-extra-apps-3.20.0::gentoo
-# required by gnome-base/gnome-3.20.0::gentoo[extras]
-# required by @selected
-# required by @world (argument)
->=dev-libs/boehm-gc-7.4.2 threads
-# required by www-client/chromium-54.0.2840.27::gentoo
-# required by @selected
-# required by @world (argument)
->=media-libs/libvpx-1.6.0 svc
-# required by media-gfx/gnome-photos-3.20.3::gentoo
-# required by gnome-base/gnome-extra-apps-3.20.0::gentoo[tracker]
-# required by gnome-base/gnome-3.20.0::gentoo[extras]
-# required by @selected
-# required by @world (argument)
->=media-libs/gegl-0.3.8 raw jpeg2k
-
-# required by kde-apps/ktp-common-internals-16.08.1::gentoo
-# required by kde-apps/ktp-call-ui-16.08.1::gentoo
-# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo[gstreamer]
-# required by plasma-telepathy-meta (argument)
->=net-libs/telepathy-qt-0.9.7 farstream qt5
-# required by media-libs/phonon-4.9.0::gentoo[gstreamer]
-# required by media-libs/phonon-vlc-0.9.0::gentoo
->=media-libs/phonon-gstreamer-4.9.0 qt5
-# required by media-libs/phonon-4.9.0::gentoo[vlc]
-# required by media-libs/phonon-gstreamer-4.9.0::gentoo
->=media-libs/phonon-vlc-0.9.0 qt5
-# required by kde-apps/ktp-auth-handler-16.08.1::gentoo
-# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo
-# required by plasma-telepathy-meta (argument)
->=app-crypt/qca-2.1.1-r1 qt5
-# required by kde-plasma/polkit-kde-agent-5.7.5::gentoo
-# required by kde-frameworks/kauth-5.26.0::gentoo[policykit]
-# required by kde-frameworks/kdelibs4support-5.26.0::gentoo
-# required by kde-plasma/kde-cli-tools-5.7.5::gentoo[X]
-# required by kde-apps/kaccounts-integration-16.08.1::gentoo
-# required by kde-apps/ktp-common-internals-16.08.1::gentoo[sso]
-# required by kde-apps/ktp-call-ui-16.08.1::gentoo
-# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo[gstreamer]
-# required by plasma-telepathy-meta (argument)
->=sys-auth/polkit-qt-0.112.0-r1 qt5
-# required by media-libs/phonon-gstreamer-4.9.0::gentoo
->=media-libs/phonon-4.9.0 qt5
-# required by kde-apps/ktp-text-ui-16.08.1::gentoo
-# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo
-# required by plasma-telepathy-meta (argument)
->=kde-apps/ktp-common-internals-16.08.1 otr
-# required by kde-apps/ktp-call-ui-16.08.1::gentoo
-# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo[gstreamer]
-# required by plasma-telepathy-meta (argument)
->=media-libs/qt-gstreamer-1.2.0-r2 qt5
-# required by kde-frameworks/knotifications-5.26.0::gentoo[dbus]
-# required by kde-frameworks/plasma-5.26.0::gentoo
-# required by kde-apps/ktp-desktop-applets-16.08.1::gentoo
-# required by kde-apps/plasma-telepathy-meta-16.08.1::gentoo
-# required by plasma-telepathy-meta (argument)
->=dev-libs/libdbusmenu-qt-0.9.3_pre20160218 qt5

@@ -10,3 +10,5 @@ www-plugins/chrome-binary-plugins google-chrome
 
 # required by app-emulation/virtualbox-extpack-oracle (argument)
 app-emulation/virtualbox-extpack-oracle PUEL
+
+www-plugins/adobe-flash AdobeFlash-11.x
