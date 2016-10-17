@@ -452,7 +452,11 @@ kconfig() {
       -m BLK_DEV_DM \
       -m DM_THIN_PROVISIONING \
       -m OVERLAY_FS \
-      -m IP_VS
+      -m IP_VS \
+      -e CONFIG_CFQ_GROUP_IOSCHED \
+      -m CONFIG_VXLAN \
+      -m CONFIG_IPVLAN \
+      -m CONFIG_DUMMY
 
     # lxc-checkpoint options
     scripts/config \
