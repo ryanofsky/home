@@ -1,0 +1,3 @@
+{% if inventory_hostname == "mini" %}
+{{ lookup('password', 'credentials/chain.pubkey') }}
+{% endif %}

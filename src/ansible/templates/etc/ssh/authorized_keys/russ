@@ -1,0 +1,3 @@
+{% if inventory_hostname == "think" %}
+{{ lookup('password', 'credentials/mote.pubkey') }}
+{% endif %}
