@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 O=()
 while test -n "$1"; do
