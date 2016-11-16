@@ -11,6 +11,8 @@
 	auto = 0
 [core]
 	pager = less -F -X
+[push]
+	default = upstream
 [rerere]
 	enabled = true
 	autoupdate = true
