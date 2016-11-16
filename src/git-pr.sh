@@ -35,7 +35,10 @@ update() {
       export GIT_COMMITTER_NAME="$(git log -1 --pretty=format:%cn $COMMIT)"
       export GIT_COMMITTER_EMAIL="$(git log -1 --pretty=format:%ce $COMMIT)"
       export GIT_COMMITTER_DATE="$(git log -1 --pretty=format:%cd $COMMIT)"
-      run git cherry-pick --no-commit "$COMMIT"
+      # Try to push past failure. Useful with:
+      #   git config --global rerere.enabled true
+      #   git config --global rerere.autoupdate true
+      run git cherry-pick --no-commit "$COMMIT" || true
       run git commit -m"$(git log -1 --pretty=format:%b $COMMIT)"
     fi
   done
