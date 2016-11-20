@@ -161,8 +161,8 @@ make-kernel() {
         fi
 
         mkdir -p /boot/grub
-        grub2-mkconfig -o /boot/grub/grub.cfg
-        grub2-install -v "$BOOT_MBR_DEV"
+        grub-mkconfig -o /boot/grub/grub.cfg
+        grub-install -v "$BOOT_MBR_DEV"
     else
         BOOT_DEV=$(findmnt -vno source /boot)
         regex='^(/dev/[a-z]+)([0-9]+)$'
