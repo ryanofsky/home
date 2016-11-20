@@ -54,9 +54,6 @@ dev-lang/php fpm -truetype -exif
 # required by dev-util/electron
 sys-libs/zlib minizip
 
-# required by dev-lang/rust
-sys-devel/llvm multitarget
-
 # required by net-misc/chrome-remote-desktop
 x11-base/xorg-server xvfb
 
