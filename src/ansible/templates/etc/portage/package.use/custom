@@ -89,3 +89,26 @@ media-plugins/grilo-plugins upnp-av
 
 # required by net-mail/notmuch
 dev-libs/gmime smime
+
+# auto
+
+# required by media-tv/kodi-16.1::gentoo[webserver]
+# required by @selected
+# required by @world (argument)
+>=net-libs/libmicrohttpd-0.9.52 messages
+# required by app-emulation/docker-1.13.0_rc1-r1::gentoo[container-init]
+# required by @selected
+# required by @world (argument)
+>=sys-process/tini-0.13.0 static
+# required by media-gfx/gnome-photos-3.22.2::gentoo
+# required by gnome-base/gnome-extra-apps-3.22.0::gentoo[tracker]
+# required by gnome-base/gnome-3.22.0::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=media-libs/gegl-0.3.10 raw jpeg2k
+# required by dev-python/PyQt5-5.7::gentoo[webkit]
+# required by dev-python/qtconsole-4.2.1::gentoo
+# required by dev-python/ipython-5.1.0::gentoo[qt4]
+# required by dev-python/ipykernel-4.5.0::gentoo
+# required by dev-python/ipyparallel-5.2.0::gentoo
+>=dev-qt/qtwebkit-5.6.2 printsupport
