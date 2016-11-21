@@ -3,7 +3,7 @@
 set -e
 
 EXPORT=
-if [ !"$BASE" ]; then BASE=base; fi
+if [ -z "$BASE" ]; then BASE=base; fi
 BRANCH=$(git symbolic-ref --short HEAD || git rev-parse HEAD)
 
 run() {
