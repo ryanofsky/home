@@ -35,7 +35,9 @@ update() {
       export GIT_COMMITTER_NAME="$(git log -1 --pretty=format:%cn $COMMIT)"
       export GIT_COMMITTER_EMAIL="$(git log -1 --pretty=format:%ce $COMMIT)"
       export GIT_COMMITTER_DATE="$(git log -1 --pretty=format:%cd $COMMIT)"
-      # Don't care about committer date.
+      # Discard committer info.
+      export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+      export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
       export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
       # Try to push past failure. Useful with:
       #   git config --global rerere.enabled true
