@@ -48,14 +48,21 @@ update() {
       # Based on https://github.com/dingram/git-scripts/blob/master/scripts/git-cherry-pick-with-committer
       export GIT_AUTHOR_NAME="$(git log -1 --pretty=format:%an $COMMIT)"
       export GIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:%ae $COMMIT)"
-      export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad $COMMIT)"
+      export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad $COMMIT --date=raw)"
       export GIT_COMMITTER_NAME="$(git log -1 --pretty=format:%cn $COMMIT)"
       export GIT_COMMITTER_EMAIL="$(git log -1 --pretty=format:%ce $COMMIT)"
-      export GIT_COMMITTER_DATE="$(git log -1 --pretty=format:%cd $COMMIT)"
+      export GIT_COMMITTER_DATE="$(git log -1 --pretty=format:%cd $COMMIT --date=raw)"
       # Discard committer info.
       export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
       export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
       export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+
+      # Use monotonic timestamps so github branch commit lists are readable.
+      read NEW_TIMESTAMP NEW_TZ <<<"$GIT_COMMITTER_DATE"
+      read PREV_TIMESTAMP PREV_TZ <<<$(git log -1 --pretty=format:%cd --date=raw)
+      if (($NEW_TIMESTAMP < $PREV_TIMESTAMP)); then
+          GIT_COMMITTER_DATE="$PREV_TIMESTAMP $NEW_TZ"
+      fi
       # Try to push past failure. Useful with:
       #   git config --global rerere.enabled true
       #   git config --global rerere.autoupdate true
