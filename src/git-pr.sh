@@ -18,6 +18,23 @@ update() {
     elif test -z "$NAME" || test -n "$STUFF"; then
       echo "Skipping $COMMIT $NAME $PATCH $STUFF" 1>&2
     else
+      local match=
+      if [ "$#" -eq 0 ]; then
+        match=1
+      else
+        for keep in "$@"; do
+          if [ "$keep" = "$NAME" ]; then
+            match=1
+            break
+          fi
+        done
+      fi
+
+      if [ -z "$match" ]; then
+        echo "Skipping not requested $NAME" 1>&2
+        continue
+      fi
+
       echo "==== $NAME (${PATCH:-base}) $COMMIT ===="
       if test "$NAME" = "$PATCH"; then
         run git checkout "pr/$NAME"
@@ -71,4 +88,4 @@ while test -n "$1"; do
 done
 
 test "$CMD" != update || git-isclean.sh || exit 1
-(git log --format=format:'%H %s' --reverse "$BASE..$BRANCH"; echo) | sed 's/#.*//' | $CMD
+(git log --format=format:'%H %s' --reverse "$BASE..$BRANCH"; echo) | sed 's/#.*//' | $CMD "$@"
