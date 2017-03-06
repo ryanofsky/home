@@ -39,6 +39,7 @@
 .gnupg/random_seed
 .gnupg/trustdb.gpg
 .lesshst
+.ln
 .local/share/evolution/
 .local/share/folks/
 .local/share/gnome-settings-daemon/input-sources-converted
