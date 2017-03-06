@@ -48,6 +48,8 @@ www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modu
 app-eselect/eselect-php -apache2 fpm
 dev-lang/php fpm -truetype -exif
 
+app-office/lyx dia dot html monolithic-build -qt4 qt5 rtf gnumeric
+
 # 32 bit crap for adobe
 */* abi_x86_32
 
