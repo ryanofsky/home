@@ -33,4 +33,7 @@ UUID={{root_fs_uuid.stdout}}		/mnt/root		btrfs		noatime		0 1
 {% endif %}
 {% if inventory_hostname == "think" %}
 /dev/mapper/hd		/mnt/hd		btrfs		noauto,noatime		0 0
+/mnt/hd/_tmp/usr-src	/usr/src	none	noauto,bind	0 0
 {% endif %}
+/dev/mapper/mup		/mnt/mup		btrfs		noauto,noatime		0 0
+/dev/mapper/book		/mnt/book		btrfs		noauto,noatime		0 0

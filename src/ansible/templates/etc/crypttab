@@ -8,3 +8,5 @@ fort UUID=cec0afd8-69d0-4b50-82d6-d26707b5a341 none noauto,luks
 {% if inventory_hostname == "think" %}
 hd UUID=e276721b-9f5e-4b2e-9475-aad7e0d95d37 none noauto,luks
 {% endif %}
+mup UUID=775f2617-09c0-4a82-a8ae-b3c84643661c none noauto,luks
+book UUID=4acf5352-23a8-47bd-a6ac-aadc596c9ae7 none noauto,luks
