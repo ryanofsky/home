@@ -80,6 +80,15 @@ set-pr() {
   git config branch."origin/pr/$num".prlocal "pr/$name"
 }
 
+get-pr() {
+    local pr="$1"
+    if [[ "$pr" =~ ^[0-9]*$ ]]; then
+        git config branch."origin/pr/$pr".prlocal
+    else
+        git config branch."pr/$pr".prbranch
+    fi
+}
+
 # Dump PR patchsets for comparison
 dump-pr() {
   local name="$1"
