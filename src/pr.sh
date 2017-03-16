@@ -108,6 +108,23 @@ dump-pr() {
   diff -rNu dump-$name-{exbranch,branch}
 }
 
+# Create directory with individual patch files and overall diff
+# dump-patch d1
+# dump-patch d2 fecd
+# dump-patch r0 HEAD 3
+dump-patch() {
+    local dir="$1"
+    local rev="${2:-HEAD}"
+    local n="$3"
+    if [ -z "$3" ]; then
+        git format-patch -o "$dir" $(git merge-base origin/master "$rev").."$rev"
+        git diff $(git merge-base origin/master "$rev").."$rev" > "$dir/diff"
+    else
+        git format-patch -o "$dir" -n"$n" "$rev"
+        git diff "$rev~$n..$rev" > "$dir/diff"
+    fi
+}
+
 # Print commands for pulling commits from PR branch to export branch
 pull-pr() {
   local name="$1"
