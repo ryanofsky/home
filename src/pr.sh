@@ -106,12 +106,12 @@ dump-pr() {
   local lcommit
   local lname
   i=0
-  while read lcommit lname; do
+  while read lcommit lname rest; do
     if [ "$name" = "$lname" ]; then
       ((++i))
       git format-patch -n1 --numbered-files --start-number="$i" -o dump-$name-exbranch "$lcommit"
     fi
-  done < <(git log --format=format:'%H %s' --reverse $(git merge-base $basebranch $exbranch)..$exbranch)
+  done < <(git log --format=format:'%H %s%n' --reverse $(git merge-base $basebranch $exbranch)..$exbranch)
 
   diff -rNu dump-$name-{exbranch,branch}
 }
