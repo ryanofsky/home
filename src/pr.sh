@@ -40,7 +40,6 @@ pmsg() {
     echo "Squashed $r ($b, [compare]($c))"
   else
     echo "Rebased $r ($b)"
-    echo "Rebased $r ($b) because of conflicts with pwalletMain renames in #9775."
   fi
 
   local prbranch="$(git config branch.$1.prbranch)"
