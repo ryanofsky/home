@@ -4,6 +4,7 @@ set -e
 
 EXPORT=
 if [ -z "$BASE" ]; then BASE=base; fi
+if [ -z "$XBASE" ]; then XBASE="$BASE"; fi
 BRANCH=$(git symbolic-ref --short HEAD || git rev-parse HEAD)
 
 run() {
@@ -42,7 +43,7 @@ update() {
         run git checkout -B "pr/$NAME" "pr/$PATCH"
         run git config branch."pr/$NAME".base "pr/$PATCH"
       else
-        run git checkout -B "pr/$NAME" "$BASE"
+        run git checkout -B "pr/$NAME" "$XBASE"
       fi
 
       # Based on https://github.com/dingram/git-scripts/blob/master/scripts/git-cherry-pick-with-committer
