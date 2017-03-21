@@ -5,14 +5,10 @@
 .bup/
 .cache/
 .cargo/
-.config/Mist-privatenet/
-.config/Mist-russ/
-.config/Mist-testnet/
 .config/VirtualBox/
 .config/audacious/
 .config/chrome-remote-desktop/chrome-profile/
 .config/chrome-remote-desktop/pulseaudio#54c84b40e9/
-.config/chromium-ether/
 .config/chromium/
 .config/dconf/
 .config/evolution/
@@ -28,7 +24,6 @@
 .config/user-dirs.locale
 .dbus/
 .emacs.d/
-.ethereum-privatenet/
 .gnome/
 .gnucash/
 .gnupg/crls.d/
