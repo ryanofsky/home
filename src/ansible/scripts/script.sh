@@ -453,6 +453,9 @@ kconfig() {
       -m DM_THIN_PROVISIONING \
       -m OVERLAY_FS \
       -m IP_VS \
+      -e IP_VS_PROTO_TCP \
+      -e IP_VS_PROTO_UDP \
+      -e IP_VS_NFCT \
       -e CONFIG_CFQ_GROUP_IOSCHED \
       -m CONFIG_VXLAN \
       -m CONFIG_IPVLAN \
@@ -706,6 +709,9 @@ kconfig() {
 
     # NBD support
     scripts/config -m BLK_DEV_NBD
+
+    # dev-libs/libcec
+    scripts/config -m USB_ACM
 }
 
 root-passwd() {
