@@ -21,7 +21,9 @@ update() {
     else
       local match=
       if [ "$#" -eq 0 ]; then
-        match=1
+        #match=1
+        >&2 echo Error: unfiltered export footgun disabled
+        exit 1
       else
         for keep in "$@"; do
           if [ "$keep" = "$NAME" ]; then
