@@ -49,6 +49,7 @@
 .local/tmp/
 .mozilla/
 .pki/
+.pyenv/
 .snapshots/
 .vim/
 .viminfo
