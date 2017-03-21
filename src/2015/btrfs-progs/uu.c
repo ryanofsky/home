@@ -2,7 +2,7 @@
 git clone https://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs.git
 cd btrfs-progs
 make
-gcc -O2 -luuid -o uu send-utils.o rbtree.o btrfs-list.o /path/to/this/file/uu.c
+gcc -O2 -luuid -o uu send-utils.o rbtree.o btrfs-list.o rbtree-utils.o utils-lib.o uuid-tree.o uu.c
 */
 
 #define _GNU_SOURCE
