@@ -4,29 +4,96 @@ import re
 import sys
 
 IGNORE_GLOBS = {
+    b'BITCOIN_CONF_FILENAME',
+    b'BITCOIN_PID_FILENAME',
+    b'DEFAULT_WALLET_DAT',
+    b'_Z12CLIENT_BUILDB5cxx11',
+    b'_Z13CURRENCY_UNITB5cxx11',
+    b'_Z13strSubVersionB5cxx11',
+    b'_Z19DEFAULT_TOR_CONTROLB5cxx11',
+    b'_Z7mapArgsB5cxx11',
+    b'_ZGVZ17LogAcceptCategoryPKcE11ptrCategory',
+    b'_ZN16CBaseChainParams4MAINB5cxx11E',
+    b'_ZN16CBaseChainParams7REGTESTB5cxx11E',
+    b'_ZN16CBaseChainParams7TESTNETB5cxx11E',
+    b'_ZZ11LogPrintStrRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEE15fStartedNewLine',
+    b'_ZZ17LogAcceptCategoryPKcE11ptrCategory',
     b'cs_args',
+    b'fDebug',
     b'fPrintToConsole',
     b'fPrintToDebugLog',
     b'fReopenDebugLog',
-    b'fReopenDebugLog',
-    b'_Z7mapArgsB5cxx11',
-    b'_ZZ11LogPrintStrRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEE15fStartedNewLine',
-    b'fDebug',
-    b'_ZGVZ17LogAcceptCategoryPKcE11ptrCategory',
-    b'_ZZ17LogAcceptCategoryPKcE11ptrCategory',
-    b'_ZN16CBaseChainParams7REGTESTB5cxx11E',
-    b'_ZN16CBaseChainParams7REGTESTB5cxx11E',
-    b'_ZN16CBaseChainParams7REGTESTB5cxx11E',
-    b'_ZN16CBaseChainParams7TESTNETB5cxx11E',
-    b'_ZN16CBaseChainParams4MAINB5cxx11E',
-    b'BITCOIN_CONF_FILENAME',
     b'translationInterface',
-    b'_Z12CLIENT_BUILDB5cxx11',
-    b'_Z13strSubVersionB5cxx11',
+    b'_ZL14pCurrentParams',
+    b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE6bnZero',
+    b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE7vchTrue',
+    b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE7vchZero',
+    b'_ZGVZ12VerifyScriptRK7CScriptS1_PK14CScriptWitnessjRK20BaseSignatureCheckerP13ScriptError_tE12emptyWitness',
+    b'_ZL9pszBase58',
+    b'_ZZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE6bnTrue',
+    b'_ZZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE7vchTrue',
+    b'_ZZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE8vchFalse',
+    b'_ZZ6SolverRK7CScriptR10txnouttypeRSt6vectorIS4_IhSaIhEESaIS6_EEE10mTemplates',
+    b'_ZZN17LockedPoolManager14CreateInstanceEvE8instance',
+    b'_ZN17LockedPoolManager9_instanceE',
+    b'_ZZN17LockedPoolManager14CreateInstanceEvE8instance',
+    b'_ZGVZN17LockedPoolManager14CreateInstanceEvE8instance',
+    b'_ZGVZ17DateTimeStrFormatPKclE7classic',
+    b'_ZZ17DateTimeStrFormatB5cxx11PKclE7classic',
+    b'_ZZ12EncodeBase64B5cxx11PKhmE7pbase64',
+    b'_ZGVZ6SolverRK7CScriptR10txnouttypeRSt6vectorIS4_IhSaIhEESaIS6_EEE10mTemplates',
+    b'_ZL12csPathCached',
+    b'_ZL18pCurrentBaseParams',
+    b'_ZL10pathCached',
+b'_ZL21pathCachedNetSpecific',
+    b'_ZZ12EncodeBase32B5cxx11PKhmE7pbase32',
+    b'_ZL9nMockTime',
+    b"_ZL13_mapMultiArgs",
+    b'_ZL7fileout',
+    b'_ZL13mutexDebugLog',
+    b'_ZL18debugPrintInitFlag',
+    b'_ZL18vMsgsBeforeOpenLog',
+    b'_ZN10NetMsgType10CMPCTBLOCKE',
+    b'_ZN10NetMsgType10FILTERLOADE',
+    b'_ZN10NetMsgType10GETHEADERSE',
+    b'_ZN10NetMsgType11FILTERCLEARE',
+    b'_ZN10NetMsgType11GETBLOCKTXNE',
+    b'_ZN10NetMsgType11MERKLEBLOCKE',
+    b'_ZN10NetMsgType11SENDHEADERSE',
+    b'_ZN10NetMsgType2TXE',
+    b'_ZN10NetMsgType3INVE',
+    b'_ZN10NetMsgType4ADDRE',
+    b'_ZN10NetMsgType4PINGE',
+    b'_ZN10NetMsgType4PONGE',
+    b'_ZN10NetMsgType5BLOCKE',
+    b'_ZN10NetMsgType6REJECTE',
+    b'_ZN10NetMsgType6VERACKE',
+    b'_ZN10NetMsgType7GETADDRE',
+    b'_ZN10NetMsgType7GETDATAE',
+    b'_ZN10NetMsgType7HEADERSE',
+    b'_ZN10NetMsgType7MEMPOOLE',
+    b'_ZN10NetMsgType7VERSIONE',
+    b'_ZN10NetMsgType8BLOCKTXNE',
+    b'_ZN10NetMsgType8NOTFOUNDE',
+    b'_ZN10NetMsgType9FEEFILTERE',
+    b'_ZN10NetMsgType9FILTERADDE',
+    b'_ZN10NetMsgType9GETBLOCKSE',
+    b'_ZN10NetMsgType9SENDCMPCTE',
 }
 
 DEBUG_SEARCH = [
-    b"strSubVersion",
+    b"DateTimeStrFormat",
+    b"EncodeBase64",
+    b"ExtractDestination",
+    b"GetDataDir",
+    b"GetNodeStats",
+    b"LogAcceptCategory",
+    b"LogPrintStr",
+    b"PrintExceptionContinue",
+    b"ReadConfigFile",
+    b"ToString",
+    b"ToStringIP",
+    b"Z6Paramsv",
 ]
 
 def get_libs():
@@ -49,6 +116,7 @@ def get_globs():
             if flags in (b'g     O', b'l     O'):
                 if not section.startswith(b".rodata") and name not in IGNORE_GLOBS:
                     globs.add(name)
+                    globs.add(section)
     return globs
 
 def get_deps():
@@ -78,14 +146,14 @@ def get_deps():
 
 def add_deps(dep_section, deps, output, root=None):
     if root is None:
-        root = dep_section
-    if any(search in dep_section for search in DEBUG_SEARCH):
+        root = dep_section,
+    if any(search in section for search in DEBUG_SEARCH for section in root):
         print("    {!r},".format(root), file=sys.stderr)
     if dep_section not in output:
         output.setdefault(dep_section, root)
         for section in deps.get(dep_section) or ():
             if section.startswith(b".text."):
-                add_deps(section[6:], deps, output, root)
+                add_deps(section[6:], deps, output, root + (section,))
 
 globs = get_globs()
 deps = get_deps()
@@ -114,7 +182,7 @@ git clean -dfx
 ./autogen.sh
 ccache -C
 ./configure CXXFLAGS="-fdata-sections -ffunction-sections"
-make -j12 -C src qt/bitcoin-qt 2>&1 | less
+make -j12 -C src qt/bitcoin-qt
 python3 ~/src/2017/hide-globals/hide-globals.py > /tmp/t
 bash /tmp/t
 find -name '*.o' | xargs rm -v

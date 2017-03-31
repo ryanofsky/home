@@ -29,7 +29,7 @@ for source in sources.values():
         p = sym.find("(")
         if p < 0:
             pattern = r"\b(" + sym + r")\b"
-            code = regex.sub(pattern, r"NEED_IPC_VALUE(\1)", code)
+            code = regex.sub(pattern, r"FIXME_IMPLEMENT_IPC_VALUE(\1)", code)
         else:
             fun = regex.search(r"([A-Za-z0-9_]+)(\[abi:cxx11])?\(", sym).group(1)
             print(source.path, fun)
@@ -51,7 +51,7 @@ for source in sources.values():
                 (([A-Za-z0-9_]+(::|\.|->))*\b{fun}\b{paren_pattern})
             """.format(fun=fun, paren_pattern=paren_pattern)
 
-            code = regex.sub(pattern, r"NEED_IPC_VALUE(\1)", code, flags=regex.VERBOSE)
+            code = regex.sub(pattern, r"FIXME_IMPLEMENT_IPC_VALUE(\1)", code, flags=regex.VERBOSE)
 
     with open(source.path, "w") as fp:
         fp.write(code)
