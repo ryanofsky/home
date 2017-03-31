@@ -10,38 +10,43 @@ def dump(s):
     for pt, pn in zip(sig[2::2], sig[3::2]):
         args.append((pt, pn))
 
+    atype = {"Text": "const std::string& "}
+    rtype = {"Text": "std::string"}
 
-    cliparams = ", ".join("{} {}".format(pt, pn) for pt, pn in args)
+    cliparams = ", ".join("{} {}".format(atype.get(pt, pt), pn) for pt, pn in args)
     caparams = ", ".join("{} :{}".format(pn, pt) for pt, pn in args)
-    serparams = ", ".join("context.getParams.get{}()".format(cap(pn)) for pt, pn in args)
+    serparams = ", ".join("context.getParams().get{}()".format(cap(pn)) for pt, pn in args)
 
     callreq="auto request = impl->nodeClient.{name}Request();".format(name=name)
     for pt, pn in args:
-        callreq += "\n    request.set{}({});".format(cap(pn), pn)
+        callreq += "\n        request.set{}({});".format(cap(pn), pn)
+    callreq += "\n        return request;".format(cap(pn), pn)
 
-    callret="promise.wait(impl->ioContext.waitScope);"
+    callret = ""
     if ret != "void":
-        callret="auto response = {}\n    return response.getValue();".format(callret)
+        callret=" [&](){ return call.response->getValue(); }"
 
     caret = "value :{ret}".format(ret=ret) if ret != "void" else ""
+    cret = rtype.get(ret, ret)
 
     print("""
 cat >> src/ipc/client.cpp <<EOS
-{ret} Node::{name}({cliparams}) const
+{cret} Node::{name}({cliparams}) const
 {{
-    {callreq}
-    auto promise = request.send();
-    {callret}
+    auto call = makeCall(*impl->loop, [&]() {{
+        {callreq}
+    }});
+    return call.send({callret} }});
 }}
 EOS
 
 cat >> src/ipc/client.h <<EOS
     //! Start node.
-    {ret} {name}({cliparams}) const;
+    {cret} {name}({cliparams}) const;
 EOS
 
 cat >> src/ipc/messages.capnp <<EOS
-    {name} @1 ({caparams}) -> (caret);
+    {name} @1 ({caparams}) -> ({caret});
 EOS
 
 cat >> src/ipc/server.cpp <<EOS
@@ -50,8 +55,12 @@ cat >> src/ipc/server.cpp <<EOS
         return kj::READY_NOW;
     }}
 EOS
-""".format(name=name, cname=cap(name), ret=ret, cliparams=cliparams, caparams=caparams, serparams=serparams, callret=callret, callreq=callreq, caret=caret))
+""".format(name=name, cname=cap(name), ret=ret, cliparams=cliparams, caparams=caparams, serparams=serparams, callret=callret, callreq=callreq, caret=caret, cret=cret))
 
 
 #dump("void,parseParameters,const std::vector<std::string>&,argv")
-dump("bool,shutdownRequested")
+#dump("bool,shutdownRequested")
+dump("Text,readConfigFile,Text,confPath")
+dump("Text,selectParams,Text,network")
+dump("void,softSetArg,Text,arg,Text,value")
+dump("void,softSetBoolArg,Text,arg,bool,value")
