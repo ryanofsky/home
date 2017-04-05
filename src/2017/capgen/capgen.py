@@ -61,7 +61,9 @@ ptype = {
     "const std::string&": "Text",
     "bool": "Bool",
     "int": "Int32",
+    "int64_t": "Int64",
     "unsigned int": "UInt32",
+    "double": "Float64",
 }
 
 def dumpc(ret, params, name):
@@ -149,14 +151,13 @@ EOS
 #dump("Text,selectParams,Text,network")
 #dump("void,softSetArg,Text,arg,Text,value")
 #dump("void,softSetBoolArg,Text,arg,bool,value")
-dumpc("bool", "const std::string& message, const std::string& caption, unsigned int style", "ThreadSafeMessageBox")
-dumpc("bool", "const std::string& message, const std::string& noninteractive_message, const std::string& caption, int style", "ThreadSafeQuestion")
-dumpc("void", "const std::string& message", "InitMessage")
+#dumpc("bool", "const std::string& message, const std::string& caption, unsigned int style", "ThreadSafeMessageBox")
+#dumpc("bool", "const std::string& message, const std::string& noninteractive_message, const std::string& caption, int style", "ThreadSafeQuestion")
+#dumpc("void", "const std::string& message", "InitMessage")
 dumpc("void", "int newNumConnections", "NotifyNumConnectionsChanged")
 dumpc("void", "bool networkActive", "NotifyNetworkActiveChanged")
 dumpc("void", "", "NotifyAlertChanged")
-dumpc("void", "CWallet* wallet", "LoadWallet")
 dumpc("void", "const std::string& title, int nProgress", "ShowProgress")
-dumpc("void", "bool, const CBlockIndex *", "NotifyBlockTip")
-dumpc("void", "bool, const CBlockIndex *", "NotifyHeaderTip")
-dumpc("void", "void", "BannedListChanged")
+dumpc("void", "bool initialDownload, int height, int64_t blockTime, double verificationProgress", "NotifyBlockTip")
+dumpc("void", "bool initialDownload, int height, int64_t blockTime, double verificationProgress", "NotifyHeaderTip")
+dumpc("void", "", "BannedListChanged")
