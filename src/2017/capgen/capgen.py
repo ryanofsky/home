@@ -4,7 +4,7 @@ def cap(s):
     return s[0].upper() + s[1:]
 
 def comment(s):
-    return cap(re.sub("([a-z0-9])([A-Z])", r"\1 \2", s).lower())
+    return re.sub("([a-z0-9])([A-Z])", r"\1 \2", s).lower()
 
 ptype = {
     "const std::string&": "Text",
@@ -20,6 +20,7 @@ ptype = {
     "CAmount": "Int64",
     "const CTransaction&": "Data",
     "const uint256": "Data",
+    "const uint256&": "Data",
     "CCoins": "Data",
     "Network": "Int32",
     "proxyType&": "Data",
@@ -29,6 +30,9 @@ ptype = {
     "BanReason": "Int32",
     "UniValue": "Text",
     "std::vector<std::string>": "List(Text)",
+    "const CTxDestination&": "Data",
+    "ChangeType": "Int32",
+    "std::unique_ptr<Wallet>": "Wallet",
 }
 
 def dump(ret, params, name):
@@ -41,7 +45,7 @@ def dump(ret, params, name):
     sub = {
         "name": name,
         "cap_name": cap(name),
-        "comment": comment(name),
+        "comment": cap(comment(name)),
         "c_ret": ret,
         "c_argnames": ", ".join(n for t, n in args),
         "c_args": ", ".join("{} {}".format(t, n) for t, n in args),
@@ -93,7 +97,7 @@ cat >> src/ipc/server.cpp <<EOS
 EOS
 """.format(**sub))
 
-def dumpc(ret, params, nayy):
+def dumpc(ret, params, name):
     args = [] # (name, type)
     for param in params.split(", "):
         if not param:
@@ -102,8 +106,9 @@ def dumpc(ret, params, nayy):
 
     sub = {
         "name": name,
+        "comment": comment(name),
         "c_args": ", ".join("{} {}".format(t, n) for t, n in args),
-        "c_sig": "void({})".format(", ".join(t for t, n in args)),
+        "c_sig": "void({})".format(", ".join("{} {}".format(t, n) for t, n in args)),
         "p_sig": "({}) -> ({})".format(
             ", ".join("{} :{}".format(n, ptype[t]) for t, n in args),
             "value :{}".format(ptype[ret]) if ret != "void" else ""),
@@ -115,34 +120,41 @@ def dumpc(ret, params, nayy):
     print("""
 cat >> src/ipc/client.cpp <<EOS
 
-//! Forwarder for handle{name} callback.
 class {name}CallbackServer final : public messages::{name}Callback::Server
 {{
 public:
-    {name}CallbackServer(std::function<{c_sig}> callback) : callback(std::move(callback)) {{}}
+    {name}CallbackServer({name}Fn fn) : fn(std::move(fn)) {{}}
     kj::Promise<void> call(CallContext context) override
     {{
-        callback({c_getargs});
+    fn({c_getargs});
         return kj::READY_NOW;
     }}
 
-    std::function<{c_sig}> callback;
+    {name}Fn fn;
 }};
 
-std::unique_ptr<Handler> Node::handle{name}(std::function<{c_sig}> callback) const
+std::unique_ptr<Handler> handle{name}({name}Fn fn) override
 {{
-    auto call = _::MakeCall(*impl->loop, [&]() {{
-        auto request = impl->nodeClient.handle{name}Request();
-        request.setCallback(kj::heap<{name}CallbackServer>(std::move(callback)));
+    auto call = util::MakeCall(loop, [&]() {{
+        auto request = client.handle{name}Request();
+        request.setCallback(kj::heap<{name}CallbackServer>(std::move(fn)));
         return request;
     }});
-    return call.send([&]() {{ return Factory::MakeImpl<Handler>(*impl->loop, call.response->getHandler()); }});
+    return call.send([&]() {{ return util::MakeUnique<HandlerClient>(loop, call.response->getHandler()); }});
 }}
 EOS
 
-cat >> src/ipc/client.h <<EOS
-    //! Register handler for node init messages.
-    std::unique_ptr<Handler> handle{name}(std::function<{c_sig}>) const;
+cat >> src/ipc/interfaces.h <<EOS
+    //! Register handler for {comment} messages.
+    using {name}Fn = std::function<{c_sig}>;
+    virtual std::unique_ptr<Handler> handle{name}({name}Fn fn) = 0;
+EOS
+
+cat >> src/ipc/interfaces.cpp <<EOS
+    std::unique_ptr<Handler> handle{name}({name}Fn fn) override
+    {{
+        return util::MakeUnique<HandlerImpl>(uiInterface.{name}.connect(fn));
+    }}
 EOS
 
 cat >> src/ipc/messages.capnp <<EOS
@@ -157,8 +169,8 @@ cat >> src/ipc/server.cpp <<EOS
     kj::Promise<void> handle{name}(Handle{name}Context context) override
     {{
         SetHandler(context, [this](messages::{name}Callback::Client& client) {{
-            return uiInterface.{name}.connect([this, &client]({c_args}) {{
-                auto call = _::MakeCall(this->loop, [&]() {{
+            return impl->handle{name}([this, &client]({c_args}) {{
+                auto call = util::MakeCall(this->loop, [&]() {{
                     auto request = client.callRequest();
                     {c_setargs}
                     return request;
@@ -232,3 +244,9 @@ dump("void", "const CNetAddr& netAddr, BanReason reason, int64_t bantimeoffset",
 dump("void", "const CSubNet& ip", "unbanNode")
 dump("std::string", "const std::string& method, UniValue params", "executeRpc") # tableRPC.execute(req)
 dump("std::vector<std::string>", "", "listRpcCommands") # listCommands
+dumpc("void", "", "StatusChanged")
+dumpc("void", "const CTxDestination& address, const std::string& label, bool isMine, const std::string& purpose, ChangeType status", "AddressBookChanged")
+dumpc("void", "const uint256& hashTx, ChangeType status", "TransactionChanged")
+dumpc("void", "const std::string& title, int progress", "ShowProgress")
+dumpc("void", "bool haveWatchOnly", "WatchonlyChanged")
+dumpc("void", "std::unique_ptr<Wallet> wallet", "LoadWallet")
