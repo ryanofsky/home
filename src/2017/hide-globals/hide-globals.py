@@ -79,6 +79,8 @@ b'_ZL21pathCachedNetSpecific',
     b'_ZN10NetMsgType9FILTERADDE',
     b'_ZN10NetMsgType9GETBLOCKSE',
     b'_ZN10NetMsgType9SENDCMPCTE',
+    b'_ZL22secp256k1_context_sign',
+    b'secp256k1_nonce_function_rfc6979',
 }
 
 DEBUG_SEARCH = [
@@ -94,6 +96,7 @@ DEBUG_SEARCH = [
     b"ToString",
     b"ToStringIP",
     b"Z6Paramsv",
+    b"SignCompact",
 ]
 
 def get_libs():
