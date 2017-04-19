@@ -76,7 +76,7 @@ ptype = {
     "std::unique_ptr<PendingWalletTx>": Param("PendingWalletTx", False),
     "std::unique_ptr<Wallet>": Param("Wallet", False),
     "std::vector<COutPoint>&": Param("List(Data)", True),
-    "std::vector<WalletAddress>": Param("WalletAddress", False),
+    "std::vector<WalletAddress>": Param("List(WalletAddress)", False),
     "std::vector<WalletTx>": Param("List(WalletTx)", False),
     "std::vector<WalletTxOut>": Param("List(WalletTxOut)", False),
     "std::vector<std::string>": Param("List(Text)", False),
@@ -119,12 +119,14 @@ def dump(classname, template, ret, name, params=""):
     for t, n in args:
         if ptype[t].output:
             c_callimpl.append("{} {};".format(t, n))
-    c_callimpl.append("impl->{name}({c_getargs})".format(**sub))
+    call = "impl->{name}({c_getargs})".format(**sub)
     if ret != "void":
-      c_callimpl.append("context.getResults().setValue({});".format(c_callimpl.pop()))
+        c_callimpl.append("context.getResults().setValue({});".format(call))
+    else:
+        c_callimpl.append("{};".format(call))
     for t, n in args:
         if ptype[t].output:
-            c_callimpl.append("context.getResults.set{}({});".format(cap(n), n))
+            c_callimpl.append("context.getResults().set{}({});".format(cap(n), n))
 
     c_getret = []
 
