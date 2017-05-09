@@ -44,7 +44,7 @@ dump-pr() {
   local name="$1"
   local branch="pr/$name"
   local prbranch="$(git config branch.$branch.prbranch)"
-  local exbranch=export
+  local exbranch="${2:-export}"
   local basebranch=origin/master
 
   echo "== $branch / $prbranch / $exbranch =="
@@ -61,7 +61,7 @@ dump-pr() {
       ((++i))
       git format-patch -n1 --numbered-files --start-number="$i" -o dump-$name-exbranch "$lcommit"
     fi
-  done < <(git log --format=format:'%H %s%n' --reverse $(git merge-base $basebranch $exbranch)..$exbranch)
+  done < <(git log --format=format:'%H %s%n' --reverse $(git merge-base $basebranch $exbranch)..$exbranch && echo)
 
   diff -rNu dump-$name-{exbranch,branch}
 }
