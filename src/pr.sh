@@ -182,11 +182,15 @@ ppush() {
         fi
     fi
     local prev=$(getnum "refs/tags/$name.*")
+    if [ "$(git rev-parse "$name")" = "$(git rev-parse "$name.$prev")" ]; then
+        prev=$((prev-1))
+    fi
+
     ntag "$name"
     echo git push -u russ $name.$((prev+1)) +$name
     echo
 
-    local prbranch="$(git config branch.$1.prbranch)"
+    local prbranch="$(git config branch.$name.prbranch)"
     if [ -z "$prbranch" ]; then
         echo "Open https://github.com/bitcoin/bitcoin/compare/master...ryanofsky:$name"
         echo "set-pr $name ###"
@@ -207,7 +211,7 @@ ppush() {
             if [ "$(git merge-base "$b1" "$name")" = "$(git rev-parse "$b1")" ]; then
                 echo "Added $(git rev-list "$b1..$name" | wc -l) commits $r ($b, [compare]($c))"
             else
-                echo "Squashed $r ($b, [compare]($c))"
+                echo "Squashed $r ($b)"
             fi
         else
             echo "Rebased $r ($b)"
@@ -225,18 +229,18 @@ ppush() {
                     bases="$bases + "
                 fi
                 if [ -n "$bp" ]; then
-                    bases="#${bp#origin/pr/}"
+                    bases="$bases#${bp#origin/pr/}"
                 else
-                    bases="$bb"
+                    bases="$bases$bb"
                 fi
             done < <(git log --reverse --min-parents=2 --format=format:'%s' $master..$base2 && echo)
 
-            echo "This is based on $bases. The non-base commits are:"
+            echo "**This is based on $bases.** The non-base commits are:"
         else
             echo "Commits:"
         fi
         echo
 
-        git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/10244/commits/%H)'
+        git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"${prbranch#origin/pr/}"'/commits/%H)'
     fi
 }
