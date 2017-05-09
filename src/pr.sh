@@ -9,67 +9,17 @@ getname() {
 
 # Get latest existing tag number for passed branch
 getnum() {
-  local NAME="$1"
-  git for-each-ref --format='%(refname:short)' \
-      "refs/tags/$NAME.*" | {
-    NMAX=0
+  git for-each-ref --format='%(refname:short)' "$@" | {
+    local NMAX=
     while read REF; do
       local N="${REF#*.}"
       local N="${N%%.*}"
-      if [ "$N" -gt "$NMAX" ]; then
+      if [ -z "$NMAX" ] || [ "$N" -gt "$NMAX" ]; then
         NMAX="$N"
       fi
     done
     echo "$NMAX"
   }
-}
-
-# Print squash/rebased message for branch
-pmsg() {
-  local b="$1"
-  local n="$2"
-  local squash="$3"
-  local b1="$b.$((n-1))"
-  local b2="$b.$n"
-  local u="https://github.com/ryanofsky/bitcoin/commits"
-  local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
-
-  local r="$(git rev-parse "$b1") -> $(git rev-parse "$b2")"
-  local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
-  if [ -n "$squash" ]; then
-    echo "Squashed $r ($b, [compare]($c))"
-  else
-    echo "Rebased $r ($b)"
-  fi
-
-  local prbranch="$(git config branch.$1.prbranch)"
-  echo https://github.com/bitcoin/bitcoin/pull/${prbranch#origin/pr/}
-}
-
-# Print commands for tagging and pushing current checked out PR
-ppush() {
-  local name=$(getname)
-  local max=$(getnum "$name")
-  local prev="$name.$max"
-  local next="$name.$((max+1))"
-  if [ "$(git rev-parse "$prev")" = \
-       "$(git rev-parse "$name")" ]; then
-    echo "Not saving: no changes found."
-    return 0
-  fi
-  local name=$(getname)
-  local max=$(getnum "$name")
-  echo git tag "$next" "$name"
-  echo git push -u russ "$next" "$name"
-  echo git push -u russ --force "$next" "$name"
-  echo pmsg "$name" "$((max+1))"
-}
-
-# Print commands for squashing current checked out PR
-psquash() {
-  local name=$(getname)
-  echo "git rebase -i --autosquash \$(git merge-base origin/master $name) $name"
-  echo ppush
 }
 
 # Associate PR name with PR number
@@ -83,9 +33,9 @@ set-pr() {
 get-pr() {
     local pr="$1"
     if [[ "$pr" =~ ^[0-9]*$ ]]; then
-        git config branch."origin/pr/$pr".prlocal
+        git config branch."origin/$pr".prlocal
     else
-        git config branch."pr/$pr".prbranch
+        git config branch."$pr".prbranch
     fi
 }
 
@@ -150,4 +100,143 @@ pull-pr() {
 # Add export-branch subject line to HEAD commit
 add-subj() {
   GIT_EDITOR="sed -i '1 s/.*/$@ # &\n\n&/g'" git commit --amend
+}
+
+ntag() {
+    local name
+    if [ -n "$1" ]; then
+        name="$1"
+    else
+        name=$(getname)
+        if [ -z "$name" ]; then
+            echo No current branch
+            return 1
+        fi
+    fi
+
+    local bname=
+    local wname=
+    local ename=
+    local suf=${name##*-}
+    local pref=
+    if [ "$suf" = work ]; then
+        pref="${name%work}"
+    elif [ "$suf" = base ]; then
+        pref="${name%base}"
+    elif [ "$suf" = export ]; then
+        pref="${name%export}"
+    else
+        suf=
+    fi
+    if [ -n "$suf" ]; then
+        bname="${pref}base"
+        wname="${pref}work"
+        ename="${pref}export"
+        prev=$(getnum "refs/tags/$bname.*" "refs/tags/$wname.*" "refs/tags/$ename.*")
+        echo "bname=$bname wname=$wname ename=$ename prev=$prev"
+        if ! git diff --quiet "$wname..$ename"; then
+            echo "Error: differences found in $wname..$ename"
+            return 1
+        fi
+        if [ "$(git merge-base "$bname" "$wname")" != "$(git rev-parse $bname)" ]; then
+           echo "Error: incompatible base branch $bname for work branch $wname"
+           return 1
+        fi
+        if [ "$(git merge-base "$bname" "$ename")" != "$(git rev-parse $bname)" ]; then
+            echo "Error: incompatible base branch $bname for work branch $ename"
+            return 1
+        fi
+        if [ "$(git rev-parse "$bname")" = "$(git rev-parse "$bname.$prev")" -a \
+             "$(git rev-parse "$wname")" = "$(git rev-parse "$wname.$prev")" -a \
+             "$(git rev-parse "$ename")" = "$(git rev-parse "$ename.$prev")" ]; then
+            echo "No changes ($bname = $bname.$prev = $(git rev-parse "$bname"))"
+            echo "No changes ($wname = $wname.$prev = $(git rev-parse "$wname"))"
+            echo "No changes ($ename = $ename.$prev = $(git rev-parse "$ename"))"
+            return 1
+        fi
+        echo git tag "$bname.$((prev+1))" "$bname"
+        echo git tag "$wname.$((prev+1))" "$wname"
+        echo git tag "$ename.$((prev+1))" "$ename"
+        return 0
+    fi
+
+    local prev=$(getnum "refs/tags/$name.*")
+    if [ -n "$prev" ]; then
+        if [ "$(git rev-parse "$name")" = "$(git rev-parse "$name.$prev")" ]; then
+            echo "No changes ($name = $name.$prev = $(git rev-parse "$name"))"
+            return 1
+        fi
+    fi
+    echo git tag "$name.$((prev+1))" "$name"
+}
+
+ppush() {
+    local name
+    if [ -n "$1" ]; then
+        name="$1"
+    else
+        name=$(getname)
+        if [ -z "$name" ]; then
+            echo No current branch
+            return 1
+        fi
+    fi
+    local prev=$(getnum "refs/tags/$name.*")
+    ntag "$name"
+    echo git push -u russ $name.$((prev+1)) +$name
+    echo
+
+    local prbranch="$(git config branch.$1.prbranch)"
+    if [ -z "$prbranch" ]; then
+        echo "Open https://github.com/bitcoin/bitcoin/compare/master...ryanofsky:$name"
+        echo "set-pr $name ###"
+    else
+        echo "Pull https://github.com/bitcoin/bitcoin/pull/${prbranch#origin/pr/}"
+        echo
+
+        local b1="$name.$prev"
+        local b2="$name.$((prev+1))"
+        local u="https://github.com/ryanofsky/bitcoin/commits"
+        local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
+        local r="$(git rev-parse "$b1") -> $(git rev-parse "$name")"
+        local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
+
+        local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
+        local base2=$(git rev-list --min-parents=2 --max-count=1 "$name")
+        if [ "$base1" = "$base2" ]; then
+            if [ "$(git merge-base "$b1" "$name")" = "$(git rev-parse "$b1")" ]; then
+                echo "Added $(git rev-list "$b1..$name" | wc -l) commits $r ($b, [compare]($c))"
+            else
+                echo "Squashed $r ($b, [compare]($c))"
+            fi
+        else
+            echo "Rebased $r ($b)"
+        fi
+        echo
+
+        local master="$(git merge-base "$base2" origin/master)"
+        if [ "$base2" != "$master" ]; then
+            local bases=
+            local subj
+            while read subj; do
+                local bb=$(sed "s/Merge branch '\([^']\+\)' into.*/\1/" <<<"$subj")
+                local bp=$(get-pr "$bb")
+                if [ -n "$bases" ]; then
+                    bases="$bases + "
+                fi
+                if [ -n "$bp" ]; then
+                    bases="#${bp#origin/pr/}"
+                else
+                    bases="$bb"
+                fi
+            done < <(git log --reverse --min-parents=2 --format=format:'%s' $master..$base2 && echo)
+
+            echo "This is based on $bases. The non-base commits are:"
+        else
+            echo "Commits:"
+        fi
+        echo
+
+        git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/10244/commits/%H)'
+    fi
 }
