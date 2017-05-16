@@ -26,8 +26,8 @@ getnum() {
 set-pr() {
   local name="$1"
   local num="$2"
-  git config branch."pr/$name".prbranch "origin/pr/$num"
-  git config branch."origin/pr/$num".prlocal "pr/$name"
+  git config branch."$name".prbranch "origin/pr/$num"
+  git config branch."origin/pr/$num".prlocal "$name"
 }
 
 get-pr() {
@@ -192,8 +192,9 @@ ppush() {
 
     local prbranch="$(git config branch.$name.prbranch)"
     if [ -z "$prbranch" ]; then
-        echo "Open https://github.com/bitcoin/bitcoin/compare/master...ryanofsky:$name"
+        echo "Open https://github.com/ryanofsky/bitcoin/pull/new/$name"
         echo "set-pr $name ###"
+        local base2=$(git rev-list --min-parents=2 --max-count=1 "$name")
     else
         echo "Pull https://github.com/bitcoin/bitcoin/pull/${prbranch#origin/pr/}"
         echo
@@ -216,6 +217,7 @@ ppush() {
         else
             echo "Rebased $r ($b)"
         fi
+    fi
         echo
 
         local master="$(git merge-base "$base2" origin/master)"
@@ -241,6 +243,9 @@ ppush() {
         fi
         echo
 
+    if [ -n "$prbranch" ]; then
         git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"${prbranch#origin/pr/}"'/commits/%H)'
+    else
+        git log --reverse $base2..$name --format=format:'- %H %s'
     fi
 }
