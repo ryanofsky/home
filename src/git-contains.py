@@ -33,7 +33,7 @@ def main():
             error("Missing {!r} in {!r}".format(p1, args.git_dir2))
             continue
         c = cmp(p1, p2)
-        if c == 0 or c == 2:
+        if c == 0 or c == 1:
             continue
         if f == "index":
             if not index_matches_head(args.git_dir1):
@@ -115,7 +115,7 @@ def join_lists(*lists):
 def add_objs(path, objs):
     r = Regex()
     if r.match(".*?/objects/([0-9a-f]{2})/([0-9a-f]{38})$", path):
-        objs.add(r.m.group(1) + r.m.group(2))
+        objs.add((r.m.group(1) + r.m.group(2)).encode("ascii"))
         return True
 
     if r.match(r"(.*?/objects/pack/pack-[0-9a-f]{40})\.(pack|idx)$", path):
@@ -133,6 +133,8 @@ def add_objs(path, objs):
                     % re.escape(path.encode()), line):
                 raise Exception(
                     "Error: unexpected verify-pack output {!r}".format(line))
+        return True
+
     return False
 
 
@@ -160,9 +162,9 @@ def cmp(f1, f2):
             l1 = len(b1)
             l2 = len(b2)
             if l1 < l2:
-                return 2 if b1 == b2[:l1] else -1
+                return 1 if b1 == b2[:l1] else -1
             if l2 < l1:
-                return 1 if b1[:l2] == b2 else -1
+                return 2 if b1[:l2] == b2 else -1
             if b1 != b2:
                 return -1
             if not b1:

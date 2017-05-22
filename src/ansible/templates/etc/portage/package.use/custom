@@ -9,6 +9,8 @@ media-tv/mythtv -autostart avahi bluray cec crystalhd -debug -dvb -egl fftw ieee
 media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad fdk fluidsynth -fontconfig gme -gnutls growl httpd ieee1394 -jack kate -kde libass -libav libcaca libtar libtiger linsys -lirc live lua matroska modplug mtp musepack omxil opencv -optimisememory opus postproc projectm -qt5 rdp rtsp -run-as-root schroedinger sdl-image sftp shout sid skins speex taglib theora tremor twolame upnp v4l vaapi vcdx -vdpau vlm vnc vpx wma-fixed x265 zeroconf zvbi
 media-video/xine-ui aalib curl libcaca -lirc vdr
 
+net-p2p/deluge console webinterface
+
 # clang compiler
 sys-devel/llvm clang
 
@@ -50,7 +52,10 @@ dev-lang/php fpm -truetype -exif
 
 app-office/lyx dia dot html monolithic-build -qt4 qt5 rtf gnumeric
 
-net-irc/znc python_single_target_python3_5 daemon
+net-irc/znc daemon
+
+app-editors/gvim -python_targets_python3_5
+app-editors/vim -python_targets_python3_5
 
 # 32 bit crap for adobe
 */* abi_x86_32
@@ -94,6 +99,17 @@ media-plugins/grilo-plugins upnp-av
 # required by net-mail/notmuch
 dev-libs/gmime smime
 
+# (dependency required by "sys-fs/btrfs-progs-4.10.2::gentoo" [ebuild])
+# (dependency required by "app-emulation/docker-17.05.0_rc2::gentoo[btrfs]" [ebuild])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+app-text/asciidoc python_single_target_python2_7
+
+# (dependency required by "gnome-extra/nemo-3.2.0::gentoo" [installed])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+gnome-extra/cinnamon-desktop python_targets_python3_4
+
 # auto
 
 # required by media-tv/kodi-16.1::gentoo[webserver]
@@ -116,3 +132,26 @@ dev-libs/gmime smime
 # required by dev-python/ipykernel-4.5.0::gentoo
 # required by dev-python/ipyparallel-5.2.0::gentoo
 >=dev-qt/qtwebkit-5.6.2 printsupport
+# required by dev-scheme/guile-2.0.14::gentoo
+# required by dev-scheme/guile-www-2.35::gentoo
+# required by app-office/gnucash-2.6.15-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-libs/boehm-gc-7.6.0 threads
+# required by app-text/calibre-2.83.0::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-python/PyQt5-5.8.2 webkit
+# required by dev-python/pygobject-3.22.0::gentoo[cairo]
+# required by gnome-extra/chrome-gnome-shell-9::gentoo
+# required by gnome-base/gnome-shell-3.22.3-r2::gentoo[browser-extension]
+# required by gnome-base/gdm-3.22.3-r1::gentoo
+# required by gnome-base/gnome-3.22.2::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-python/pycairo-1.10.0-r5 python_targets_python3_4
+# required by gnome-extra/cinnamon-desktop-3.2.4::gentoo
+# required by gnome-extra/nemo-3.2.0::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-python/pygobject-3.22.0 python_targets_python3_4
