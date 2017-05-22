@@ -115,7 +115,7 @@ def join_lists(*lists):
 def add_objs(path, objs):
     r = Regex()
     if r.match(".*?/objects/([0-9a-f]{2})/([0-9a-f]{38})$", path):
-        objs.add(r.m.group(1) + r.m.group(2))
+        objs.add((r.m.group(1) + r.m.group(2)).encode("ascii"))
         return True
 
     if r.match(r"(.*?/objects/pack/pack-[0-9a-f]{40})\.(pack|idx)$", path):
@@ -133,6 +133,8 @@ def add_objs(path, objs):
                     % re.escape(path.encode()), line):
                 raise Exception(
                     "Error: unexpected verify-pack output {!r}".format(line))
+        return True
+
     return False
 
 
