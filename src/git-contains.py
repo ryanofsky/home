@@ -33,7 +33,7 @@ def main():
             error("Missing {!r} in {!r}".format(p1, args.git_dir2))
             continue
         c = cmp(p1, p2)
-        if c == 0 or c == 2:
+        if c == 0 or c == 1:
             continue
         if f == "index":
             if not index_matches_head(args.git_dir1):
@@ -162,9 +162,9 @@ def cmp(f1, f2):
             l1 = len(b1)
             l2 = len(b2)
             if l1 < l2:
-                return 2 if b1 == b2[:l1] else -1
+                return 1 if b1 == b2[:l1] else -1
             if l2 < l1:
-                return 1 if b1[:l2] == b2 else -1
+                return 2 if b1[:l2] == b2 else -1
             if b1 != b2:
                 return -1
             if not b1:
