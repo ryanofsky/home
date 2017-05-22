@@ -9,6 +9,8 @@ media-tv/mythtv -autostart avahi bluray cec crystalhd -debug -dvb -egl fftw ieee
 media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad fdk fluidsynth -fontconfig gme -gnutls growl httpd ieee1394 -jack kate -kde libass -libav libcaca libtar libtiger linsys -lirc live lua matroska modplug mtp musepack omxil opencv -optimisememory opus postproc projectm -qt5 rdp rtsp -run-as-root schroedinger sdl-image sftp shout sid skins speex taglib theora tremor twolame upnp v4l vaapi vcdx -vdpau vlm vnc vpx wma-fixed x265 zeroconf zvbi
 media-video/xine-ui aalib curl libcaca -lirc vdr
 
+net-p2p/deluge console webinterface
+
 # clang compiler
 sys-devel/llvm clang
 
