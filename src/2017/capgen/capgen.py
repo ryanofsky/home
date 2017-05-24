@@ -17,6 +17,7 @@ ptype = {
     "CCoins&": Param("Data", True),
     "CConnman::NumConnections": Param("Int32", False),
     "CFeeRate": Param("Data", False),
+    "CMutableTransaction&": Param("Data", True),
     "CKey&": Param("Data", True),
     "CPubKey&": Param("Data", True),
     "CTransactionRef": Param("Data", False),
@@ -81,6 +82,7 @@ ptype = {
     "std::vector<WalletTxOut>": Param("List(WalletTxOut)", False),
     "std::vector<std::string>": Param("List(Text)", False),
     "std::vector<std::string>&": Param("List(Text)", True),
+    "uint256&": Param("Data", True),
     "uint32_t": Param("UInt32", False),
     "unsigned int": Param("UInt32", False),
 }
@@ -332,6 +334,10 @@ dump("Wallet", CALL_TEMPLATE, "void", "listLockedCoins", "std::vector<COutPoint>
 dump("Wallet", CALL_TEMPLATE, "std::unique_ptr<PendingWalletTx>", "createTransaction", "const std::vector<CRecipient>& recipients, const CCoinControl* coinControl, bool sign, int& changePos, CAmount& fee, std::string& failReason")
 dump("Wallet", CALL_TEMPLATE, "bool", "transactionCanBeAbandoned", "const uint256& txHash")
 dump("Wallet", CALL_TEMPLATE, "bool", "abandonTransaction", "const uint256& txHash")
+dump("Wallet", CALL_TEMPLATE, "bool", "transactionCanBeBumped", "const uint256& txHash")
+dump("Wallet", CALL_TEMPLATE, "bool", "createBumpTransaction", "const uint256& txHash, int confirmTarget, bool ignoreUserSetFee, CAmount totalFee, bool replaceable, std::vector<std::string>& errors, CAmount& oldFee, CAmount& newFee, CMutableTransaction& mtx")
+dump("Wallet", CALL_TEMPLATE, "bool", "signBumpTransaction", "CMutableTransaction& mtx")
+dump("Wallet", CALL_TEMPLATE, "bool", "commitBumpTransaction", "const uint256& txHash, CMutableTransaction& mtx, std::vector<std::string>& errors, uint256& bumpedTxHash")
 dump("Wallet", CALL_TEMPLATE, "CTransactionRef", "getTx", "const uint256& txHash")
 dump("Wallet", CALL_TEMPLATE, "WalletTx", "getWalletTx", "const uint256& txHash")
 dump("Wallet", CALL_TEMPLATE, "std::vector<WalletTx>", "getWalletTxs")
