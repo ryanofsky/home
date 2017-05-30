@@ -9,7 +9,7 @@ class Source:
        self.path = path
        self.syms = set()
 
-for dirpath, dirnames, filenames in os.walk("src/qt"):
+for dirpath, dirnames, filenames in os.walk("src/wallet"):
     for filename in filenames:
         if filename.endswith(".cpp"):
             sources[filename] = Source(os.path.join(dirpath, filename))

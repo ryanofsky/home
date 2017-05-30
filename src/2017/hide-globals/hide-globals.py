@@ -81,6 +81,14 @@ b'_ZL21pathCachedNetSpecific',
     b'_ZN10NetMsgType9SENDCMPCTE',
     b'_ZL22secp256k1_context_sign',
     b'secp256k1_nonce_function_rfc6979',
+    b'logCategories',
+    b'NullUniValue',
+    b'_ZN12_GLOBAL__N_124secp256k1_context_verifyE',
+    b'_ZZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE5bnOne',
+    b'_ZZ12VerifyScriptRK7CScriptS1_PK14CScriptWitnessjRK20BaseSignatureCheckerP13ScriptError_tE12emptyWitness',
+    b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE5bnOne',
+    b'_ZZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE6bnZero',
+    b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE8vchFalse',
 }
 
 DEBUG_SEARCH = [
@@ -191,5 +199,27 @@ bash /tmp/t
 find -name '*.o' | xargs rm -v
 
 make -j12 -C src qt/bitcoin-qt > /tmp/e 2>&1
+python ~/src/2017/hide-globals/replace-syms.py < /tmp/e
+
+# wallet replace
+patch -p1 <<<EOS
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -358,7 +358,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
+ #
+ 
+ # bitcoind binary #
+-bitcoind_SOURCES = bitcoind.cpp
++bitcoind_SOURCES = bitcoind.cpp $(libbitcoin_wallet_a_SOURCES)
+ bitcoind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+ bitcoind_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+ bitcoind_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+EOS
+find -name '*.o' | xargs rm -v
+make -j12 -C src bitcoind
+python3 ~/src/2017/hide-globals/hide-globals.py > /tmp/t
+grep -v src/wallet < /tmp/t > /tmp/u
+bash /tmp/u
+make -j12 -k -C src bitcoind > /tmp/e 2>&1
 python ~/src/2017/hide-globals/replace-syms.py < /tmp/e
 """
