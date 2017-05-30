@@ -89,6 +89,7 @@ b'_ZL21pathCachedNetSpecific',
     b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE5bnOne',
     b'_ZZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE6bnZero',
     b'_ZGVZ10EvalScriptRSt6vectorIS_IhSaIhEESaIS1_EERK7CScriptjRK20BaseSignatureChecker10SigVersionP13ScriptError_tE8vchFalse',
+    b'_ZN17LockedPoolManager9init_flagE',
 }
 
 DEBUG_SEARCH = [
@@ -202,7 +203,7 @@ make -j12 -C src qt/bitcoin-qt > /tmp/e 2>&1
 python ~/src/2017/hide-globals/replace-syms.py < /tmp/e
 
 # wallet replace
-patch -p1 <<<EOS
+patch -p1 <<'EOS'
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -358,7 +358,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
