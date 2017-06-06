@@ -181,9 +181,14 @@ ppush() {
             return 1
         fi
     fi
-    local prev=$(getnum "refs/tags/$name.*")
-    if [ "$(git rev-parse "$name")" = "$(git rev-parse "$name.$prev")" ]; then
-        prev=$((prev-1))
+    local cur=$(getnum "refs/tags/$name.*")
+    local prev
+    if [ -n "$2" ]; then
+        prev="$2"
+    else
+        if [ "$(git rev-parse "$name")" = "$(git rev-parse "$name.$cur")" ]; then
+            prev=$((cur-1))
+        fi
     fi
 
     ntag "$name"
@@ -200,7 +205,7 @@ ppush() {
         echo
 
         local b1="$name.$prev"
-        local b2="$name.$((prev+1))"
+        local b2="$name.$cur"
         local u="https://github.com/ryanofsky/bitcoin/commits"
         local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
         local r="$(git rev-parse "$b1") -> $(git rev-parse "$name")"
@@ -211,8 +216,10 @@ ppush() {
         if [ "$base1" = "$base2" ]; then
             if [ "$(git merge-base "$b1" "$name")" = "$(git rev-parse "$b1")" ]; then
                 echo "Added $(git rev-list "$b1..$name" | wc -l) commits $r ($b, [compare]($c))"
-            else
+            elif git diff --quiet "$b1".."$name"; then
                 echo "Squashed $r ($b)"
+            else
+                echo "Updated $r ($b)"
             fi
         else
             echo "Rebased $r ($b)"
