@@ -182,17 +182,18 @@ ppush() {
         fi
     fi
     local cur=$(getnum "refs/tags/$name.*")
+    if [ "$(git rev-parse "$name")" != "$(git rev-parse "$name.$cur")" ]; then
+      cur="$((cur+1))"
+    fi
     local prev
     if [ -n "$2" ]; then
         prev="$2"
     else
-        if [ "$(git rev-parse "$name")" = "$(git rev-parse "$name.$cur")" ]; then
-            prev=$((cur-1))
-        fi
+        prev="$((cur-1))"
     fi
 
     ntag "$name"
-    echo git push -u russ $name.$((prev+1)) +$name
+    echo git push -u russ $name.$cur +$name
     echo
 
     local prbranch="$(git config branch.$name.prbranch)"
