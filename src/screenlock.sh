@@ -18,6 +18,24 @@ handle-unity-lock() {
     exit $?
 }
 
+handle-gnome-check() {
+    # https://askubuntu.com/questions/505681/gnome-how-to-detect-if-the-screen-is-locked
+    OUT=$(gdbus call -e -d org.gnome.ScreenSaver -o /org/gnome/ScreenSaver -m org.gnome.ScreenSaver.GetActive)
+    if [ "$OUT" = "(true,)" ]; then
+        exit 0
+    elif [ "$OUT" = "(false,)" ]; then
+        exit 1
+    else
+        echo "Bad output '$OUT'"
+        exit 2
+    fi
+}
+
+handle-gnome-lock() {
+    gdbus call -e -d org.gnome.ScreenSaver -o /org/gnome/ScreenSaver -m org.gnome.ScreenSaver.Lock
+    exit $?
+}
+
 handle-locked() {
     echo "$(date) -- locked"
 }
@@ -37,6 +55,21 @@ handle-unity-monitor() {
         done
     # signal time=1497302025.510647 sender=:1.44 -> destination=(null destination) serial=130094 path=/com/canonical/Unity/Session; interface=com.canonical.Unity.Session; member=Locked
     # signal time=1497302029.114925 sender=:1.44 -> destination=(null destination) serial=130117 path=/com/canonical/Unity/Session; interface=com.canonical.Unity.Session; member=Unlocked
+}
+
+handle-gnome-monitor() {
+    # https://unix.stackexchange.com/questions/28181/run-script-on-screen-lock-unlock
+    dbus-monitor --session "type='signal',interface='org.gnome.ScreenSaver'" |
+        while read line; do
+            case "$line" in
+                *"path=/org/gnome/ScreenSaver; interface=org.gnome.ScreenSaver; member=ActiveChanged")
+                    read line
+                    if [ "$line" = "boolean false" ]; then handle-unlocked;
+                    elif [ "$line" = "boolean true" ]; then handle-locked;
+                    else echo "Bad line '$line'"; exit 1; fi
+                ;;
+            esac
+        done
 }
 
 if [ "$XDG_CURRENT_DESKTOP" = GNOME ]; then
