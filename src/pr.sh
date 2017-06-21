@@ -83,6 +83,10 @@ dump-patch() {
     fi
 }
 
+pdiff() {
+    diff -ru -I "^@@.*" -I "^index " -I "^From " "$@" | cdiff
+}
+
 # Print commands for pulling commits from PR branch to export branch
 pull-pr() {
   local name="$1"
