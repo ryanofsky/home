@@ -37,3 +37,5 @@ UUID={{root_fs_uuid.stdout}}		/mnt/root		btrfs		noatime		0 1
 {% endif %}
 /dev/mapper/mup		/mnt/mup		btrfs		noauto,noatime		0 0
 /dev/mapper/book		/mnt/book		btrfs		noauto,noatime		0 0
+/dev/seven1		/mnt/seven1		ext3		noauto,noatime		0 0
+/dev/mapper/seven2		/mnt/seven2		btrfs		noauto,noatime		0 0
