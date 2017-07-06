@@ -238,6 +238,7 @@ ppush() {
             local subj
             while read subj; do
                 local bb=$(sed "s/Merge branch '\([^']\+\)' into.*/\1/" <<<"$subj")
+                local bb=$(sed "s:Merge remote-tracking branch 'origin/pull/\([^']\+\)/head':#\1:" <<<"$subj")
                 local bp=$(get-pr "$bb")
                 if [ -n "$bases" ]; then
                     bases="$bases + "
@@ -260,4 +261,11 @@ ppush() {
     else
         git log --reverse $base2..$name --format=format:'- %H %s'
     fi
+}
+
+pr-merge() {
+    local branch="origin/pull/$1/head"
+    export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad "$branch" --date=raw)"
+    export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+    git merge --no-ff --no-edit -m "Merge remote-tracking branch '$branch'" "$branch"
 }
