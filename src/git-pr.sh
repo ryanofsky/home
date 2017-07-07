@@ -52,7 +52,21 @@ update() {
             fi
         fi
 
-        if [ "$name" != "$want" ]; then
+        # split name on + to check for commits that belong to multiple prs
+        # check for trailing ^ on pr name to check for commits that should be squashed
+        local found=
+        local squash=
+        for n in ${name/+/ } ; do
+            if [ "${n%^}" = "$want" ]; then
+                found=1
+                if [ -z "${n#*^}" ]; then
+                    squash=1
+                fi
+                break
+            fi
+        done
+
+        if [ -z "$found" ]; then
             continue
         fi
 
@@ -76,15 +90,25 @@ update() {
             fi
         fi
 
-        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup rest='$rest' ===="
+        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash rest='$rest' ===="
+
+        local metacommit=$COMMIT
+        if [ -n "$squash" ]; then
+            if [ -n "$first" ]; then
+                # Could be implemented in future by squashing into following
+                echo "Squashing first commit not implemented"
+                exit 1
+            fi
+           metacommit=HEAD
+        fi
 
         # Based on https://github.com/dingram/git-scripts/blob/master/scripts/git-cherry-pick-with-committer
-        export GIT_AUTHOR_NAME="$(git log -1 --pretty=format:%an $COMMIT)"
-        export GIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:%ae $COMMIT)"
-        export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad $COMMIT --date=raw)"
-        export GIT_COMMITTER_NAME="$(git log -1 --pretty=format:%cn $COMMIT)"
-        export GIT_COMMITTER_EMAIL="$(git log -1 --pretty=format:%ce $COMMIT)"
-        export GIT_COMMITTER_DATE="$(git log -1 --pretty=format:%cd $COMMIT --date=raw)"
+        export GIT_AUTHOR_NAME="$(git log -1 --pretty=format:%an $metacommit)"
+        export GIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:%ae $metacommit)"
+        export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad $metacommit --date=raw)"
+        export GIT_COMMITTER_NAME="$(git log -1 --pretty=format:%cn $metacommit)"
+        export GIT_COMMITTER_EMAIL="$(git log -1 --pretty=format:%ce $metacommit)"
+        export GIT_COMMITTER_DATE="$(git log -1 --pretty=format:%cd $metacommit --date=raw)"
         # Discard committer info.
         export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
         export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
@@ -108,7 +132,11 @@ update() {
         if [ -n "$fixup" ]; then
             fix="fixup! $rest"$'\n'$'\n'
         fi
-        run git commit -m"$fix$(git log -1 --pretty=format:%b $COMMIT)"
+        if [ -n "$squash" ]; then
+            run git commit --amend --no-edit
+        else
+            run git commit -m"$fix$(git log -1 --pretty=format:%b $COMMIT)"
+        fi
     done < <(git log --format=format:'%H %s' --reverse "$BASE..$BRANCH" && echo)
     run git checkout $BRANCH
     echo "== Successfully exported branch pr/$want =="
