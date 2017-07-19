@@ -238,7 +238,7 @@ ppush() {
             local subj
             while read subj; do
                 local bb=$(sed "s/Merge branch '\([^']\+\)' into.*/\1/" <<<"$subj")
-                local bb=$(sed "s:Merge remote-tracking branch 'origin/pull/\([^']\+\)/head':#\1:" <<<"$subj")
+                local bb=$(sed "s:Merge remote-tracking branch 'origin/pull/\([^']\+\)/head':#\1:" <<<"$bb")
                 local bp=$(get-pr "$bb")
                 if [ -n "$bases" ]; then
                     bases="$bases + "
