@@ -142,7 +142,7 @@ class Find:
                                                   attr,
                                                   follow_symlinks=False)
                 elif sub is None:
-                    bprint(path + sep)
+                    bprint(path + sep, newline=False)
             if root_modified:
                 args.pretend or os.utime(
                     root or os.curdir,
@@ -171,7 +171,7 @@ class Reverse():
 
     def run(self, args):
         for path in args.symlink_path:
-            check(os.path.islink(path), path)
+            check(os.path.islink(path), repr(path))
             path_parent = os.path.dirname(path)
             path_parent_st = os.stat(path_parent)
             link = os.readlink(path)
@@ -281,9 +281,10 @@ def check(cond, *args, **kwargs):
         raise Exception(*args, **kwargs)
 
 
-def bprint(str):
+def bprint(str, newline=True):
     sys.stdout.buffer.write(str.encode("utf-8", "surrogateescape"))
-    sys.stdout.buffer.write(b'\n')
+    if newline:
+        sys.stdout.buffer.write(b'\n')
 
 
 if __name__ == "__main__":
