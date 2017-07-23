@@ -4,7 +4,9 @@ FIFO="$TMPDIR/pom.d"
 TIMEOUT=300
 
 popup() {
-    e -c $(readlink -f "$HOME/.ln/todo.org")
+    if test "$1" != 0; then while test $(xprintidle) -lt 5000; do sleep 1; done; fi
+    echo "$(date) -- emacsclient"
+    e -c $(readlink -f "$HOME/.ln/org")/0.org
 }
 
 if [ "$1" = monitor ]; then
@@ -24,7 +26,7 @@ if [ "$1" = monitor ]; then
             TIMEOUTS=0
         elif [ "$TIMEOUTS" -lt 4 ]; then
             echo "$(date) -- popup ($TIMEOUTS timeouts)"
-            popup
+            popup "$DUR"
         else
             echo "$(date) -- lock ($TIMEOUTS timeouts)"
             screenlock.sh lock
