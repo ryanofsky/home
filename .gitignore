@@ -7,14 +7,13 @@
 .cargo/
 .config/VirtualBox/
 .config/audacious/
-.config/chrome-remote-desktop/chrome-profile/
-.config/chrome-remote-desktop/pulseaudio#54c84b40e9/
 .config/chromium/
 .config/dconf/
 .config/evolution/
 .config/gconf/
 .config/gtk-2.0/
 .config/gtk-3.0/
+.config/hexchat/
 .config/ibus/
 .config/nemo/
 .config/pavucontrol.ini
@@ -38,6 +37,7 @@
 .local/share/evolution/
 .local/share/folks/
 .local/share/gnome-settings-daemon/input-sources-converted
+.local/share/gnome-shell/
 .local/share/gnome-shell/application_state
 .local/share/gsettings-data-convert
 .local/share/gvfs-metadata/
