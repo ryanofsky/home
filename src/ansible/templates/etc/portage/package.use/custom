@@ -56,6 +56,8 @@ net-irc/znc daemon
 
 app-portage/layman mercurial
 
+app-misc/jq oniguruma
+
 gnome-extra/chrome-gnome-shell python_single_target_python3_5
 media-video/totem python_single_target_python3_5
 sys-devel/gdb python_single_target_python3_5
