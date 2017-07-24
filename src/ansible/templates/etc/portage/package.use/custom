@@ -54,6 +54,8 @@ app-office/lyx dia dot html monolithic-build -qt4 qt5 rtf gnumeric
 
 net-irc/znc daemon
 
+app-portage/layman mercurial
+
 gnome-extra/chrome-gnome-shell python_single_target_python3_5
 media-video/totem python_single_target_python3_5
 sys-devel/gdb python_single_target_python3_5
@@ -264,3 +266,14 @@ gnome-extra/cinnamon-desktop python_targets_python3_4
 # required by @selected
 # required by @world (argument)
 >=dev-ruby/rubygems-2.6.12 ruby_targets_ruby23
+# required by dev-dotnet/libgdiplus-4.2-r3::gentoo
+# required by dev-lang/mono-4.8.0.524::gentoo[-minimal]
+# required by dev-dotnet/referenceassemblies-pcl-4.6::gentoo
+# required by media-tv/emby-server-3.2.19.0-r1::megacoffee
+# required by emby-server (argument)
+>=x11-libs/cairo-1.14.10 X
+# required by x11-libs/libva-vdpau-driver-0.7.4-r4::gentoo
+>=x11-libs/libva-1.8.2 X
+# required by media-tv/emby-server-3.2.19.0-r1::megacoffee
+# required by emby-server (argument)
+>=media-gfx/imagemagick-7.0.5.7-r1 jpeg webp jpeg2k png
