@@ -3,7 +3,7 @@
 set -e
 
 EXPORT=
-if [ -z "$BASE" ]; then BASE=$(git merge-base HEAD origin/master); fi
+if [ -z "$BASE" ]; then BASE=$(git rev-list --min-parents=2 --max-count=1 HEAD); fi
 if [ -z "$XBASE" ]; then XBASE="$BASE"; fi
 BRANCH=$(git symbolic-ref --short HEAD || git rev-parse HEAD)
 
@@ -88,6 +88,7 @@ update() {
                     run git merge --no-ff --no-edit "pr/$m"
                 done
             fi
+            run git config "branch.pr/$name.export" "$BRANCH"
         fi
 
         echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash rest='$rest' ===="

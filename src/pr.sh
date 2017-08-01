@@ -232,6 +232,27 @@ ppush() {
     fi
         echo
 
+        local prnum="${prbranch#origin/pr/}"
+        local desc=$(git show $(git config "branch.$name.export"):"$name".md 2>/dev/null || true)
+        if [ -n "$desc" ]; then
+          local commits=$(git log --reverse $base2..$name --format=format:'[`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)')
+          python3 -c '
+import sys
+
+class Commits:
+    def __init__(self, commits):
+        self.commits = commits.split("\n")
+
+    def __format__(self, spec):
+        for commit in self.commits:
+           if spec in commit:
+               return commit
+        raise Exception("No commit {!r}".format(spec))
+
+print(sys.argv[1].format(commit=Commits(sys.argv[2])))' "$desc" "$commits"
+          echo
+        fi
+
         local master="$(git merge-base "$base2" origin/master)"
         if [ "$base2" != "$master" ]; then
             local bases=
@@ -257,7 +278,7 @@ ppush() {
         echo
 
     if [ -n "$prbranch" ]; then
-        git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"${prbranch#origin/pr/}"'/commits/%H)'
+        git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)'
     else
         git log --reverse $base2..$name --format=format:'- %H %s'
     fi
