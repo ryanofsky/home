@@ -9,10 +9,13 @@ import datetime
 
 
 def main():
-    if len(sys.argv) == 1:
+    args = sys.argv[1:]
+    if not args:
         save()
-    elif len(sys.argv) == 2 and sys.argv[1] == "apply":
+    elif args == ["apply"]:
         apply()
+    elif args == ["apply", "-u"]:
+        apply(unmodified=True)
     else:
         raise Exception("bad arguments")
 
@@ -43,8 +46,9 @@ def save():
             prev_path = path
 
 
-def apply():
+def apply(unmodified=False):
     root = git_root()
+    skip = set(get_files(root, modified=True)) if unmodified else set()
     with open(os.path.join(root, ".git-mtime"), "rb") as fp:
         dirpath_cur = None
         for line in fp:
@@ -64,6 +68,9 @@ def apply():
                     tzinfo=datetime.timezone.utc).timestamp(
                     )) * 1000000000 + int(ns)
             path = posixpath.join(dirpath_cur, filename)
+            if path in skip:
+                print("Skipping modified {!r}".format(root_path))
+                continue
             root_path = os.path.join(root, path)
             st = os.lstat(root_path)
             if mtime_ns != st.st_mtime_ns:
@@ -100,8 +107,8 @@ def format_mtime(ns):
         datetime.datetime.utcfromtimestamp(ns // 1000000000), ns % 1000000000)
 
 
-def get_files(root, buf_size=16384):
-    command = ["git", "ls-files", "--full-name", "-z", root]
+def get_files(root, modified=False, buf_size=16384):
+    command = ["git", "ls-files", "--full-name", "-z"] + (["-m"] if modified else []) + [root]
     process = subprocess.Popen(command, stdout=subprocess.PIPE)
     buf = b""
     buf_pos = 0
