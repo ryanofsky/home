@@ -67,7 +67,7 @@ def apply():
             root_path = os.path.join(root, path)
             st = os.lstat(root_path)
             if mtime_ns != st.st_mtime_ns:
-                print(repr(path), mtime_ns, st.st_mtime_ns)
+                print(repr(path), format_mtime(mtime_ns), format_mtime(st.st_mtime_ns))
                 os.utime(root_path,
                          ns=(st.st_atime_ns, mtime_ns),
                          follow_symlinks=False)
@@ -92,6 +92,10 @@ def git_mtimes(root):
 
 def mtime(path):
     ns = os.lstat(path).st_mtime_ns
+    return format_mtime(ns)
+
+
+def format_mtime(ns):
     return "{}.{:09}".format(
         datetime.datetime.utcfromtimestamp(ns // 1000000000), ns % 1000000000)
 
