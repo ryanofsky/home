@@ -112,7 +112,7 @@ def main():
                           dtime=dtime,
                           mtime=None,
                           incomplete=False)
-                assert visit_type == TRANSITION_DOWNLOAD
+                assert visit_type == TRANSITION_DOWNLOAD or visit_type is None
 
 
 def connect_readonly(filename):
