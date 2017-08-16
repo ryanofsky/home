@@ -4,7 +4,7 @@ FIFO="$TMPDIR/pom.d"
 TIMEOUT=300
 
 popup() {
-    if test "$1" != 0; then while test $(xprintidle) -lt 5000; do sleep 1; done; fi
+    if test "$1" != 0; then while test $(xprintidle) -lt 2000; do sleep 1; done; fi
     echo "$(date) -- emacsclient"
     e -c $(readlink -f "$HOME/.ln/org")/0.org
 }
