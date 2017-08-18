@@ -1,6 +1,11 @@
 appengine-404/
+bips/
+bitcoin/
 bufferman/
 bup/
+capnproto/
+cc-home/
+cc/
 cfree/
 cs4772-project/
 cvsdate/
@@ -11,6 +16,7 @@ easycrt/
 ethcore-advert/
 fbdb/
 gateone/
+git-fixup/
 lost/
 net/
 quickman/
@@ -22,5 +28,6 @@ site_old/
 stick/
 tiger/
 twofish/
+univalue/
 viewvc/
 wces/
