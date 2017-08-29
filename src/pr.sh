@@ -12,8 +12,7 @@ getnum() {
   git for-each-ref --format='%(refname:short)' "$@" | {
     local NMAX=
     while read REF; do
-      local N="${REF#*.}"
-      local N="${N%%.*}"
+      local N="${REF##*.}"
       if [ -z "$NMAX" ] || [ "$N" -gt "$NMAX" ]; then
         NMAX="$N"
       fi
@@ -289,4 +288,27 @@ pr-merge() {
     export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad "$branch" --date=raw)"
     export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
     git merge --no-ff --no-edit -m "Merge remote-tracking branch '$branch'" "$branch"
+}
+
+pr-rev() {
+    local branch="origin/pull/$1/head"
+    local tag="review.$1"
+    local num=$(getnum "refs/tags/$tag.*")
+    local new=$(git rev-parse "$branch")
+    if [ -z "$new" ]; then
+        echo "Branch '$branch' doesn't exist."
+        return 1
+    elif [ -n "$num" ] && [ "$new" = "$(git rev-parse "$tag.$num")" ]; then
+        echo "No changes: $branch == $tag.$num == $new"
+    else
+        num=$((num + 1))
+        echo git tag "$tag.$((num + 1))" "$branch"
+    fi
+    if [ "$num" -gt 1 ]; then
+        echo rm -rvf "_$((num-1))" "_$((num))"
+        echo dump-patch "_$((num-1))" "$tag.$((num-1))"
+        echo dump-patch "_$((num))" "$tag.$((num))"
+        echo utACK "$new"
+        echo meld "_$((num-1))" "_$((num))"
+    fi
 }
