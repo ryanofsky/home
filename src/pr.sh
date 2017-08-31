@@ -302,13 +302,13 @@ pr-rev() {
         echo "No changes: $branch == $tag.$num == $new"
     else
         num=$((num + 1))
-        echo git tag "$tag.$((num + 1))" "$branch"
+        echo git tag "$tag.$num" "$branch"
     fi
     if [ "$num" -gt 1 ]; then
         echo rm -rvf "_$((num-1))" "_$((num))"
         echo dump-patch "_$((num-1))" "$tag.$((num-1))"
         echo dump-patch "_$((num))" "$tag.$((num))"
-        echo utACK "$new"
         echo meld "_$((num-1))" "_$((num))"
     fi
+    echo utACK "$new"
 }
