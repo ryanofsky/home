@@ -308,6 +308,7 @@ pr-rev() {
         echo rm -rvf "_$((num-1))" "_$((num))"
         echo dump-patch "_$((num-1))" "$tag.$((num-1))"
         echo dump-patch "_$((num))" "$tag.$((num))"
+        echo "diff -ru -I'^index ' -I'^@@' _$((num-1)) _$((num)) | cdiff"
         echo meld "_$((num-1))" "_$((num))"
     fi
     echo utACK "$new"
