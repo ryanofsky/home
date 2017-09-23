@@ -13,7 +13,7 @@ getnum() {
     local NMAX=
     while read REF; do
       local N="${REF##*.}"
-      if [ -z "$NMAX" ] || [ "$N" -gt "$NMAX" ]; then
+      if [ -z "$NMAX" ] || [ "$N" -gt "$NMAX" ] 2>/dev/null; then
         NMAX="$N"
       fi
     done
@@ -160,6 +160,8 @@ ntag() {
         echo git tag "$bname.$((prev+1))" "$bname"
         echo git tag "$wname.$((prev+1))" "$wname"
         echo git tag "$ename.$((prev+1))" "$ename"
+        echo git checkout "$wname"
+        echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
         return 0
     fi
 
