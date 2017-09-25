@@ -58,6 +58,8 @@ app-portage/layman mercurial
 
 app-misc/jq oniguruma
 
+app-emulation/libvirt apparmor audit firewalld fuse iscsi libssh lvm lxc nfs parted pcap uml virt-network virtualbox wireshark-plugins zeroconf
+
 gnome-extra/chrome-gnome-shell python_single_target_python3_5
 media-video/totem python_single_target_python3_5
 sys-devel/gdb python_single_target_python3_5
@@ -282,3 +284,12 @@ gnome-extra/cinnamon-desktop python_targets_python3_4
 # required by @selected
 # required by @world (argument)
 >=dev-libs/libgit2-0.26.0 ssh
+# required by app-emulation/virt-manager-1.4.2::gentoo[gtk]
+# required by app-emulation/virt-manager (argument)
+>=net-misc/spice-gtk-0.33-r2 usbredir
+# required by app-emulation/libvirt-3.5.0::gentoo[parted]
+# required by app-emulation/libvirt (argument)
+>=sys-block/parted-3.2-r2 device-mapper
+# required by app-emulation/libvirt-3.5.0::gentoo[virt-network]
+# required by app-emulation/libvirt (argument)
+>=net-dns/dnsmasq-2.77-r1 script
