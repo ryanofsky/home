@@ -20,6 +20,7 @@ update() {
 
     local want="$1"
     local first=1
+    local committed=
 
     while read COMMIT SUBJ; do
         if test -z "${SUBJ##|*}"; then
@@ -56,11 +57,16 @@ update() {
         # check for trailing ^ on pr name to check for commits that should be squashed
         local found=
         local squash=
+        local squash_next=
         for n in ${name/+/ } ; do
-            if [ "${n%^}" = "$want" ]; then
+            if [ "${n%^}" = "$want" -o "${n%@}" = "$want"  ]; then
                 found=1
                 if [ -z "${n#*^}" ]; then
                     squash=1
+                fi
+                if [ -z "${n#*@}" ]; then
+                    squash=1
+                    squash_next=1
                 fi
                 break
             fi
@@ -72,38 +78,65 @@ update() {
 
         if [ -n "$first" ]; then
             first=
-            if ! git rev-parse --verify "pr/$name"; then
-                run git branch "pr/$name" "$XBASE"
+            if ! git rev-parse --verify "pr/$want"; then
+                run git branch "pr/$want" "$XBASE"
                 RESET=1
             fi
-            run git checkout "pr/$name"
+            run git checkout "pr/$want"
+
             if [ -z "$RESET" ]; then
                 run git reset --hard $(git rev-list --min-parents=2 --max-count=1 HEAD)
             else
                 run git reset --hard "$XBASE"
                 local m
                 for m in ${merge/+/ } ; do
-                    export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad "pr/$m" --date=raw)"
+                    if [ -z "${m#*^}" ]; then
+                        merge_source="pr/${m%^}"
+                        merge_cherry=1
+                    else
+                        merge_source="pr/$m"
+                        merge_cherry=
+                    fi
+                    merge_log=
+                    prbranch=$(git config "branch.${merge_source}.prbranch" || true)
+                    if [ -n "$prbranch" ]; then
+                        merge_log="Merge remote-tracking branch '$prbranch'"
+                    fi
+                    export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad "$merge_source" --date=raw)"
                     export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
-                    run git merge --no-ff --no-edit "pr/$m"
+                    if [ -n "$merge_cherry" ]; then
+                        run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
+                    elif [ -n "$merge_log" ]; then
+                        run git merge --no-ff --no-edit "$merge_source" -m "$merge_log"
+                    else
+                        run git merge --no-ff --no-edit "$merge_source"
+                    fi
                 done
             fi
-            run git config "branch.pr/$name.export" "$BRANCH"
+            run git config "branch.pr/$want.export" "$BRANCH"
+        else
+            # Skip squash into previous if no previous commits (unless resetting).
+            if [ -z "$RESET" -a -z "$committed" -a -n "$squash" -a -z "$squash_next" ]; then
+                continue
+            fi
+
+            # For non-first commit, treat merge list as list of things to squash
+            # by cherry-pick, instead of things to merge and preserve history
+            # of. Unlike first commit, treat these as arguments to cherry pick
+            # instead of like pr names, on assumption these will just be
+            # 1-commit branches off of the pr branch.
+            for m in ${merge/+/ }; do
+                run git cherry-pick --no-commit "$m"
+                if [ -z "$squash_next" ]; then
+                    run git commit --amend --no-edit
+                fi
+            done
         fi
 
         echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash rest='$rest' ===="
 
-        local metacommit=$COMMIT
-        if [ -n "$squash" ]; then
-            if [ -n "$first" ]; then
-                # Could be implemented in future by squashing into following
-                echo "Squashing first commit not implemented"
-                exit 1
-            fi
-           metacommit=HEAD
-        fi
-
         # Based on https://github.com/dingram/git-scripts/blob/master/scripts/git-cherry-pick-with-committer
+        local metacommit=$COMMIT
         export GIT_AUTHOR_NAME="$(git log -1 --pretty=format:%an $metacommit)"
         export GIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:%ae $metacommit)"
         export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad $metacommit --date=raw)"
@@ -133,10 +166,13 @@ update() {
         if [ -n "$fixup" ]; then
             fix="fixup! $rest"$'\n'$'\n'
         fi
-        if [ -n "$squash" ]; then
+        if [ -n "$squash_next" ]; then
+            true
+        elif [ -n "$squash" ]; then
             run git commit --amend --no-edit
         else
             run git commit -m"$fix$(git log -1 --pretty=format:%b $COMMIT)"
+            committed=1
         fi
     done < <(git log --format=format:'%H %s' --reverse "$BASE..$BRANCH" && echo)
     run git checkout $BRANCH
