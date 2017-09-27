@@ -25,16 +25,17 @@ getnum() {
 set-pr() {
   local name="$1"
   local num="$2"
-  git config branch."$name".prbranch "origin/pr/$num"
-  git config branch."origin/pr/$num".prlocal "$name"
+  git config branch."$name".prbranch "origin/pull/$num/head"
+  git config branch."origin/pull/$num/head".prlocal "$name"
 }
 
+# map pr/name to number and vice versa
 get-pr() {
     local pr="$1"
     if [[ "$pr" =~ ^[0-9]*$ ]]; then
-        git config branch."origin/$pr".prlocal
+        git config branch."origin/pull/$pr/head".prlocal
     else
-        git config branch."$pr".prbranch
+        git config branch."$pr".prbranch | sed 's:origin/pull/\(.*\)/head:\1:'
     fi
 }
 
@@ -201,13 +202,13 @@ ppush() {
     echo git push -u russ $name.$cur +$name
     echo
 
-    local prbranch="$(git config branch.$name.prbranch)"
-    if [ -z "$prbranch" ]; then
+    local prnum="$(get-pr "$name")"
+    if [ -z "$prnum" ]; then
         echo "Open https://github.com/ryanofsky/bitcoin/pull/new/$name"
         echo "set-pr $name ###"
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name")
     else
-        echo "Pull https://github.com/bitcoin/bitcoin/pull/${prbranch#origin/pr/}"
+        echo "Pull https://github.com/bitcoin/bitcoin/pull/$prnum"
         echo
 
         local b1="$name.$prev"
@@ -233,7 +234,6 @@ ppush() {
     fi
         echo
 
-        local prnum="${prbranch#origin/pr/}"
         local desc=$(git show $(git config "branch.$name.export"):"$name".md 2>/dev/null || true)
         if [ -n "$desc" ]; then
           local commits=$(git log --reverse $base2..$name --format=format:'[`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)')
@@ -278,7 +278,7 @@ print(sys.argv[1].format(commit=Commits(sys.argv[2])))' "$desc" "$commits"
         fi
         echo
 
-    if [ -n "$prbranch" ]; then
+    if [ -n "$prnum" ]; then
         git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)'
     else
         git log --reverse $base2..$name --format=format:'- %H %s'
