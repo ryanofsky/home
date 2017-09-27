@@ -58,7 +58,7 @@ update() {
         local found=
         local squash=
         local squash_next=
-        for n in ${name/+/ } ; do
+        for n in $(echo "$name" | sed 's:+: :g'); do
             if [ "${n%^}" = "$want" -o "${n%@}" = "$want"  ]; then
                 found=1
                 if [ -z "${n#*^}" ]; then
@@ -89,7 +89,7 @@ update() {
             else
                 run git reset --hard "$XBASE"
                 local m
-                for m in ${merge/+/ } ; do
+                for m in $(echo "$merge" | sed 's:+: :g'); do
                     if [ -z "${m#*^}" ]; then
                         merge_source="pr/${m%^}"
                         merge_cherry=1
@@ -125,7 +125,7 @@ update() {
             # of. Unlike first commit, treat these as arguments to cherry pick
             # instead of like pr names, on assumption these will just be
             # 1-commit branches off of the pr branch.
-            for m in ${merge/+/ }; do
+            for m in $(echo "$merge" | sed 's:+: :g'); do
                 run git cherry-pick --no-commit "$m"
                 if [ -z "$squash_next" ]; then
                     run git commit --amend --no-edit
