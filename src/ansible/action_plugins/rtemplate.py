@@ -93,7 +93,7 @@ class ActionModule(ActionBase):
                 upstream_info["st_atime"] = st_atime
                 upstream_info["st_mtime"] = st_mtime
                 upstream_info["st_ctime"] = st_ctime
-            with open(os.path.join(src, tfile.info_path), "wb") as fp:
+            with open(os.path.join(src, tfile.info_path), "w") as fp:
                 ordered_dump(tfile.info, fp, yaml.SafeDumper)
 
         changes = []
