@@ -704,6 +704,22 @@ kconfig() {
       -m NETFILTER_XT_MATCH_TIME \
       -m NETFILTER_XT_MATCH_U32
 
+    # libvirt modules (from emerge output)
+    scripts/config
+      -m DM_MULTIPATH \
+      -m DM_SNAPSHOT \
+      -e SECURITYFS \
+      -m MACVTAP \
+      -m BRIDGE_EBT_MARK_T \
+      -m BRIDGE_NF_EBTABLES \
+      -m BRIDGE_EBT_T_NAT \
+      -m NET_ACT_POLICE \
+      -m NET_CLS_FW \
+      -m NET_CLS_U32 \
+      -m NET_SCH_HTB \
+      -m NET_SCH_INGRESS \
+      -m NET_SCH_SFQ
+
     # Make USB printer support into module instead of builtin (conflicts with CUPS).
     scripts/config -m USB_PRINTER
 
