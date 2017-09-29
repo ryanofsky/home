@@ -720,6 +720,9 @@ kconfig() {
       -m NET_SCH_INGRESS \
       -m NET_SCH_SFQ
 
+    # net-firewall/ipset-6.32 unknown type name ‘sctp_sctphdr_t’
+    scripts/config -m IP_SCTP
+
     # Make USB printer support into module instead of builtin (conflicts with CUPS).
     scripts/config -m USB_PRINTER
 
