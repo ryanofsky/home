@@ -705,7 +705,7 @@ kconfig() {
       -m NETFILTER_XT_MATCH_U32
 
     # libvirt modules (from emerge output)
-    scripts/config
+    scripts/config \
       -m DM_MULTIPATH \
       -m DM_SNAPSHOT \
       -e SECURITYFS \
