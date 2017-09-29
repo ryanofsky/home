@@ -62,9 +62,7 @@ app-emulation/libvirt apparmor audit firewalld fuse iscsi libssh lvm lxc nfs par
 
 gnome-extra/chrome-gnome-shell python_single_target_python3_5
 media-video/totem python_single_target_python3_5
-sys-devel/gdb python_single_target_python3_5
 net-irc/hexchat python_single_target_python3_5
-dev-libs/gobject-introspection python_single_target_python3_5
 media-tv/kodi python_single_target_python3_5
 dev-libs/libpeas python_single_target_python3_5
 dev-libs/libcec python_single_target_python3_5
@@ -293,3 +291,12 @@ gnome-extra/cinnamon-desktop python_targets_python3_4
 # required by app-emulation/libvirt-3.5.0::gentoo[virt-network]
 # required by app-emulation/libvirt (argument)
 >=net-dns/dnsmasq-2.77-r1 script
+# required by dev-vcs/git-2.14.1::gentoo[pcre-jit,pcre]
+# required by www-client/chromium-62.0.3202.18::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-libs/libpcre2-10.30 jit
+# required by media-tv/kodi-17.4-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=media-video/ffmpeg-3.3.4 openssl
