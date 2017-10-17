@@ -17,7 +17,6 @@
 
 # NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
 UUID={{root_fs_uuid.stdout}}		/		btrfs		noatime,subvol=root		0 1
-UUID={{root_fs_uuid.stdout}}		/usr/portage		btrfs		noatime,subvol=portage		0 1
 {% if boot_dev %}
 UUID={{boot_dev_uuid.stdout}}		/boot		ext2		noauto,noatime	0 2
 {% endif %}
@@ -34,6 +33,7 @@ UUID={{root_fs_uuid.stdout}}		/mnt/root		btrfs		noatime		0 1
 {% if inventory_hostname == "think" %}
 /dev/mapper/hd		/mnt/hd		btrfs		noauto,noatime		0 0
 /mnt/hd/_tmp/usr-src	/usr/src	none	noauto,bind	0 0
+/mnt/hd/_tmp/usr-portage	/usr/portage	none	noauto,bind	0 0
 {% endif %}
 /dev/mapper/mup		/mnt/mup		btrfs		noauto,noatime		0 0
 /dev/mapper/book		/mnt/book		btrfs		noauto,noatime		0 0
