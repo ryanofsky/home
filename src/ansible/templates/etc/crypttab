@@ -11,3 +11,4 @@ hd UUID=e276721b-9f5e-4b2e-9475-aad7e0d95d37 none noauto,luks
 mup UUID=775f2617-09c0-4a82-a8ae-b3c84643661c none noauto,luks
 book UUID=4acf5352-23a8-47bd-a6ac-aadc596c9ae7 none noauto,luks
 seven2 UUID=d3ee8271-7005-4ab2-a07d-ac9174b54d45 none noauto,luks
+seb2 UUID=6a0c673a-2aae-42f5-9444-17065c1a5079 none noauto,luks
