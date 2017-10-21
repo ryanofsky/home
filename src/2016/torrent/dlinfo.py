@@ -8,6 +8,8 @@ import argparse
 import json
 import os
 import sqlite3
+import sys
+import urllib
 
 
 def main():
@@ -48,12 +50,15 @@ def main():
 
     for db in args.firefox or ():
         with connect_readonly(db) as conn:
+            NAME = 'downloads/destinationFileName'
+            URI = 'downloads/destinationFileURI'
             c = conn.cursor()
             c.execute("""
                 SELECT p.url, fn.content AS filename, m.content AS metadata,
-                     v.visit_date, v.visit_type, v.from_visit
+                     v.visit_date, v.visit_type, v.from_visit, at.name
                 FROM moz_annos AS fn
                 INNER JOIN moz_places AS p ON p.id = fn.place_id
+                INNER JOIN moz_anno_attributes AS at ON fn.anno_attribute_id = at.id
                 LEFT JOIN moz_historyvisits AS v
                     -- Select MAX below is needed because firefox create two
                     -- otherwise indistinguishable moz_historyvisits entries for
@@ -66,14 +71,14 @@ def main():
                     AND m.anno_attribute_id
                         = (SELECT id FROM moz_anno_attributes
                            WHERE name = 'downloads/metaData')
-                WHERE fn.anno_attribute_id
-                    = (SELECT id FROM moz_anno_attributes
-                       WHERE name = 'downloads/destinationFileName')
+                WHERE at.name IN (?, ?)
                 ORDER BY v.id DESC
-            """, (TRANSITION_DOWNLOAD, ))
+            """, (TRANSITION_DOWNLOAD, NAME, URI))
             s = conn.cursor()
             for (url, filename, metadata_str, visit_date, visit_type,
-                 prev_visit) in c.fetchall():
+                 prev_visit, at) in c.fetchall():
+                if at == URI:
+                    filename = urllib.parse.unquote(urlparse(filename).path)
                 s.execute("""
                     WITH RECURSIVE
                         r(depth, from_visit, place_id, visit_type) AS (
@@ -124,6 +129,11 @@ def save_info(filename, url, redirects, referrer, size, dtime, mtime,
               incomplete):
     base = os.path.basename(filename) if filename else os.path.basename(
         urlparse(url).path) or "_"
+
+    if len(base) > 1024:
+        print("Warning: Skipping overlong file {!r}".format(base[:1024] + "..."), file=sys.stderr)
+        return
+
     if incomplete:
         base += ".incomplete"
 
