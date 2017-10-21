@@ -102,14 +102,25 @@ update() {
                     if [ -n "$prbranch" ]; then
                         merge_log="Merge remote-tracking branch '$prbranch'"
                     fi
-                    export GIT_AUTHOR_DATE="$(git log -1 --pretty=format:%ad "$merge_source" --date=raw)"
-                    export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
                     # Montonic timestamp to unfuck github ordering in branch commits view
-                    read NEW_TIMESTAMP NEW_TZ <<<"$GIT_COMMITTER_DATE"
+                    read NEW_TIMESTAMP NEW_TZ <<<$(git log -1 --pretty=format:%ad --date=raw)
+                    read PREV_TIMESTAMP PREV_TZ <<<$(git log -1 --pretty=format:%cd --date=raw)
+                    if (($NEW_TIMESTAMP < $PREV_TIMESTAMP)); then
+                        NEW_TIMESTAMP="$PREV_TIMESTAMP"
+                        NEW_TZ="$PREV_TZ"
+                    fi
+                    read PREV_TIMESTAMP PREV_TZ <<<$(git log -1 --pretty=format:%ad --date=raw "$merge_source")
+                    if (($NEW_TIMESTAMP < $PREV_TIMESTAMP)); then
+                        NEW_TIMESTAMP="$PREV_TIMESTAMP"
+                        NEW_TZ="$PREV_TZ"
+                    fi
                     read PREV_TIMESTAMP PREV_TZ <<<$(git log -1 --pretty=format:%cd --date=raw "$merge_source")
                     if (($NEW_TIMESTAMP < $PREV_TIMESTAMP)); then
-                        GIT_COMMITTER_DATE="$PREV_TIMESTAMP $NEW_TZ"
+                        NEW_TIMESTAMP="$PREV_TIMESTAMP"
+                        NEW_TZ="$PREV_TZ"
                     fi
+                    export GIT_AUTHOR_DATE="$PREV_TIMESTAMP $PREV_TZ"
+                    export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
                     if [ -n "$merge_cherry" ]; then
                         run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
                     elif [ -n "$merge_log" ]; then
