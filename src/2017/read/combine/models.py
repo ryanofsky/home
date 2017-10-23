@@ -12,3 +12,8 @@ class Event(models.Model):
     url = models.ForeignKey(Url, on_delete=models.PROTECT)
     date = models.DateTimeField()
     rating = models.IntegerField()
+
+class Requests(models.Model):
+    url = models.TextField()
+    data = models.BinaryField()
+    time = models.DateTimeField(auto_now=True)
