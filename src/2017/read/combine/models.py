@@ -13,7 +13,7 @@ class Event(models.Model):
     date = models.DateTimeField()
     rating = models.IntegerField()
 
-class Requests(models.Model):
+class Request(models.Model):
     url = models.TextField()
     data = models.BinaryField()
     time = models.DateTimeField(auto_now=True)
