@@ -35,6 +35,7 @@ except Request.DoesNotExist:
         'keep-alive',
     }
     r = requests.get(url, headers=headers)
+    r.raise_for_status()
     req = Request(url=url, data=r.content)
     req.save()
     print("new")
