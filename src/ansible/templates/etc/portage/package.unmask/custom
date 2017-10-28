@@ -2,6 +2,7 @@
 gnome-extra/gnome-pomodoro::tranquility
 =net-p2p/armory-0.94.1::bitcoin
 =net-p2p/go-ethereum-9999::hnaparst
+=app-editors/visual-studio-code-1.17.2::jorgicio
 dev-python/yapf::ultrabug
 media-tv/plex-media-server::fkmclane
 media-tv/emby-server::megacoffee
