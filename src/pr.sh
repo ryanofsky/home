@@ -297,6 +297,7 @@ pr-rev() {
     local tag="review.$1"
     local num=$(getnum "refs/tags/$tag.*")
     local new=$(git rev-parse "$branch")
+    git for-each-ref --format='- %(refname:short) %(objectname)' "refs/tags/$tag.*"
     if [ -z "$new" ]; then
         echo "Branch '$branch' doesn't exist."
         return 1
