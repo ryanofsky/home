@@ -297,7 +297,27 @@ pr-rev() {
     local tag="review.$1"
     local num=$(getnum "refs/tags/$tag.*")
     local new=$(git rev-parse "$branch")
-    git for-each-ref --format='- %(refname:short) %(objectname)' "refs/tags/$tag.*"
+    local t
+    declare -A seen
+    for t in $(git reflog "origin/pull/$1/head" --format='%gd' | tac) $(git for-each-ref --format='%(refname:short)' "refs/tags/$tag.*"); do
+      local r=$(git rev-parse --short "$t")
+      if [ -n "${seen[$r]}" ]; then
+         continue
+      fi
+      seen[$r]=1
+      local b=$(git merge-base "$t" origin/master)
+      local bs=$(git rev-parse --short "$b")
+      local c=$(git rev-list "$b..$t" | wc -l)
+      local d=$(git diff --shortstat "$b..$t")
+      local rs=$(git rev-parse --short "$t")
+      local m=$(git log -n1 --pretty=format:"%cI" "$t")
+      local ts=$(git log -n1 --pretty=format:%D "$t")
+      if [[ "$ts" != *"$t"* ]]; then
+        ts="$t $ts"
+      fi
+      echo "- $(tput setaf 2)$m, $(tput setaf 3)$rs base $bs, $(tput setaf 2)$(tput bold)$ts$(tput sgr0)"
+      echo "  $c commits,$d"
+    done
     if [ -z "$new" ]; then
         echo "Branch '$branch' doesn't exist."
         return 1
