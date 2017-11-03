@@ -206,7 +206,7 @@ ppush() {
     if [ -z "$prnum" ]; then
         echo "Open https://github.com/ryanofsky/bitcoin/pull/new/$name"
         echo "set-pr $name ###"
-        local base2=$(git rev-list --min-parents=2 --max-count=1 "$name")
+        local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
     else
         echo "Pull https://github.com/bitcoin/bitcoin/pull/$prnum"
         echo
@@ -219,7 +219,7 @@ ppush() {
         local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
 
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
-        local base2=$(git rev-list --min-parents=2 --max-count=1 "$name")
+        local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
         if [ "$base1" = "$base2" ]; then
             if [ "$(git merge-base "$b1" "$name")" = "$(git rev-parse "$b1")" ]; then
                 echo "Added $(git rev-list "$b1..$name" | wc -l) commits $r ($b, [compare]($c))"
