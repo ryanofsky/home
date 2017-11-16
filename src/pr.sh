@@ -21,21 +21,43 @@ getnum() {
   }
 }
 
+# Write meta value
+meta-write() {
+    local name=$1
+    local value=$2
+    if [ "$name" != "${name%/*}" ]; then
+       mkdir -p "$HOME/src/meta/${name%/*}"
+    fi
+    echo "$value" > "$HOME/src/meta/$name"
+    (cd "$HOME/src/meta" && git add "$name")
+    echo "write $name $value" >> $HOME/src/meta/log
+}
+
+# Read meta value
+meta-read() {
+    local name="$1"
+    cat "$HOME/src/meta/$name"
+}
+
 # Associate PR name with PR number
 set-pr() {
   local name="$1"
   local num="$2"
-  git config branch."$name".prbranch "origin/pull/$num/head"
-  git config branch."origin/pull/$num/head".prlocal "$name"
+  local rname="refs/heads/$name"
+  local rnum="refs/remotes/origin/pull/$num/head"
+  meta-write "$rname/.prbranch" "$rnum"
+  meta-write "$rnum/.prlocal" "$rname"
 }
 
 # map pr/name to number and vice versa
 get-pr() {
     local pr="$1"
     if [[ "$pr" =~ ^[0-9]*$ ]]; then
-        git config branch."origin/pull/$pr/head".prlocal
+        local rnum="refs/remotes/origin/pull/$pr/head"
+        meta-read "$rnum/.prlocal"
     else
-        git config branch."$pr".prbranch | sed 's:origin/pull/\(.*\)/head:\1:'
+        local rname="refs/heads/$pr"
+        meta-read "$rname/.prbranch" | sed 's:refs/remotes/origin/pull/\(.*\)/head:\1:'
     fi
 }
 
