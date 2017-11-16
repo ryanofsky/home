@@ -65,7 +65,8 @@ get-pr() {
 dump-pr() {
   local name="$1"
   local branch="pr/$name"
-  local prbranch="$(git config branch.$branch.prbranch)"
+  local rname="refs/heads/$branch"
+  local prbranch="$(meta-read "$rname/.prbranch" | sed 's:refs/remotes/:')"
   local exbranch="${2:-export}"
   local basebranch=origin/master
 
@@ -219,29 +220,40 @@ ppush() {
     else
         prev="$((cur-1))"
     fi
-
-    ntag "$name"
-    echo git push -u russ $name.$cur +$name
-    echo
-
+    local descpath="$HOME/src/meta/refs/heads/$name/.prdesc.md"
     local prnum="$(get-pr "$name")"
     if [ -z "$prnum" ]; then
-        echo "Open https://github.com/ryanofsky/bitcoin/pull/new/$name"
-        echo "set-pr $name ###"
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
     else
-        echo "Pull https://github.com/bitcoin/bitcoin/pull/$prnum"
-        echo
-
         local b1="$name.$prev"
         local b2="$name.$cur"
         local u="https://github.com/ryanofsky/bitcoin/commits"
         local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
         local r="$(git rev-parse "$b1") -> $(git rev-parse "$name")"
         local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
-
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
+    fi
+
+    echo "== Tag and push =="
+    ntag "$name"
+    echo git push -u russ $name.$cur +$name
+    echo
+
+    echo "== Update =="
+    echo "git checkout $(meta-read refs/heads/$name/.export)"
+    echo "pr ${name#pr/}"
+    echo "set-pr $name ${prnum:-###}"
+    echo "vi $descpath"
+    if [ -n "$prnum" ]; then
+        echo "https://github.com/bitcoin/bitcoin/pull/$prnum"
+    fi
+    echo "https://github.com/ryanofsky/bitcoin/pull/new/$name"
+    echo "https://github.com/ryanofsky/bitcoin/commits/$name"
+    echo
+
+    if [ -n "$prnum" ]; then
+        echo "== Comment =="
         if [ "$base1" = "$base2" ]; then
             if [ "$(git merge-base "$b1" "$name")" = "$(git rev-parse "$b1")" ]; then
                 echo "Added $(git rev-list "$b1..$name" | wc -l) commits $r ($b, [compare]($c))"
@@ -256,7 +268,8 @@ ppush() {
     fi
         echo
 
-        local desc=$(git show $(git config "branch.$name.export"):"$name".md 2>/dev/null || true)
+        echo "== Description =="
+        local desc=$(cat "$descpath" 2>/dev/null || true)
         if [ -n "$desc" ]; then
           local commits=$(git log --reverse $base2..$name --format=format:'[`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)')
           python3 -c '

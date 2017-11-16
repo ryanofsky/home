@@ -7,6 +7,8 @@ if [ -z "$BASE" ]; then BASE=$(git rev-list --min-parents=2 --max-count=1 HEAD);
 if [ -z "$XBASE" ]; then XBASE="$BASE"; fi
 BRANCH=$(git symbolic-ref --short HEAD || git rev-parse HEAD)
 
+. ~/src/pr.sh
+
 run() {
     echo $@
     "$@"
@@ -98,7 +100,7 @@ update() {
                         merge_cherry=
                     fi
                     merge_log=
-                    prbranch=$(git config "branch.${merge_source}.prbranch" || true)
+                    prbranch=$(get-pr "$merge_source" || true)
                     if [ -n "$prbranch" ]; then
                         merge_log="Merge remote-tracking branch '$prbranch'"
                     fi
@@ -130,7 +132,7 @@ update() {
                     fi
                 done
             fi
-            run git config "branch.pr/$want.export" "$BRANCH"
+            run meta-write "refs/heads/pr/$want/.export" "refs/heads/$BRANCH"
         else
             # Skip squash into previous if no previous commits (unless resetting).
             if [ -z "$RESET" -a -z "$committed" -a -n "$squash" -a -z "$squash_next" ]; then
