@@ -160,7 +160,10 @@ ntag() {
         wname="${pref}work"
         ename="${pref}export"
         prev=$(getnum "refs/tags/$bname.*" "refs/tags/$wname.*" "refs/tags/$ename.*")
-        echo "bname=$bname wname=$wname ename=$ename prev=$prev"
+        local pad=$((- ${#bname} - ${#prev} - 1))
+        printf "%*s %s   %*s %s   %*s %s\n" $pad "$wname" "$(git rev-parse --short "$wname")" $(($pad - 2)) "$ename" "$(git rev-parse --short "$ename")" $pad "$bname" "$(git rev-parse --short "$bname")"
+        printf "%*s %s   %*s %s   %*s %s\n" $pad "$wname.$prev" "$(git rev-parse --short "$wname.$prev")" $(($pad - 2)) "$ename.$prev" "$(git rev-parse --short "$ename.$prev")" $pad "$bname.$prev" "$(git rev-parse --short "$bname.$prev")"
+
         if ! git diff --quiet "$wname..$ename"; then
             echo "Error: differences found in $wname..$ename"
             return 1
