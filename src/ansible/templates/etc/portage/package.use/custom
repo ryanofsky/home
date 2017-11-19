@@ -300,3 +300,13 @@ gnome-extra/cinnamon-desktop python_targets_python3_4
 # required by @selected
 # required by @world (argument)
 >=media-video/ffmpeg-3.3.4 openssl
+# required by dev-qt/qtcore-5.9.2::gentoo
+# required by dev-qt/qtnetwork-5.9.2::gentoo
+# required by dev-qt/qtwebkit-5.9.1::gentoo
+# required by dev-python/PyQt5-5.9.1::gentoo[webkit]
+# required by dev-python/qtconsole-4.3.0::gentoo
+# required by dev-python/ipython-5.4.1::gentoo[qt4,-qt5]
+# required by x11-wm/xpra-2.1.1::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-libs/libpcre2-10.30 pcre16

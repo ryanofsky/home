@@ -1,4 +1,4 @@
-/usr/portage/profiles/hardened/linux/amd64
+/usr/portage/profiles/default/linux/amd64/17.0/hardened
 /usr/portage/profiles/targets/systemd
 {% if inventory_hostname == "mini" or inventory_hostname == "think" %}
 /usr/portage/profiles/targets/desktop/gnome
