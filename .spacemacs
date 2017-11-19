@@ -352,6 +352,7 @@ you should place your code here."
  '(evil-search-module (quote evil-search))
  '(evil-want-fine-undo t)
  '(global-evil-search-highlight-persist t))
+ '(js-indent-level 2))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
