@@ -298,16 +298,12 @@ print(sys.argv[1].format(commit=Commits(sys.argv[2])))' "$desc" "$commits"
             local subj
             while read subj; do
                 local bb=$(sed "s/Merge branch '\([^']\+\)' into.*/\1/" <<<"$subj")
-                local bb=$(sed "s:Merge remote-tracking branch 'origin/pull/\([^']\+\)/head':#\1:" <<<"$bb")
+                local bb=$(sed "s:Merge remote-tracking branch 'origin/pull/\([^']\+\)/head':\1:" <<<"$bb")
                 local bp=$(get-pr "$bb")
                 if [ -n "$bases" ]; then
                     bases="$bases + "
                 fi
-                if [ -n "$bp" ]; then
-                    bases="$bases#${bp#origin/pr/}"
-                else
-                    bases="$bases$bb"
-                fi
+                bases="$bases#${bb}"
             done < <(git log --reverse --min-parents=2 --format=format:'%s' $master..$base2 && echo)
 
             echo "**This is based on $bases.** The non-base commits are:"
