@@ -100,7 +100,7 @@ update() {
                         merge_cherry=
                     fi
                     merge_log=
-                    prbranch=$(get-pr "$merge_source" || true)
+                    prbranch=$(meta-read "refs/heads/$merge_source/.prbranch" | sed s:refs/remotes/:: || true)
                     if [ -n "$prbranch" ]; then
                         merge_log="Merge remote-tracking branch '$prbranch'"
                     fi
