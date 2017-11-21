@@ -10,3 +10,12 @@
 
 # https://bugs.gentoo.org/show_bug.cgi?id=597194
 =net-p2p/amule-2.3.2
+
+# https://bugs.gentoo.org/637312
+=media-libs/faac-1.29.9
+
+# https://bugs.gentoo.org/635276
+=dev-util/electron-1.6.11-r1
+
+# https://bugs.gentoo.org/634152
+=media-plugins/live-2017.09.12
