@@ -115,9 +115,6 @@ dev-libs/gmime smime
 # https://bugs.gentoo.org/636722
 media-sound/audacity id3tag
 
-# https://bugs.gentoo.org/620764
-=dev-lang/spidermonkey-24.2.0-r4 -system-icu
-
 # (dependency required by "sys-fs/btrfs-progs-4.10.2::gentoo" [ebuild])
 # (dependency required by "app-emulation/docker-17.05.0_rc2::gentoo[btrfs]" [ebuild])
 # (dependency required by "@selected" [set])
