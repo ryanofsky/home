@@ -351,7 +351,7 @@ you should place your code here."
  '(browse-url-browser-function (quote browse-url-chromium))
  '(evil-search-module (quote evil-search))
  '(evil-want-fine-undo t)
- '(global-evil-search-highlight-persist t))
+ '(global-evil-search-highlight-persist t)
  '(js-indent-level 2))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
