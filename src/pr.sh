@@ -192,7 +192,7 @@ ntag() {
                 return 1
             fi
             echo "git-isclean.sh && git checkout $bname && git reset --hard origin/master"
-            echo "git-isclean.sh && git rebase -i $bname $ename"
+            echo "git-isclean.sh && git rebase -i --keep-empty --autosquash $bname $ename"
             echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
         else
             echo git tag "$bname.$((prev+1))" "$bname"
