@@ -87,6 +87,7 @@ update() {
             run git checkout "pr/$want"
 
             if [ -z "$RESET" ]; then
+                # FIXME this is wrong because first commit may contain cherry pick. maybe should recherrypick?
                 run git reset --hard $(git rev-list --min-parents=2 --max-count=1 HEAD)
             else
                 run git reset --hard "$XBASE"
