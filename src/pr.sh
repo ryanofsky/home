@@ -380,3 +380,163 @@ pr-rev() {
     fi
     echo utACK "$new"
 }
+
+log-find() {
+  git log --grep="$1" --all --source
+}
+
+check-branch() {
+    local branch="$1"
+    local ctx="$2"
+    if ! git rev-parse --quiet --verify "$branch" >/dev/null; then
+        echo "Error: bad branch '$branch'$ctx"
+    fi
+}
+
+pad() {
+    printf "%*s" "-$1" "$2"
+}
+
+brev() {
+    echo "$1" | sed -e 's:refs/heads/::' -e 's:refs/remotes/origin/pull/\([^/]\+\)/head:#\1:' -e 's:refs/remotes/\([^\/]\+\)/pull/\([^/]\+\)/head:\1#\2:' -e 's:refs/remotes/::'
+}
+
+pr-list() {
+    local red=$(tput setaf 1)
+    local green=$(tput setaf 2)
+    local reset=$(tput sgr0)
+
+    local f
+    find ~/src/meta -type f -printf '%P\n' | while read f; do
+        if [ "$f" = .git -o "$f" = "log" ]; then
+            continue
+        fi
+        local branch=${f%/*}
+        local attrib=${f##*/}
+        check-branch "$branch" " for '$f'"
+        if [ "$attrib" = .export ]; then
+            check-branch "$(cat ~/src/meta/"$f")" " in '$f'"
+        elif [ "$attrib" = .abandon ]; then
+            local abandon=$(cat ~/src/meta/"$f")
+            if [ ! -f ~/src/meta/"$f" -o -s ~/src/meta/"$f" ]; then
+                echo "Error: bad '$f' is not an empty file"
+            fi
+        elif [ "$attrib" = .prbranch ]; then
+            local rbranch=$(cat ~/src/meta/"$f")
+            local lbranch=$(cat ~/src/meta/"$rbranch"/.prlocal)
+            if [ "$branch" != "$lbranch" ]; then
+                echo "Error: bad '$lbranch/.prlocal' found '$lbranch' expected '$branch' from '$f'"
+            fi
+        elif [ "$attrib" = .prlocal ]; then
+            local lbranch=$(cat ~/src/meta/"$f")
+            local rbranch=$(cat ~/src/meta/"$lbranch"/.prbranch)
+            if [ "$branch" != "$rbranch" ]; then
+                echo "Error: bad '$lbranch/.prbranch' found '$rbranch' expected '$branch' from '$f'"
+            fi
+            check-branch "$(cat ~/src/meta/"$f")" " in '$f'"
+        elif [ "$attrib" = .prdest ]; then
+            check-branch "$(cat ~/src/meta/"$f")" " in '$f'"
+        elif [ "$attrib" = .prbase ]; then
+            check-branch "$(cat ~/src/meta/"$f")" " in '$f'"
+        elif [ "$attrib" = .prdesc.md ]; then
+            true
+        else
+            echo "Error: unknown attribute '$attrib' for '$f'"
+        fi
+    done
+
+    git for-each-ref --format='%(refname:short)' 'refs/heads/pr/*' | while read name; do
+        local show_all=
+        if [ "$#" -gt 0 ]; then
+          local arg=
+          local found=
+          local filter=
+          for arg in "$@"; do
+              if [ "$arg" = "-a" ]; then
+                  show_all=1
+              else
+                  filter=1
+                  if [[ "$name" == *"$arg"* ]]; then
+                    found=1;
+                    continue;
+                  fi
+              fi
+          done
+          if [ -n "$filter" -a -z "$found" ]; then continue; fi
+        fi
+        local dest=refs/remotes/origin/master
+        if [ -e "$HOME/src/meta/refs/heads/$name/.abandon" ]; then
+            dest=""
+        fi
+        if [ -e "$HOME/src/meta/refs/heads/$name/.prdest" ]; then
+            if [ -z "$dest" ]; then
+                echo "Error: replaced '$name' marked abandoned"
+            fi
+            dest=$(cat "$HOME/src/meta/refs/heads/$name/.prdest")
+        fi
+
+        local prbase=
+        if [ -e "$HOME/src/meta/refs/heads/$name/.prbase" ]; then
+            prbase=$(cat "$HOME/src/meta/refs/heads/$name/.prbase")
+        fi
+
+        local prbranch=
+        if [ -e "$HOME/src/meta/refs/heads/$name/.prbranch" ]; then
+            prbranch=$(cat "$HOME/src/meta/refs/heads/$name/.prbranch")
+            if [ -n "$prbase" ]; then
+                echo "Error: branch '$name' conflicting prbase '$prbase' prbranch '$prbranch'"
+            fi
+        fi
+
+        local src="$prbase"
+        if [ -e "$HOME/src/meta/refs/heads/$name/.export" ]; then
+            src=$(cat "$HOME/src/meta/refs/heads/$name/.export")
+            if [ -n "$prbase" ]; then
+                echo "Error: branch '$name' conflicting prbase '$prbase' src '$src'"
+            fi
+        fi
+
+        local state=unmerged
+        if [ -z "$dest" ]; then
+            state=abandoned
+            if [ -z "$show_all" ]; then continue; fi
+        else
+            local base=$(git merge-base "$name" "$dest")
+            local hash=$(git rev-parse "$name")
+            if [ "$hash" = "$base" ]; then
+                if [ -z "$show_all" ]; then continue; fi
+                state=merged
+            else
+                GIT_INDEX_FILE=/tmp/oindex git read-tree "$dest"
+                if ! git diff "$base".."$hash" | GIT_INDEX_FILE=/tmp/oindex git apply --cached --check 2>/dev/null; then
+                    state=conflicted
+                fi
+            fi
+            if [ -n "$prbranch" ]; then
+                if [ "$(git rev-parse "$prbranch")" != "$hash" ]; then
+                    echo "Error: branch '$name' doesn't match upstream '$prbranch'"
+                fi
+            fi
+        fi
+
+        local tag="$name"
+        local cur=$(getnum "refs/tags/$name.*")
+        if [ -n "$cur" ]; then
+           if [ "$hash" != "$(git rev-parse "$name.$cur")" ]; then
+               tag="$tag$red.$cur$reset"
+           else
+               tag="$tag$green.$cur$reset"
+           fi
+        else
+            tag="$tag$green$reset"
+        fi
+
+        local out=
+        out=$(pad 40 "$tag")
+        out=$(pad 60 "$out $(brev "$src")")
+        out=$(pad 80 "$out $(brev "$prbranch")")
+        out=$(pad 100 "$out $(brev "$dest")")
+        out=$(pad 120 "$out $state")
+        echo "$out"
+    done
+}
