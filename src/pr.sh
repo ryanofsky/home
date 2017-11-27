@@ -36,7 +36,7 @@ meta-write() {
 # Read meta value
 meta-read() {
     local name="$1"
-    cat "$HOME/src/meta/$name"
+    ! test -e "$HOME/src/meta/$name" || cat "$HOME/src/meta/$name"
 }
 
 # Associate PR name with PR number
