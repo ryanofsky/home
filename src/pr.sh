@@ -402,9 +402,14 @@ brev() {
 }
 
 pr-list() {
-    local red=$(tput setaf 1)
-    local green=$(tput setaf 2)
-    local reset=$(tput sgr0)
+    local red=
+    local green=
+    local reset=
+    if [ -t 1 ]; then
+      red=$(tput setaf 1)
+      green=$(tput setaf 2)
+      reset=$(tput sgr0)
+    fi
 
     local f
     find ~/src/meta -type f -printf '%P\n' | while read f; do
