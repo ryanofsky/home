@@ -6,7 +6,7 @@ TIMEOUT=300
 popup() {
     if test "$1" != 0; then while test $(xprintidle) -lt 2000; do sleep 1; done; fi
     echo "$(date) -- emacsclient"
-    e -c $(readlink -f "$HOME/.ln/org")/0.org
+    e -c $(readlink -f "$HOME/.ln/org")/todo.org
 }
 
 if [ "$1" = monitor ]; then
