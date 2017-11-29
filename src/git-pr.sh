@@ -23,6 +23,7 @@ update() {
     local want="$1"
     local first=1
     local committed=
+    declare -A patched
 
     while read COMMIT SUBJ; do
         if test -z "${SUBJ##|*}"; then
@@ -55,8 +56,12 @@ update() {
             fi
         fi
 
+        local desc="${rest//\//-}"
+
         # split name on + to check for commits that belong to multiple prs
-        # check for trailing ^ on pr name to check for commits that should be squashed
+        # trailing ^ on pr name means squash into previous commit
+        # trailing @ on pr name means squash into next commit
+        # trailing ^ on first commit dependency name means cherry pick rather than merge
         local found=
         local squash=
         local squash_next=
@@ -78,6 +83,16 @@ update() {
             continue
         fi
 
+        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash desc='$desc' ===="
+
+        local patch
+        for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
+            if [ -f "$patch" ]; then
+                run git apply --index -3 --verbose "$patch"
+                patched[$patch]=1
+            fi
+        done
+
         if [ -n "$first" ]; then
             first=
             if ! git rev-parse --verify "pr/$want"; then
@@ -87,10 +102,11 @@ update() {
             run git checkout "pr/$want"
 
             if [ -z "$RESET" ]; then
-                # FIXME this is wrong because first commit may contain cherry pick. maybe should recherrypick?
                 run git reset --hard $(git rev-list --min-parents=2 --max-count=1 HEAD)
             else
                 run git reset --hard "$XBASE"
+            fi
+
                 local m
                 for m in $(echo "$merge" | sed 's:+: :g'); do
                     if [ -z "${m#*^}" ]; then
@@ -126,34 +142,19 @@ update() {
                     export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
                     if [ -n "$merge_cherry" ]; then
                         run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
-                    elif [ -n "$merge_log" ]; then
+                    elif [ -z "$RESET" ]; then # skip merges if not resetting
+                    if [ -n "$merge_log" ]; then
                         run git merge --no-ff --no-edit "$merge_source" -m "$merge_log"
                     else
                         run git merge --no-ff --no-edit "$merge_source"
                     fi
+                    fi
                 done
-            fi
+
             run meta-write "refs/heads/pr/$want/.export" "refs/heads/$BRANCH"
-        else
-            # Skip squash into previous if no previous commits (unless resetting).
-            if [ -z "$RESET" -a -z "$committed" -a -n "$squash" -a -z "$squash_next" ]; then
-                continue
-            fi
-
-            # For non-first commit, treat merge list as list of things to squash
-            # by cherry-pick, instead of things to merge and preserve history
-            # of. Unlike first commit, treat these as arguments to cherry pick
-            # instead of like pr names, on assumption these will just be
-            # 1-commit branches off of the pr branch.
-            for m in $(echo "$merge" | sed 's:+: :g'); do
-                run git cherry-pick --no-commit "$m"
-                if [ -z "$squash_next" ]; then
-                    run git commit --amend --no-edit
-                fi
-            done
+        elif [ -n "$merge" ]; then
+            echo "Error: ignoring merge list '$merge' since not first commit of pr"
         fi
-
-        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash rest='$rest' ===="
 
         # Based on https://github.com/dingram/git-scripts/blob/master/scripts/git-cherry-pick-with-committer
         local metacommit=$COMMIT
@@ -182,6 +183,15 @@ update() {
             echo "(((((((((((sleep to avoid index.lock fs race)))))))))))"
             sleep 1
         fi
+
+        local patch
+        for patch in ~/src/meta/refs/heads/pr/"$want"/.postpatch-"$desc"*; do
+            if [ -f "$patch" ]; then
+                run git apply --index -3 --verbose "$patch"
+                patched[$patch]=1
+            fi
+        done
+
         local fix=
         if [ -n "$fixup" ]; then
             fix="fixup! $rest"$'\n'$'\n'
@@ -189,15 +199,28 @@ update() {
         if [ -n "$squash_next" ]; then
             true
         elif [ -n "$squash" ]; then
-            run git commit --amend --no-edit
+            # Skip squash into previous if no previous commits (unless resetting)
+            if [ -n "$committed" -o -n "$RESET" ]; then
+                run git commit --amend --no-edit
+            fi
         else
             run git commit -m"$fix$(git log -1 --pretty=format:%b $COMMIT)"
             committed=1
+        fi
+        if [[ $rest == *"SPECIAL"* ]]; then
+            run make -j12
         fi
     done < <(git log --format=format:'%H %s' --reverse "$BASE..$BRANCH" && echo)
     run git checkout $BRANCH
     echo "== Successfully exported branch pr/$want =="
     echo "ppush pr/$want"
+
+    local patch
+    for patch in ~/src/meta/refs/heads/pr/"$want"/.{pre,post}patch-*; do
+        if [ -f "$patch" -a -z "${patched[$patch]}" ]; then
+            echo "Warning: ignored patch $patch"
+        fi
+    done
 }
 
 RESET=
