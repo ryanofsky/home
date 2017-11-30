@@ -448,7 +448,7 @@ pr-list() {
         fi
     done
 
-    local git_dir=$(git rev-parse --git-dir)
+    local git_dir=$(readlink -f "$(git rev-parse --git-dir)")
 
     git for-each-ref --format='%(refname:short)' 'refs/heads/pr/*' | while read name; do
         local show_all=
