@@ -443,9 +443,7 @@ pr-list() {
             check-branch "$(cat ~/src/meta/"$f")" " in '$f'"
         elif [ "$attrib" = .prbase ]; then
             check-branch "$(cat ~/src/meta/"$f")" " in '$f'"
-        elif [ "$attrib" = .prdesc.md ]; then
-            true
-        else
+        elif [[ $attrib != .prdesc.md ]] && [[ $attrib != .prepatch-* ]] && [[ $attrib != .postpatch-* ]]; then
             echo "Error: unknown attribute '$attrib' for '$f'"
         fi
     done
