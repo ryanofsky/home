@@ -250,6 +250,7 @@ ppush() {
     echo "== Tag and push =="
     ntag "$name"
     echo git push -u russ $name.$cur +$name
+    echo "sleep 10; git fetch origin"
     echo
 
     echo "== Update =="
