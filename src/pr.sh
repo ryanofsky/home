@@ -448,6 +448,8 @@ pr-list() {
         fi
     done
 
+    local git_dir=$(git rev-parse --git-dir)
+
     git for-each-ref --format='%(refname:short)' 'refs/heads/pr/*' | while read name; do
         local show_all=
         if [ "$#" -gt 0 ]; then
@@ -510,9 +512,13 @@ pr-list() {
                 if [ -z "$show_all" ]; then continue; fi
                 state=merged
             else
-                GIT_INDEX_FILE=/tmp/oindex git read-tree "$dest"
-                if ! git diff "$base".."$hash" | GIT_INDEX_FILE=/tmp/oindex git apply --cached --check 2>/dev/null; then
-                    state=conflicted
+                GIT_INDEX_FILE=/tmp/prcheck-index git read-tree "$dest"
+                if ! git diff --binary "$base".."$hash" | GIT_INDEX_FILE=/tmp/prcheck-index git apply --cached --check 2>/dev/null; then
+                    mkdir -p /tmp/prcheck-work
+                    git diff -z --diff-filter=a --name-only "$base".."$hash" | GIT_INDEX_FILE=/tmp/prcheck-index GIT_WORK_TREE=/tmp/prcheck-work xargs -0r git checkout "$dest" 2>/dev/null || true
+                    if ! git diff --binary "$base".."$hash" | (cd /tmp/prcheck-work; GIT_DIR="$git_dir" GIT_INDEX_FILE=/tmp/prcheck-index GIT_WORK_TREE=/tmp/prcheck-work git apply -3 --check 2>/dev/null); then
+                        state=conflicted
+                    fi
                 fi
             fi
             if [ -n "$prbranch" ]; then
