@@ -186,19 +186,18 @@ ntag() {
                 echo "No changes ($wname = $ename.$prev = $(git rev-parse "$wname"))"
             elif [ "$(git rev-parse "$wname")" = "$(git rev-parse "$wname.$prev")" ]; then
                 echo "No changes ($wname = $wname.$prev = $(git rev-parse "$wname"))"
-                echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
             else
                 echo "Unexpected"
                 return 1
             fi
-            echo "git-isclean.sh && git checkout $bname && git reset --hard origin/master"
-            echo "git-isclean.sh && git rebase -i --keep-empty --autosquash $bname $ename"
-            echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
         else
             echo git tag "$bname.$((prev+1))" "$bname"
             echo git tag "$wname.$((prev+1))" "$wname"
             echo git tag "$ename.$((prev+1))" "$ename"
         fi
+        echo "git-isclean.sh && git checkout $bname && git reset --hard origin/master"
+        echo "git-isclean.sh && git rebase -i --keep-empty --autosquash $bname $ename"
+        echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
         return 0
     fi
 
