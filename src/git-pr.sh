@@ -149,6 +149,8 @@ update() {
                         run git merge --no-ff --no-edit "$merge_source"
                     fi
                     fi
+                    unset GIT_AUTHOR_DATE
+                    unset GIT_COMMITTER_DATE
                 done
 
             run meta-write "refs/heads/pr/$want/.export" "refs/heads/$BRANCH"
@@ -207,6 +209,13 @@ update() {
             run git commit -m"$fix$(git log -1 --pretty=format:%b $COMMIT)"
             committed=1
         fi
+        unset GIT_AUTHOR_NAME
+        unset GIT_AUTHOR_EMAIL
+        unset GIT_AUTHOR_DATE
+        unset GIT_COMMITTER_NAME
+        unset GIT_COMMITTER_EMAIL
+        unset GIT_COMMITTER_DATE
+
         if [[ $rest == *"SPECIAL"* ]]; then
             run make -j12
         fi
