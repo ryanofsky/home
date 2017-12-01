@@ -83,7 +83,7 @@ update() {
             continue
         fi
 
-        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash desc='$desc' ===="
+        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash desc='$desc' first=$first committed=$committed ===="
 
         local patch
         for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
@@ -142,7 +142,7 @@ update() {
                     export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
                     if [ -n "$merge_cherry" ]; then
                         run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
-                    elif [ -z "$RESET" ]; then # skip merges if not resetting
+                    elif [ -n "$RESET" ]; then # skip merges if not resetting
                     if [ -n "$merge_log" ]; then
                         run git merge --no-ff --no-edit "$merge_source" -m "$merge_log"
                     else
