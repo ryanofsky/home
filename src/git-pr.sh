@@ -138,7 +138,7 @@ update() {
                         NEW_TIMESTAMP="$PREV_TIMESTAMP"
                         NEW_TZ="$PREV_TZ"
                     fi
-                    export GIT_AUTHOR_DATE="$PREV_TIMESTAMP $PREV_TZ"
+                    export GIT_AUTHOR_DATE="$NEW_TIMESTAMP $NEW_TZ"
                     export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
                     if [ -n "$merge_cherry" ]; then
                         run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
