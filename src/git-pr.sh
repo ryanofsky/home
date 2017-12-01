@@ -143,11 +143,11 @@ update() {
                     if [ -n "$merge_cherry" ]; then
                         run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
                     elif [ -n "$RESET" ]; then # skip merges if not resetting
-                    if [ -n "$merge_log" ]; then
-                        run git merge --no-ff --no-edit "$merge_source" -m "$merge_log"
-                    else
-                        run git merge --no-ff --no-edit "$merge_source"
-                    fi
+                        if [ -n "$merge_log" ]; then
+                            run git merge --no-ff --no-edit "$merge_source" -m "$merge_log"
+                        else
+                            run git merge --no-ff --no-edit "$merge_source"
+                        fi
                     fi
                     unset GIT_AUTHOR_DATE
                     unset GIT_COMMITTER_DATE
