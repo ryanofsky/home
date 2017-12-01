@@ -516,7 +516,7 @@ pr-list() {
                 if ! git diff --binary "$base".."$hash" | GIT_INDEX_FILE=/tmp/prcheck-index git apply --cached --check 2>/dev/null; then
                     mkdir -p /tmp/prcheck-work
                     git diff -z --diff-filter=a --name-only "$base".."$hash" | GIT_INDEX_FILE=/tmp/prcheck-index GIT_WORK_TREE=/tmp/prcheck-work xargs -0r git checkout "$dest" 2>/dev/null || true
-                    if ! git diff --binary "$base".."$hash" | (cd /tmp/prcheck-work; GIT_DIR="$git_dir" GIT_INDEX_FILE=/tmp/prcheck-index GIT_WORK_TREE=/tmp/prcheck-work git apply -3 --check 2>/dev/null); then
+                    if git diff --binary "$base".."$hash" | (cd /tmp/prcheck-work; GIT_DIR="$git_dir" GIT_INDEX_FILE=/tmp/prcheck-index GIT_WORK_TREE=/tmp/prcheck-work git apply -3 --check 2>&1 || echo "with conflicts") | grep -q "with conflicts"; then
                         state=conflicted
                     fi
                 fi
