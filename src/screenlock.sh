@@ -37,11 +37,11 @@ handle-gnome-lock() {
 }
 
 handle-locked() {
-    echo "$(date) -- locked"
+    echo "$(date) -- locked" | tee -a ~/.ln/org/date
 }
 
 handle-unlocked() {
-    echo "$(date) -- unlocked"
+    echo "$(date) -- unlocked" | tee -a ~/.ln/org/date
 }
 
 handle-unity-monitor() {

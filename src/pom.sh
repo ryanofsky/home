@@ -36,6 +36,11 @@ if [ "$1" = monitor ]; then
         ((++TIMEOUTS))
     done
 else
-    T=${1:-25m}
+    T=25m
+    if [[ "$1" =~ ^[0-9] ]]; then
+        T="$1"
+        shift
+    fi
     echo "$T" >> $TMPDIR/pom.d
+    echo "$(date) pom $T $@" | tee -a ~/.ln/org/date
 fi
