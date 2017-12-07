@@ -232,6 +232,14 @@ ppush() {
     else
         prev="$((cur-1))"
     fi
+    local r1=$(git rev-parse "$name.$prev")
+    local r2
+    if [ -n "$3" ]; then
+        cur="$3"
+        r2=$(git rev-parse "$name.$cur")
+    else
+        r2=$(git rev-parse "$name")
+    fi
     local descpath="$HOME/src/meta/refs/heads/$name/.prdesc.md"
     local prnum="$(get-pr "$name")"
     if [ -z "$prnum" ]; then
@@ -241,7 +249,7 @@ ppush() {
         local b2="$name.$cur"
         local u="https://github.com/ryanofsky/bitcoin/commits"
         local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
-        local r="$(git rev-parse "$b1") -> $(git rev-parse "$name")"
+        local r="$r1 -> $r2"
         local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
@@ -268,9 +276,9 @@ ppush() {
     if [ -n "$prnum" ]; then
         echo "== Comment =="
         if [ "$base1" = "$base2" ]; then
-            if [ "$(git merge-base "$b1" "$name")" = "$(git rev-parse "$b1")" ]; then
-                echo "Added $(git rev-list "$b1..$name" | wc -l) commits $r ($b, [compare]($c))"
-            elif git diff --quiet "$b1".."$name"; then
+            if [ "$(git merge-base "$r1" "$r2")" = "$r1" ]; then
+                echo "Added $(git rev-list "$r1..$r2" | wc -l) commits $r ($b, [compare]($c))"
+            elif git diff --quiet "$r1".."$r2"; then
                 echo "Squashed $r ($b)"
             else
                 echo "Updated $r ($b)"
@@ -284,7 +292,7 @@ ppush() {
         echo "== Description =="
         local desc=$(cat "$descpath" 2>/dev/null || true)
         if [ -n "$desc" ]; then
-          local commits=$(git log --reverse $base2..$name --format=format:'[`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)')
+          local commits=$(git log --reverse $base2..$r2 --format=format:'[`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)')
           python3 -c '
 import sys
 
@@ -323,9 +331,9 @@ print(sys.argv[1].format(commit=Commits(sys.argv[2])))' "$desc" "$commits"
         echo
 
     if [ -n "$prnum" ]; then
-        git log --reverse $base2..$name --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)'
+        git log --reverse $base2..$r2 --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)'
     else
-        git log --reverse $base2..$name --format=format:'- %H %s'
+        git log --reverse $base2..$r2 --format=format:'- %H %s'
     fi
 }
 
