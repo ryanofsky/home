@@ -226,6 +226,7 @@ update() {
 
         if [ -n "$scr" ]; then
             run script-check HEAD
+            run git checkout "pr/$want"
         fi
 
         if [[ $rest == *"SPECIAL"* ]]; then
