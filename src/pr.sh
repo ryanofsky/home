@@ -557,3 +557,11 @@ pr-list() {
         echo "$out"
     done
 }
+
+script-get() {
+  git log -n1 --pretty=%b "$1" | sed -n '/-BEGIN VERIFY SCRIPT-/,/-END VERIFY SCRIPT-/p' | sed '1d;$d'
+}
+
+script-check() {
+  contrib/devtools/commit-script-check.sh "$1^..$1"
+}

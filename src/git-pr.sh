@@ -177,10 +177,18 @@ update() {
         if (($NEW_TIMESTAMP < $PREV_TIMESTAMP)); then
             GIT_COMMITTER_DATE="$PREV_TIMESTAMP $NEW_TZ"
         fi
+
+        local scr=$(script-get "$COMMIT")
+        if [ -z "$scr" ]; then
         # Try to push past failure. Useful with:
         #   git config --global rerere.enabled true
         #   git config --global rerere.autoupdate true
         run git cherry-pick --no-commit "$COMMIT" || true
+        else
+           run bash -c "$scr"
+           git add -u
+        fi
+
         if [ -e "$(git rev-parse --git-dir)/index.lock" ]; then
             echo "(((((((((((sleep to avoid index.lock fs race)))))))))))"
             sleep 1
@@ -215,6 +223,10 @@ update() {
         unset GIT_COMMITTER_NAME
         unset GIT_COMMITTER_EMAIL
         unset GIT_COMMITTER_DATE
+
+        if [ -n "$scr" ]; then
+            run script-check HEAD
+        fi
 
         if [[ $rest == *"SPECIAL"* ]]; then
             run make -j12
