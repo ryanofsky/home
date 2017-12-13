@@ -164,18 +164,6 @@ ntag() {
         printf "%*s %s   %*s %s   %*s %s\n" $pad "$wname" "$(git rev-parse --short "$wname")" $(($pad - 2)) "$ename" "$(git rev-parse --short "$ename")" $pad "$bname" "$(git rev-parse --short "$bname")"
         printf "%*s %s   %*s %s   %*s %s\n" $pad "$wname.$prev" "$(git rev-parse --short "$wname.$prev")" $(($pad - 2)) "$ename.$prev" "$(git rev-parse --short "$ename.$prev")" $pad "$bname.$prev" "$(git rev-parse --short "$bname.$prev")"
 
-        if ! git diff --quiet "$wname..$ename"; then
-            echo "Error: differences found in $wname..$ename"
-            return 1
-        fi
-        if [ "$(git merge-base "$bname" "$wname")" != "$(git rev-parse $bname)" ]; then
-           echo "Error: incompatible base branch $bname for work branch $wname"
-           return 1
-        fi
-        if [ "$(git merge-base "$bname" "$ename")" != "$(git rev-parse $bname)" ]; then
-            echo "Error: incompatible base branch $bname for work branch $ename"
-            return 1
-        fi
         if [ "$(git rev-parse "$bname")" = "$(git rev-parse "$bname.$prev")" -a \
              "(" "$(git rev-parse "$wname")" = "$(git rev-parse "$wname.$prev")" -o \
                  "$(git rev-parse "$wname")" = "$(git rev-parse "$ename.$prev")" ")" -a \
@@ -198,6 +186,15 @@ ntag() {
         echo "git-isclean.sh && git checkout $bname && git reset --hard origin/master"
         echo "git-isclean.sh && git rebase -i --keep-empty --autosquash $bname $ename"
         echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
+        if ! git diff --quiet "$wname..$ename"; then
+            echo "Warning: differences found in $wname..$ename"
+        fi
+        if [ "$(git merge-base "$bname" "$wname")" != "$(git rev-parse $bname)" ]; then
+           echo "Warning: incompatible base branch $bname for work branch $wname"
+        fi
+        if [ "$(git merge-base "$bname" "$ename")" != "$(git rev-parse $bname)" ]; then
+            echo "Warning: incompatible base branch $bname for work branch $ename"
+        fi
         return 0
     fi
 
