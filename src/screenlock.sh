@@ -36,12 +36,19 @@ handle-gnome-lock() {
     exit $?
 }
 
+idle-str() {
+    local idle=$(xprintidle)
+    local min=$((idle/60000))
+    local ms=$((idle%60000))
+    printf "%s (%dm %d.%03ds)" "$idle" "$min" "$((ms/1000))" "$((ms%1000))"
+}
+
 handle-locked() {
-    echo "$(date) -- locked" | tee -a ~/.ln/org/date
+    echo "$(date) -- locked idle $(idle-str)" | tee -a ~/.ln/org/date
 }
 
 handle-unlocked() {
-    echo "$(date) -- unlocked" | tee -a ~/.ln/org/date
+    echo "$(date) -- unlocked idle $(idle-str)" | tee -a ~/.ln/org/date
 }
 
 handle-unity-monitor() {
