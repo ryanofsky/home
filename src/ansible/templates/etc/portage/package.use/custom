@@ -316,3 +316,7 @@ gnome-extra/cinnamon-desktop python_targets_python3_4
 # required by app-office/libreoffice-5.4.3.2::gentoo
 # required by @preserved-rebuild (argument)
 >=dev-libs/xmlsec-1.2.24-r1 nss
+# required by dev-libs/libappindicator-12.10.0-r301::gentoo
+# required by net-im/signal-desktop-bin-1.0.40::gentoo
+# required by net-im/signal-desktop-bin (argument)
+>=dev-libs/libdbusmenu-16.04.0 gtk3
