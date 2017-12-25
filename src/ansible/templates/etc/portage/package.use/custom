@@ -64,11 +64,13 @@ gnome-extra/chrome-gnome-shell python_single_target_python3_5
 media-video/totem python_single_target_python3_5
 net-irc/hexchat python_single_target_python3_5
 media-tv/kodi python_single_target_python3_5
-dev-libs/libpeas python_single_target_python3_5
 dev-libs/libcec python_single_target_python3_5
-app-editors/gedit python_single_target_python3_5
 net-analyzer/rrdtool python_single_target_python3_5
 media-sound/gnome-music python_single_target_python3_5
+
+net-dns/avahi gdbm
+
+media-libs/mesa opencl
 
 # 32 bit crap for adobe
 */* abi_x86_32
@@ -125,6 +127,11 @@ app-text/asciidoc python_single_target_python2_7
 # (dependency required by "@selected" [set])
 # (dependency required by "@world" [argument])
 gnome-extra/cinnamon-desktop python_targets_python3_4
+
+media-sound/audacious -qt5
+media-video/totem -python_single_target_python3_5
+media-video/vlc qt5
+media-plugins/audacious-plugins -qt5
 
 # auto
 
