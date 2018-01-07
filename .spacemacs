@@ -312,6 +312,7 @@ you should place your code here."
                                (quote
                                  ((sequence "NEXT(n)" "WAIT(w@/@)" "PROJ(p)" "GOAL(g)" "|" "DONE(d@/@)" "NVM(v@/@)" "DEAD(x@/@)" "EXPORTED(e@/@)"))))
                              (global-set-key (kbd "<f9>") 'toggle-window-split)
+                             (global-set-key (kbd "<f12>") 'helm-mini)
                         )
   )
 
