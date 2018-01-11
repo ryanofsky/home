@@ -457,6 +457,7 @@ pr-list() {
 
     git for-each-ref --format='%(refname:short)' 'refs/heads/pr/*' | while read name; do
         local show_all=
+        local show_conflicted=
         if [ "$#" -gt 0 ]; then
           local arg=
           local found=
@@ -464,6 +465,8 @@ pr-list() {
           for arg in "$@"; do
               if [ "$arg" = "-a" ]; then
                   show_all=1
+              elif [ "$arg" = "-c" ]; then
+                  show_conflicted=1
               else
                   filter=1
                   if [[ "$name" == *"$arg"* ]]; then
@@ -531,6 +534,10 @@ pr-list() {
                     echo "Error: branch '$name' doesn't match upstream '$prbranch'"
                 fi
             fi
+        fi
+
+        if [ -n "$show_conflicted" -a "$state" != conflicted ]; then
+            continue
         fi
 
         local tag="$name"
