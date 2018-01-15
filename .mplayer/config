@@ -3,3 +3,5 @@
 utf8=yes
 ao="pulse"
 af="scaletempo"
+subfont-text-scale=2
+subfont-osd-scale=3
