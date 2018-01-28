@@ -456,9 +456,11 @@ kconfig() {
       -e IP_VS_PROTO_TCP \
       -e IP_VS_PROTO_UDP \
       -e IP_VS_NFCT \
-      -e CONFIG_CFQ_GROUP_IOSCHED \
-      -m CONFIG_VXLAN \
-      -m CONFIG_IPVLAN \
+      -m IP_VS_RR \
+      -e CFQ_GROUP_IOSCHED \
+      -m VXLAN \
+      -e NET_L3_MASTER_DEV \
+      -m IPVLAN \
       -m CONFIG_DUMMY
 
     # lxc-checkpoint options
@@ -539,6 +541,7 @@ kconfig() {
 
     # Systemd required https://github.com/systemd/systemd/blob/master/README
     scripts/config \
+      -e GENTOO_LINUX_INIT_SYSTEMD \
       -e DEVTMPFS \
       -e CGROUPS \
       -e INOTIFY_USER \
@@ -555,7 +558,9 @@ kconfig() {
       -e DMIID \
       -e BLK_DEV_BSG \
       -e NET_NS \
-      -e DEVPTS_MULTIPLE_INSTANCES
+      -e CRYPTO_USER_API_HASH \
+      -e BPF_SYSCALL \
+      -e CGROUP_BPF
 
     # Systemd optional https://github.com/systemd/systemd/blob/master/README
     # Symbol: CONFIG_UEVENT_HELPER_PATH=""
@@ -600,7 +605,6 @@ kconfig() {
         -m NFT_EXTHDR \
         -m NFT_META \
         -m NFT_CT \
-        -m NFT_RBTREE \
         -m NFT_HASH \
         -m NFT_COUNTER \
         -m NFT_LOG \
@@ -702,7 +706,9 @@ kconfig() {
       -m NETFILTER_XT_MATCH_STRING \
       -m NETFILTER_XT_MATCH_TCPMSS \
       -m NETFILTER_XT_MATCH_TIME \
-      -m NETFILTER_XT_MATCH_U32
+      -m NETFILTER_XT_MATCH_U32 \
+      -m NF_SOCKET_IPV4 \
+      -m NF_SOCKET_IPV6
 
     # libvirt modules (from emerge output)
     scripts/config \

@@ -1,5 +1,4 @@
 sys-devel/gcc **
-=net-p2p/go-ethereum-9999 **
 =app-crypt/acme-9999 **
 =app-crypt/letsencrypt-9999 **
 {% if inventory_hostname == "think" %}

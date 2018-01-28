@@ -1,4 +1,4 @@
-- hosts: mini
+- hosts: think
   tasks:
     - name: Make kernel.
       script: scripts/script.sh make-kernel

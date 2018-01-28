@@ -15,4 +15,4 @@ www-plugins/adobe-flash AdobeFlash-11.x
 
 # required by media-tv/emby-server-3.2.19.0-r1::megacoffee
 # required by emby-server (argument)
->=dev-dotnet/referenceassemblies-pcl-4.6 dotnet-eula
+dev-dotnet/referenceassemblies-pcl dotnet-eula
