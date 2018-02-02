@@ -456,6 +456,11 @@ pr-list() {
     local git_dir=$(readlink -f "$(git rev-parse --git-dir)")
 
     git for-each-ref --format='%(refname:short)' 'refs/heads/pr/*' | while read name; do
+        local prbranch=
+        if [ -e "$HOME/src/meta/refs/heads/$name/.prbranch" ]; then
+            prbranch=$(cat "$HOME/src/meta/refs/heads/$name/.prbranch")
+        fi
+
         local show_all=
         local show_conflicted=
         if [ "$#" -gt 0 ]; then
@@ -469,7 +474,7 @@ pr-list() {
                   show_conflicted=1
               else
                   filter=1
-                  if [[ "$name" == *"$arg"* ]]; then
+                  if [[ "$name" == *"$arg"* ]] || [[ "$prbranch" == *"$arg"* ]]; then
                     found=1;
                     continue;
                   fi
@@ -491,12 +496,7 @@ pr-list() {
         local prbase=
         if [ -e "$HOME/src/meta/refs/heads/$name/.prbase" ]; then
             prbase=$(cat "$HOME/src/meta/refs/heads/$name/.prbase")
-        fi
-
-        local prbranch=
-        if [ -e "$HOME/src/meta/refs/heads/$name/.prbranch" ]; then
-            prbranch=$(cat "$HOME/src/meta/refs/heads/$name/.prbranch")
-            if [ -n "$prbase" ]; then
+            if [ -n "$prbranch" ]; then
                 echo "Error: branch '$name' conflicting prbase '$prbase' prbranch '$prbranch'"
             fi
         fi
@@ -504,15 +504,15 @@ pr-list() {
         local src="$prbase"
         if [ -e "$HOME/src/meta/refs/heads/$name/.export" ]; then
             src=$(cat "$HOME/src/meta/refs/heads/$name/.export")
-            if [ -n "$prbase" ]; then
-                echo "Error: branch '$name' conflicting prbase '$prbase' src '$src'"
-            fi
         fi
 
         local state=unmerged
         if [ -z "$dest" ]; then
             state=abandoned
             if [ -z "$show_all" ]; then continue; fi
+        elif [ -n "$src" -a -n "$prbase" ]; then
+            state=adjunct
+            prbranch="$prbase"
         else
             local base=$(git merge-base "$name" "$dest")
             local hash=$(git rev-parse "$name")
