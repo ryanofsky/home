@@ -89,6 +89,12 @@ mirror-date() {
     date -u +"%Y%m%dT%H%M%SZ"
 }
 
+# print latest date in format used for snapshots
+mirror-latest() {
+    local dir="$1"
+    date -u +"%Y%m%dT%H%M%SZ" --date=@$(find "$dir" -printf '%T@\n' | sort -n | tail -n1)
+}
+
 # snap (src) (dst) (sdate)
 # print command to create $dst@$sdate snapshot from $src ONLY if $src has been
 # modified since the previous snapshot
@@ -154,12 +160,195 @@ mirror-check() {
     done | sort
 }
 
+# git-pack (git_dir)
+# repack loose objects & pack files without .keep tags into single new pack with .keep tag
+# also pack refs and delete stale server-info
+# warn about unexpected files in object and ref directories
+mirror-git-pack() {
+    local git_dir="$1"
+    rm -vf "$git_dir/info/refs" "$git_dir/objects/info/packs"
+    test ! -e "$git_dir/branches" || rmdir -v "$git_dir/branches"
+
+    local pack=$(
+        (
+            for i in "$git_dir"/objects/pack/pack-????????????????????????????????????????.idx; do
+                if [ -e "$i" ] && ! [ -e "${i%.idx}.keep" ]; then
+                    git show-index < "$i" | cut -d' ' -f2
+                fi
+            done;
+            local m=("$git_dir"/objects/??)
+            if [ -e "${m[0]}" ]; then
+                (cd "$git_dir/objects"; find ?? -type f -printf '%p\n' | sed 's:/::')
+            fi
+        ) | GIT_DIR="$git_dir" git pack-objects -q "$git_dir/objects/pack/pack" --honor-pack-keep --non-empty)
+
+    if [ -n "$pack" ]; then
+        run touch -r "$git_dir/objects/pack/pack-${pack}.idx" "$git_dir/objects/pack/pack-${pack}.keep"
+    fi
+
+    GIT_DIR="$git_dir" git prune-packed
+    for i in "$git_dir"/objects/pack/pack-????????????????????????????????????????.idx; do
+        if [ -e "$i" ] && ! [ -e "${i%.idx}.keep" ]; then
+            rm -fv "$i" "${i%.idx}.pack"
+        fi
+    done
+
+    if [ -n "$(find "$git_dir/refs" -type f -'(' -name HEAD -prune -o -print -')')" ]; then
+        GIT_DIR="$git_dir" run git pack-refs --all
+    fi
+    find "$git_dir/refs" -depth -mindepth 1 -type d -empty -delete
+    if [ -n "$(find "$git_dir/objects" -type f -'(' -name 'pack-*' -prune -o -print -')')" ]; then
+        echo "WARNING: Unexpected files found in $git_dir/objects"
+    fi
+    if [ -n "$(find "$git_dir/refs" -type f -'(' -name HEAD -prune -o -print -')')" ]; then
+        echo "WARNING: Unexpected files found in $git_dir/refs"
+    fi
+    local find=(find "$git_dir" '-(' -path "$git_dir/objects/pack/pack-*.keep" -o -path "$git_dir/refs" ')' -prune -o -empty -print)
+    if [ -n "$("${find[@]}")" ]; then
+        echo "WARNING: Unexpected empty files/dirs found in in $git_dir:"
+        "${find[@]}"
+    fi
+}
+
+# safe-git-pick (git_dir) (backup_dir)
+# modify $git_dir in-place similar to git-pack command above, but before doing
+# this, create reflinked backup copy of it inside a backup directory (must
+# already exist). delete the backup if no changes are made, but keep it and
+# print a warning to manually check the changes if any are found
+mirror-safe-git-pack() {
+    local git_dir="$1"
+    local backup_dir="$2"
+
+    if ! [ -d "$backup_dir" ]; then
+        echo "Error: safe-git-pack backup dir '$backup_dir' does not exist" >&2
+        return 1
+    fi
+
+    local git_backup="$backup_dir/${git_dir//\//_}"
+    while [ -e "$git_backup" ]; do git_backup="${git_backup}_"; done
+
+    cp -a --reflink "$git_dir" "$git_backup"
+    mirror-git-pack "$git_dir"
+
+    if [ -z "$(rsync -ncia --delete "$git_dir/" "$git_backup/")" ]; then
+        rm -rf "$git_backup"
+    else
+        local check="git-contains.py ${git_backup@Q} ${git_dir@Q}"
+        echo "Warning: Repacked git dir '$git_dir', verify with: $check"
+        echo "$check" >> "$backup_dir/check.sh"
+        echo "rsync -ncirltDHX --delete ${git_backup@Q}/ ${git_dir@Q}" >> "$backup_dir/check.sh"
+    fi
+}
+
+# half unit-test for git-pack function. creates a temporary dummy git repository
+# and calls git-pack on it, but doesn't do any automated error checking, just prints
+# output for manual inspection
+mirror-test-git-pack() {
+    local d=$(mktemp -d)
+    local git_dir="$d/.git"
+
+    echo "=== mirror-git-pack init ==="
+    git init "$d"
+    local loose=$(echo loose | GIT_DIR="$git_dir" git hash-object -w --stdin)
+    local keep=$(echo keep | GIT_DIR="$git_dir" git hash-object -w --stdin)
+    local nokeep=$(echo nokeep | GIT_DIR="$git_dir" git hash-object -w --stdin)
+    local p_keep=$( echo "$keep" | GIT_DIR="$git_dir" git pack-objects -q "$git_dir/objects/pack/pack")
+    local p_nokeep=$( (echo "$keep"; echo "$nokeep") | GIT_DIR="$git_dir" git pack-objects -q "$git_dir/objects/pack/pack")
+    touch "$git_dir/objects/pack/pack-${p_keep}.keep"
+    GIT_DIR="$git_dir" git prune-packed
+    echo
+
+    echo "=== mirror-git-pack before keep=${keep:0:7} nokeep=${nokeep:0:7} loose=${loose:0:7} ==="
+    find "$git_dir/objects" -type f | sort
+    for f in "$git_dir"/objects/pack/pack-????????????????????????????????????????.idx; do
+        echo "== $f =="
+        git show-index < "$f"
+    done
+    echo
+
+    echo "=== mirror-git-pack [1/2] ==="
+    mirror-git-pack "$git_dir"
+    echo
+
+    echo "=== mirror-git-pack [2/2] ==="
+    mirror-git-pack "$git_dir"
+    echo
+
+    echo "=== mirror-git-pack after ==="
+    find "$git_dir/objects" -type f | sort
+    for f in "$git_dir"/objects/pack/pack-????????????????????????????????????????.idx; do
+        echo "== $f =="
+        git show-index < "$f"
+    done
+}
+
+# git-rsync ...
+# wrapper around rsync to copy git dir to a destination, but exclude
+# (and delete any exluded files on destination) working dir git files
+# like the index and caches
+mirror-git-rsync() {
+    run rsync \
+        -aDHX \
+        --inplace \
+        --numeric-ids \
+        --chown=1000:1000 \
+        --chmod=u=rwX,go=rX \
+        --exclude=/index \
+        --exclude=/ORIG_HEAD \
+        --exclude=/FETCH_HEAD \
+        --exclude=/COMMIT_EDITMSG \
+        --exclude=/gitk.cache \
+        --exclude=/MERGE_RR \
+        --exclude=/worktrees \
+        --exclude=/rr-cache \
+        --exclude=/qgit_cache.dat \
+        --delete --delete-excluded "$@"
+}
+
+# snap-start (snap_dir) (prev) (tmp)
+mirror-snap-start() {
+    local snap_dir="$1"
+    local prev="$2"
+    local tmp="$3"
+    if [ -z "$prev" ] || ! [ -d "$snap_dir/$prev" ]; then
+        echo "Error: can't create snapshot '$snap_dir/$tmp' from invalid base '$prev'.">&2
+        return 1
+    fi
+    if [ -e "$snap_dir/$tmp" ]; then
+        echo "Error: can't create snapshot '$snap_dir/$tmp' from '$prev' because it already exists.">&2
+        return 1
+    fi
+    run btrfs su snapshot "$snap_dir/$prev" "$snap_dir/$tmp"
+}
+
+# snap-finish (snap_dir) (prev) (tmp) (new)
+mirror-snap-finish() {
+    local snap_dir="$1"
+    local prev="$2"
+    local tmp="$3"
+    local new="$4"
+    if [ -z "$(rsync -nciaDHX --delete "$snap_dir/$tmp/" "$snap_dir/$prev")" ]; then
+        run btrfs su delete "$snap_dir/$tmp"
+    elif [[ $prev < $new ]]; then
+        run mv -vT "$snap_dir/$tmp" "$snap_dir/$new"
+        run btrfs property set -ts "$snap_dir/$new" ro true
+    else
+        echo "Error: can't rename '$snap_dir/$tmp' to '$new' because doesn't follow previous snapshot '$prev'">&2
+        return 1
+    fi
+}
+
 # remotely list snapshots matching pattern
 mirror-ssh-ls() {
     local remote_host="$1"
     local remote_dir="$2"
     local subvol="$3"
     ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* 2>/dev/null || true"
+}
+
+run() {
+    echo "$@"
+    "$@"
 }
 
 if [ "$#" -ne 0 ]; then
