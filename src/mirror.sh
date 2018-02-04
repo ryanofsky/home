@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# replace btrfs directory with btrfs subvolume
 mirror-tovol() {
     local path="${1%/}"
     mv -v "$path" "${path}_tovol_"
@@ -8,6 +9,8 @@ mirror-tovol() {
     rm -rf "${path}_tovol_"
 }
 
+# send (local_dir) (remote_dir) (snapshot...)
+# print btrfs send/receive commands for sending local subvolume to remote
 mirror-send() {
     local local_dir="$1"
     shift
@@ -59,20 +62,34 @@ mirror-send() {
     done
 }
 
+# changed (snapshot1_path) (subvol2_path) && echo same || echo different
+# compare generation numbers on two subvolume/snapshots
 mirror-changed() {
     test "$(btrfs subvolume find-new "$1" 99999999)" != "$(btrfs subvolume find-new "$2" 99999999)"
 }
 
+# ls (directory) [strip prefix]
+#
+# print child subvolumes of whatever subvolume contains directory,
+# and optionally filter/strip prefix, since output weirdly contains
+# volume name as first path component
+#
+# not recursive, and awkwardly includes subvolumes not directly in
+# provided path, elsewhere on same subvolume
 mirror-ls() {
     local path="$1"
     local strip="$2"
     btrfs su list -o "$path" | sed "s:^ID [0-9]\\+ gen [0-9]\\+ top level [0-9]\\+ path $strip::"
 }
 
+# print current date in format used for snapshots
 mirror-date() {
     date -u +"%Y%m%dT%H%M%SZ"
 }
 
+# snap (src) (dst) (sdate)
+# print command to create $dst@$sdate snapshot from $src ONLY if $src has been
+# modified since the previous snapshot
 mirror-snap() {
     local src="$1"
     local dst="$2"
@@ -85,6 +102,10 @@ mirror-snap() {
     fi
 }
 
+# snaps (path) (strip) (prefix)
+# search path for live subvolumes not in .mirror/.snapshot directories that have
+# been modified since previous snapshot, and print commands to create new
+# snapshots with current date
 mirror-snaps() {
     local path="$1"
     local strip="$2"
@@ -101,6 +122,9 @@ mirror-snaps() {
     return 0
 }
 
+# output list of snapshots in a directory that can be passed as arguments to mirror-send
+# compare each snapshot in directory against global EXPECT array
+# if size is too big or snapshot name is unknown, print error
 mirror-check() {
     local dir="$1"
     local subvol
