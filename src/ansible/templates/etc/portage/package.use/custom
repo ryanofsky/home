@@ -42,6 +42,7 @@ mail-mta/postfix sasl
 
 # yanofsky.org viewvc/cvs/svn setup
 dev-vcs/cvs server
+dev-vcs/cvsd tcpd
 dev-vcs/cvsgraph gif jpeg png truetype
 dev-vcs/subversion apache2 ctypes-python python
 
@@ -194,3 +195,29 @@ media-sound/gnome-music python_single_target_python3_5 python_targets_python3_5
 # required by dev-lang/ruby-2.4.3::gentoo
 # required by dev-ruby/did_you_mean-1.1.2::gentoo[ruby_targets_ruby24]
 >=dev-ruby/rubygems-2.7.4 ruby_targets_ruby24
+
+# required by media-gfx/gnome-photos-3.24.5::gentoo
+# required by gnome-base/gnome-extra-apps-3.24.2::gentoo
+# required by gnome-base/gnome-3.24.2::gentoo
+# required by @selected
+# required by @world (argument)
+>=media-libs/gegl-0.3.28 raw jpeg2k
+
+# required by media-tv/kodi-17.6-r2::gentoo
+# required by @selected
+# required by @world (argument)
+>=net-libs/libmicrohttpd-0.9.59 messages
+
+# required by dev-scheme/guile-2.2.3::gentoo
+# required by @__auto_slot_operator_replace_installed__ (argument)
+>=dev-libs/boehm-gc-7.6.4 threads
+
+# required by dev-dotnet/libgdiplus-4.2-r3::gentoo
+# required by dev-lang/mono-5.4.1.6::gentoo
+# required by media-tv/emby-server-3.2.60.0::megacoffee
+# required by @selected
+# required by @world (argument)
+>=x11-libs/cairo-1.14.12 X
+
+# required by media-video/ffmpeg[vaapi], avoid X and x11-libs/libva-vdpau-driver dependencies on jumpy
+x11-libs/libva -video_cards_nouveau
