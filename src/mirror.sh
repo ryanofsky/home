@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # replace btrfs directory with btrfs subvolume
 mirror-tovol() {
     local path="${1%/}"
