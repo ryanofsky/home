@@ -19,12 +19,14 @@ def main():
     args = parser.parse_args()
     obj1 = set()
     obj2 = set()
+    ref1 = {}
+    ref2 = {}
     fail = False
     for f, (in_git1, in_git2) in join_lists(
             list_files(args.git_dir1), list_files(args.git_dir2)):
         p1 = os.path.join(args.git_dir1, f) if in_git1 else None
         p2 = os.path.join(args.git_dir2, f) if in_git2 else None
-        if any((p1 and add_objs(p1, obj1), p2 and add_objs(p2, obj2))):
+        if any((p1 and add_objs(p1, f, obj1, ref1), p2 and add_objs(p2, f, obj2, ref2))):
             continue
         if not p1:
             continue
@@ -48,21 +50,24 @@ def main():
                         "diff -U10 <(GIT_DIR={} git ls-files --stage --debug) <(GIT_DIR={} git ls-files --stage --debug) | cdiff".
                         format(args.git_dir1, args.git_dir2)))
             continue
-        r = Regex()
-        if r.match("refs/", f):
-            h1 = read(p1)
-            h2 = read(p2)
+        fail = True
+        error("Conflicting {!r} and {!r} (cmp={!r})".format(p1, p2, c))
+
+    for ref in ref1.keys() | ref2.keys():
+        h1 = ref1.get(ref)
+        h2 = ref2.get(ref)
+        if not h2:
+            fail = True
+            error("Missing ref {!r} {!r} in {!r}".format(ref, h1, args.git_dir2))
+        elif h1 and h2 and h1 != h2:
             base = b"".join(
                 run(["git", "merge-base", h1, h2],
                     env=dict(os.environ, GIT_DIR=args.git_dir2))).rstrip()
             if base != h1:
                 fail = True
-                error("Ref {!r} changed {} -> {} (base {})".format(f, h1, h2,
+                error("Ref {!r} changed {} -> {} (base {})".format(ref, h1, h2,
                                                                    base))
             continue
-
-        fail = True
-        error("Conflicting {!r} and {!r} (cmp={!r})".format(p1, p2, c))
 
     if not obj1.issubset(obj2):
         fail = True
@@ -112,7 +117,25 @@ def join_lists(*lists):
             for item, pos_set in grouped)
 
 
-def add_objs(path, objs):
+def add_objs(path, filename, objs, refs):
+    if filename == "packed-refs":
+        with open(path, "rb") as fp:
+            for line in fp:
+                if line.startswith(b'# pack-refs with: '):
+                    continue
+                if re.match(b'\\^[0-9a-f]{40}\n$', line):
+                    continue
+                hash, name = re.match(b'([0-9a-f]{40}) (refs/.*)\n$', line).groups()
+                name = name.decode()
+                refs.setdefault(name, hash)
+        return True
+
+    if filename.startswith("refs/"):
+        name = filename
+        hash = read(path)
+        refs[name] = hash
+        return True
+
     r = Regex()
     if r.match(".*?/objects/([0-9a-f]{2})/([0-9a-f]{38})$", path):
         objs.add((r.m.group(1) + r.m.group(2)).encode("ascii"))
