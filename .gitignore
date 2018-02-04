@@ -24,7 +24,6 @@
 .dbus/
 .emacs.d/
 .gnome/
-.gnucash/
 .gnupg/crls.d/
 .gnupg/openpgp-revocs.d/
 .gnupg/private-keys-v1.d/
@@ -34,6 +33,7 @@
 .gnupg/trustdb.gpg
 .lesshst
 .ln
+.local/share/GnuCash/
 .local/share/evolution/
 .local/share/folks/
 .local/share/gnome-settings-daemon/input-sources-converted
