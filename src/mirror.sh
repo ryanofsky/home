@@ -28,7 +28,7 @@ mirror-send() {
         readarray -t local_ls < <(cd "$local_dir"; ls -1d "$subvol@"* 2>/dev/null || true)
         readarray -t remote_ls < <(
             if [ -n "$remote_host" ]; then
-               ssh -n "$remote_host" "cd \"$remote_dir\"; ls -1d \"$subvol@\"* 2>/dev/null || true"
+                mirror-ssh-ls "$remote_host" "$remote_dir" "$subvol"
             else
                cd "$remote_dir"; ls -1d "$subvol@"* 2>/dev/null || true
             fi
@@ -81,7 +81,7 @@ mirror-changed() {
 mirror-ls() {
     local path="$1"
     local strip="$2"
-    btrfs su list -o "$path" | sed "s:^ID [0-9]\\+ gen [0-9]\\+ top level [0-9]\\+ path $strip::"
+    btrfs su list -o "$path" | sed -n "s:^ID [0-9]\\+ gen [0-9]\\+ top level [0-9]\\+ path $strip::p"
 }
 
 # print current date in format used for snapshots
@@ -152,6 +152,14 @@ mirror-check() {
     for k in "${!good[@]}"; do
       test -n "${bad[$k]}" || echo "$k"
     done | sort
+}
+
+# remotely list snapshots matching pattern
+mirror-ssh-ls() {
+    local remote_host="$1"
+    local remote_dir="$2"
+    local subvol="$3"
+    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* 2>/dev/null || true"
 }
 
 if [ "$#" -ne 0 ]; then
