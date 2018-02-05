@@ -346,6 +346,24 @@ mirror-ssh-ls() {
     ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* 2>/dev/null || true"
 }
 
+mirror-log() {
+    local snap_dir="$1"
+    local prev=
+    local prev_name=
+    for snap in $(cd "$snap_dir"; ls -1); do
+        name="${snap%@*}"
+        date="${snap#*@}"
+        date="$(sed 's,\(....\)\(..\)\(..\)T\(..\)\(..\)\(..\).*,\1-\2\-\3T\4:\5:\6Z,' <<<"$date")"
+        if [ "$name" != "$prev_name" ]; then
+            echo "$date -- created $name@"
+        else
+            echo "$date -- updated $name@ (rsync -nai --delete $snap/ $prev)"
+        fi
+        prev="$snap"
+        prev_name="$name"
+    done | sort -r
+}
+
 run() {
     echo "$@"
     "$@"
