@@ -185,7 +185,7 @@ ntag() {
         fi
         echo "git-isclean.sh && git checkout $bname && git reset --hard origin/master"
         echo "git-isclean.sh && git rebase -i --keep-empty --autosquash $bname $ename"
-        echo "git-isclean.sh && git checkout $wname && git reset --hard $ename"
+        echo "git-isclean.sh && git checkout $wname && git reset --hard $ename && git checkout $ename"
         if ! git diff --quiet "$wname..$ename"; then
             echo "Warning: differences found in $wname..$ename"
         fi
@@ -383,6 +383,7 @@ pr-rev() {
         echo "diff -ru -I'^index ' -I'^@@' _$((num-1)) _$((num)) | cdiff"
         echo meld "_$((num-1))" "_$((num))"
     fi
+    echo git checkout "$branch"
     echo utACK "$new"
 }
 
