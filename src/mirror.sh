@@ -227,16 +227,16 @@ mirror-safe-git-pack() {
     local git_backup="$backup_dir/${git_dir//\//_}"
     while [ -e "$git_backup" ]; do git_backup="${git_backup}_"; done
 
-    cp -a --reflink "$git_dir" "$git_backup"
+    cp -a --reflink=auto "$git_dir" "$git_backup"
     mirror-git-pack "$git_dir"
 
     if [ -z "$(rsync -ncia --delete "$git_dir/" "$git_backup/")" ]; then
         rm -rf "$git_backup"
     else
-        local check="git-contains.py ${git_backup@Q} ${git_dir@Q}"
+        local check="git-contains.py ${git_backup} ${git_dir}"
         echo "Warning: Repacked git dir '$git_dir', verify with: $check"
         echo "$check" >> "$backup_dir/check.sh"
-        echo "rsync -ncirltDHX --delete ${git_backup@Q}/ ${git_dir@Q}" >> "$backup_dir/check.sh"
+        echo "rsync -ncirltDHX --delete ${git_backup}/ ${git_dir}" >> "$backup_dir/check.sh"
     fi
 }
 
