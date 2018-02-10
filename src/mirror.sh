@@ -184,6 +184,7 @@ mirror-git-pack() {
 
     if [ -n "$pack" ]; then
         run touch -r "$git_dir/objects/pack/pack-${pack}.idx" "$git_dir/objects/pack/pack-${pack}.keep"
+        run chmod a-w "$git_dir/objects/pack/pack-${pack}.keep"
     fi
 
     GIT_DIR="$git_dir" git prune-packed
