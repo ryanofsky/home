@@ -305,35 +305,33 @@ mirror-git-rsync() {
         --delete --delete-excluded "$@"
 }
 
-# snap-start (snap_dir) (prev) (tmp)
+# snap-start (prev) (tmp)
 mirror-snap-start() {
-    local snap_dir="$1"
-    local prev="$2"
-    local tmp="$3"
-    if [ -z "$prev" ] || ! [ -d "$snap_dir/$prev" ]; then
-        echo "Error: can't create snapshot '$snap_dir/$tmp' from invalid base '$prev'.">&2
+    local prev="$1"
+    local tmp="$2"
+    if [ -z "$prev" ] || ! [ -d "$prev" ]; then
+        echo "Error: can't create snapshot '$tmp' from invalid base '$prev'.">&2
         return 1
     fi
-    if [ -e "$snap_dir/$tmp" ]; then
-        echo "Error: can't create snapshot '$snap_dir/$tmp' from '$prev' because it already exists.">&2
+    if [ -e "$tmp" ]; then
+        echo "Error: can't create snapshot '$tmp' from '$prev' because it already exists.">&2
         return 1
     fi
-    run btrfs su snapshot "$snap_dir/$prev" "$snap_dir/$tmp"
+    run btrfs su snapshot "$prev" "$tmp"
 }
 
-# snap-finish (snap_dir) (prev) (tmp) (new)
+# snap-finish (prev) (tmp) (new)
 mirror-snap-finish() {
-    local snap_dir="$1"
-    local prev="$2"
-    local tmp="$3"
-    local new="$4"
-    if [ -z "$(rsync -nciaDHX --delete "$snap_dir/$tmp/" "$snap_dir/$prev")" ]; then
-        run btrfs su delete "$snap_dir/$tmp"
+    local prev="$1"
+    local tmp="$2"
+    local new="$3"
+    if [ -z "$(rsync -nciaDHX --delete "$tmp/" "$prev")" ]; then
+        run btrfs su delete "$tmp"
     elif [[ $prev < $new ]]; then
-        run mv -vT "$snap_dir/$tmp" "$snap_dir/$new"
-        run btrfs property set -ts "$snap_dir/$new" ro true
+        run mv -vT "$tmp" "$new"
+        run btrfs property set -ts "$new" ro true
     else
-        echo "Error: can't rename '$snap_dir/$tmp' to '$new' because doesn't follow previous snapshot '$prev'">&2
+        echo "Error: can't rename '$tmp' to '$new' because doesn't follow previous snapshot '$prev'">&2
         return 1
     fi
 }
