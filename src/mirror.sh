@@ -301,7 +301,6 @@ mirror-git-rsync() {
         --exclude=/gitk.cache \
         --exclude=/MERGE_RR \
         --exclude=/worktrees \
-        --exclude=/rr-cache \
         --exclude=/qgit_cache.dat \
         --delete --delete-excluded "$@"
 }
