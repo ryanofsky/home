@@ -326,7 +326,9 @@ mirror-snap-finish() {
     local prev="$1"
     local tmp="$2"
     local new="$3"
-    if [ -z "$(rsync -nciaDHX --delete "$tmp/" "$prev")" ]; then
+    if ! [ -d "$tmp" ]; then
+        run btrfs property set -ts "$new" ro true
+    elif [ -z "$(rsync -nciaDHX --delete "$tmp/" "$prev")" ]; then
         run btrfs su delete "$tmp"
     elif [[ $prev < $new ]]; then
         run mv -vT "$tmp" "$new"
