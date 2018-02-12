@@ -17,6 +17,7 @@ def main():
     parser.add_argument("git_dir1")
     parser.add_argument("git_dir2")
     parser.add_argument("--subdir")
+    parser.add_argument("--ignore-temp", "-t", action="store_true")
     args = parser.parse_args()
     obj1 = set()
     obj2 = set()
@@ -28,6 +29,8 @@ def main():
     for f, (in_git1, in_git2, in_subdir) in join_lists(
             list_files(args.git_dir1), list_files(args.git_dir2),
             list_files(subdir) if subdir else []):
+        if args.ignore_temp and (f in ("COMMIT_EDITMSG", "FETCH_HEAD", "ORIG_HEAD", "gitk.cache") or re.match(r"^objects/pack/pack-[0-9a-f]{40}\.keep$", f)):
+            continue
         p1 = os.path.join(args.git_dir1, f) if in_git1 else None
         p2 = os.path.join(subdir, f) if in_subdir else os.path.join(args.git_dir2, f) if in_git2 else None
         if any((p1 and add_objs(p1, f, obj1, ref1), p2 and add_objs(p2, f, obj2, ref2))):
