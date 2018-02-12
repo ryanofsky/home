@@ -16,39 +16,43 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("git_dir1")
     parser.add_argument("git_dir2")
+    parser.add_argument("--subdir")
     args = parser.parse_args()
     obj1 = set()
     obj2 = set()
     ref1 = {}
     ref2 = {}
     fail = False
-    for f, (in_git1, in_git2) in join_lists(
-            list_files(args.git_dir1), list_files(args.git_dir2)):
+    subdir = os.path.join(args.git_dir2, args.subdir) if args.subdir else None
+    dir2 = subdir or args.git_dir2
+    for f, (in_git1, in_git2, in_subdir) in join_lists(
+            list_files(args.git_dir1), list_files(args.git_dir2),
+            list_files(subdir) if subdir else []):
         p1 = os.path.join(args.git_dir1, f) if in_git1 else None
-        p2 = os.path.join(args.git_dir2, f) if in_git2 else None
+        p2 = os.path.join(subdir, f) if in_subdir else os.path.join(args.git_dir2, f) if in_git2 else None
         if any((p1 and add_objs(p1, f, obj1, ref1), p2 and add_objs(p2, f, obj2, ref2))):
             continue
         if not p1:
             continue
         if not p2:
             fail = True
-            error("Missing {!r} in {!r}".format(p1, args.git_dir2))
+            error("Missing {!r} in {!r}".format(p1, dir2))
             continue
         c = cmp(p1, p2)
         if c == 0 or c == 1:
             continue
         if f == "index":
-            if not index_matches_head(args.git_dir1):
+            if not index_matches_head(args.git_dir1, p1):
                 fail = True
-                if index_matches_head(args.git_dir2):
+                if index_matches_head(args.git_dir2, p2):
                     error("index {!r} different from HEAD (try {!r})".format(
                         args.git_dir1,
-                        "GIT_DIR={} git diff-index --cached HEAD".format(
-                            args.git_dir1)))
+                        "GIT_DIR={} GIT_INDEX_FILE={} git diff-index --cached HEAD".format(
+                            args.git_dir1, p1)))
                 else:
                     error("index files differ (try {!r})".format(
-                        "diff -U10 <(GIT_DIR={} git ls-files --stage --debug) <(GIT_DIR={} git ls-files --stage --debug) | cdiff".
-                        format(args.git_dir1, args.git_dir2)))
+                        "diff -U10 <(GIT_DIR={} GIT_INDEX_FILE={} git ls-files --stage --debug) <(GIT_DIR={} GIT_INDEX_FILE={} git ls-files --stage --debug) | cdiff".
+                        format(args.git_dir1, p1, args.git_dir2, p2)))
             continue
         fail = True
         error("Conflicting {!r} and {!r} (cmp={!r})".format(p1, p2, c))
@@ -58,7 +62,7 @@ def main():
         h2 = ref2.get(ref)
         if not h2:
             fail = True
-            error("Missing ref {!r} {!r} in {!r}".format(ref, h1, args.git_dir2))
+            error("Missing ref {!r} {!r} in {!r}".format(ref, h1, dir2))
         elif h1 and h2 and h1 != h2:
             base = b"".join(
                 run(["git", "merge-base", h1, h2],
@@ -72,14 +76,14 @@ def main():
     if not obj1.issubset(obj2):
         fail = True
         for missing in obj1 - obj2:
-            error("Missing {} in {!r}".format(missing, args.git_dir2))
+            error("Missing {} in {!r}".format(missing, dir2))
     if fail:
         print("Failure: {!r} is NOT a subset of {!r}".format(args.git_dir1,
-                                                             args.git_dir2))
+                                                             dir2))
         sys.exit(1)
     else:
         print("Success: {!r} is a subset of {!r}".format(args.git_dir1,
-                                                         args.git_dir2))
+                                                         dir2))
 
 
 def list_files(path):
@@ -199,10 +203,10 @@ def read(filename):
         return f.read().rstrip()
 
 
-def index_matches_head(git_dir):
+def index_matches_head(git_dir, index_file):
     return subprocess.run(
         ["git", "diff-index", "--cached", "--quiet", "HEAD"],
-        env=dict(os.environ, GIT_DIR=git_dir)).returncode == 0
+        env=dict(os.environ, GIT_DIR=git_dir, GIT_INDEX_FILE=index_file)).returncode == 0
 
 
 def error(str):
