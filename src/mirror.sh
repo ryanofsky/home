@@ -204,7 +204,7 @@ mirror-git-pack() {
     if [ -n "$(find "$git_dir/refs" -type f -'(' -name HEAD -prune -o -print -')')" ]; then
         echo "WARNING: Unexpected files found in $git_dir/refs"
     fi
-    local find=(find "$git_dir" '-(' -path "$git_dir/objects/pack/pack-*.keep" -o -path "$git_dir/refs" ')' -prune -o -empty -print)
+    local find=(find "$git_dir" '-(' -path "$git_dir/objects/pack/pack-*.keep" -o -path "$git_dir/refs" -o -name rr-cache -o -name MERGE_RR ')' -prune -o -empty -print)
     if [ -n "$("${find[@]}")" ]; then
         echo "WARNING: Unexpected empty files/dirs found in in $git_dir:"
         "${find[@]}"
