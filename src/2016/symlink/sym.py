@@ -176,7 +176,7 @@ class Reverse():
             path_parent_st = os.stat(path_parent)
             link = os.readlink(path)
             link_parent = os.path.dirname(link)
-            link_parent_st = os.stat(link_parent)
+            link_parent_st = os.stat(os.path.join(path_parent, link_parent))
             rename(link, path, args.pretend)
             symlink(path, link, args.pretend)
             path_st = os.stat(path, follow_symlinks=False)
