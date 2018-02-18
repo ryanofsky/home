@@ -294,14 +294,14 @@ mirror-git-rsync() {
         --numeric-ids \
         --chown=1000:1000 \
         --chmod=u=rwX,go=rX \
-        --exclude=/index \
-        --exclude=/ORIG_HEAD \
-        --exclude=/FETCH_HEAD \
-        --exclude=/COMMIT_EDITMSG \
-        --exclude=/gitk.cache \
-        --exclude=/MERGE_RR \
-        --exclude=/worktrees \
-        --exclude=/qgit_cache.dat \
+        --exclude=/{worktrees/*/,}index \
+        --exclude=/{worktrees/*/,}sequencer/ \
+        --exclude=/{worktrees/*/,}ORIG_HEAD \
+        --exclude=/{worktrees/*/,}FETCH_HEAD \
+        --exclude=/{worktrees/*/,}COMMIT_EDITMSG \
+        --exclude=/{worktrees/*/,}gitk.cache \
+        --exclude=/{worktrees/*/,}MERGE_RR \
+        --exclude=/{worktrees/*/,}qgit_cache.dat \
         --delete --delete-excluded "$@"
 }
 
