@@ -325,9 +325,12 @@ mirror-snap-finish() {
     local prev="$1"
     local tmp="$2"
     local new="$3"
+    local skip_sum="$4"
+    local sum="-c"
+    if [ -n "$skip_sum" ]; then sum=; fi
     if ! [ -d "$tmp" ]; then
         run btrfs property set -ts "$new" ro true
-    elif [ -z "$(rsync -nciaDHX --delete "$tmp/" "$prev")" ]; then
+    elif [ -z "$(rsync $sum -niaDHX --delete "$tmp/" "$prev")" ]; then
         run btrfs su delete "$tmp"
     elif [[ $prev < $new ]]; then
         run mv -vT "$tmp" "$new"
