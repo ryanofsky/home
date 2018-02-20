@@ -367,6 +367,12 @@ mirror-log() {
     done | sort -r
 }
 
+mirror-bup-idx() {
+    local bup_dir="$1"
+    BUP_DIR="$bup_dir" run bup midx -f
+    BUP_DIR="$bup_dir" run bup bloom
+}
+
 run() {
     echo "$@"
     "$@"
