@@ -39,6 +39,13 @@ update() {
              name="${rest%% *}"
              rest="${rest#* }"
         fi
+        local revert=
+        if [ "$name" = "Revert" ]; then
+             revert=1
+             name="${rest%% *}"
+             name="${name#\"}"
+             rest="${rest#* }"
+        fi
 
         merge="${rest%% *}"
         rest="${rest#* }"
@@ -83,7 +90,7 @@ update() {
             continue
         fi
 
-        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup squash=$squash desc='$desc' first=$first committed=$committed ===="
+        echo "==== $COMMIT name=$name merge=$merge fixup=$fixup revert=$revert squash=$squash desc='$desc' first=$first committed=$committed ===="
 
         local patch
         for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
@@ -205,6 +212,9 @@ update() {
         local fix=
         if [ -n "$fixup" ]; then
             fix="fixup! $rest"$'\n'$'\n'
+        fi
+        if [ -n "$revert" ]; then
+            fix="Revert \"$rest"$'\n'$'\n'
         fi
         if [ -n "$squash_next" ]; then
             true
