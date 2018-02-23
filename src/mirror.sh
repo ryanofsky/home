@@ -296,6 +296,7 @@ mirror-git-rsync() {
         --chmod=u=rwX,go=rX \
         --exclude=/{worktrees/*/,}index \
         --exclude=/{worktrees/*/,}sequencer/ \
+        --exclude=/{worktrees/*/,}EDIT_DESCRIPTION \
         --exclude=/{worktrees/*/,}ORIG_HEAD \
         --exclude=/{worktrees/*/,}FETCH_HEAD \
         --exclude=/{worktrees/*/,}COMMIT_EDITMSG \
