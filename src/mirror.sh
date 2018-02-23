@@ -305,6 +305,30 @@ mirror-git-rsync() {
         --delete --delete-excluded "$@"
 }
 
+
+# git-pack (prev_dir) (new_dir)
+# repack new pack files into single pack file
+mirror-bup-pack() {
+    local prev_dir="$1"
+    local new_dir="$2"
+    local tmp_dir="$new_dir/repack-tmp"
+    run rm -vf "$new_dir"/objects/pack/{bup.bloom,midx-*.midx}
+    run btrfs su create "$tmp_dir"
+    run git init --bare "$tmp_dir"
+    comm -13 <(cd "$prev_dir"/objects/pack && ls -1 *.pack) <(cd "$new_dir"/objects/pack && ls -1 *.pack) | while read PACK; do
+        local new_pack="$new_dir/objects/pack/$PACK"
+        (cd "$tmp_dir" && GIT_DIR="$tmp_dir" git unpack-objects) < "$new_pack"
+        rm -v "$new_pack" "${new_pack%.pack}.idx"
+    done
+    (cd "$tmp_dir" && find objects/?? -type f | perl -pe 's@^objects/(..)/@$1@' | GIT_DIR="$tmp_dir" run git pack-objects --depth=0 --compression=9 objects/pack/pack)
+    (cd "$tmp_dir" && GIT_DIR="$tmp_dir" run git prune-packed)
+    ls -lAh --full-time "$tmp_dir"/objects/pack
+    run git verify-pack -s "$tmp_dir"/objects/pack/*.idx
+    run mv -iv "$tmp_dir"/objects/pack/* "$new_dir"/objects/pack/
+    run btrfs su del "$tmp_dir"
+    BUP_DIR="$new_dir" run bup fsck -g
+}
+
 # snap-start (prev) (tmp)
 mirror-snap-start() {
     local prev="$1"
