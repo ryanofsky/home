@@ -31,6 +31,11 @@ fi
 # Put your fun stuff here.
 alias s='stty sane'
 
+# dump emacsclient kill buffer
+ekill() {
+    python -c "print($(emacsclient -e '(substring-no-properties (car kill-ring))'))"
+}
+
 # Look for file in parent directories, print relative path.
 findup () {
   local UP
