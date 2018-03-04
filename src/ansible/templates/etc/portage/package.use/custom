@@ -119,7 +119,6 @@ dev-python/six python_targets_python3_5
 dev-python/urllib3 python_targets_python3_5
 dev-python/xonsh python_targets_python3_5
 gnome-base/gnome-shell python_targets_python3_5
-gnome-extra/chrome-gnome-shell python_single_target_python3_5 python_targets_python3_5
 media-sound/gnome-music python_single_target_python3_5 python_targets_python3_5
 
 ## (dependency required by "dev-lang/ruby-2.4.3::gentoo" [ebuild])
