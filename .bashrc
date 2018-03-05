@@ -6,6 +6,7 @@
 # anything or bad things will happen !
 export TMPDIR="$HOME/.local/tmp"
 export PATH="$HOME/.local/bin:$HOME/russ/src:$HOME/google/src:$HOME/src:$HOME/.npm-global/bin:$PATH"
+export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 export PYTHONPATH="$HOME/russ/src/lib:$HOME/google/src/lib:$HOME/src/lib:$PYTHONPATH"
 export EDITOR=vim
 umask u=rwx,g=,o=
