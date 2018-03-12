@@ -1,8 +1,12 @@
 # .caffrc -- vim:ft=perl:
 # This file is in perl(1) format - see caff(1) for details.
 
-$CONFIG{'owner'} = '';
-#$CONFIG{'email'} = 'russ@think.lan';
+$CONFIG{'owner'} = 'Russell Yanofsky';
+$CONFIG{'email'} = 'russ@yanofsky.org';
+$CONFIG{'bcc'} = 'russ@yanofsky.org';
+$CONFIG{'mailer-send'} =  [ 'sendmail', '-f', $CONFIG{'email'}, '-it' ];
+$ENV{'PERL_MAILERS'} = 'sendmail:/usr/sbin/sendmail';
+
 #$CONFIG{'reply-to'} = 'foo@bla.org';
 
 # You can get your long keyid from
@@ -15,10 +19,10 @@ $CONFIG{'owner'} = '';
 #   $CONFIG{'keyid'} = [ qw{FEDCBA9876543210} ];
 #  or, if you have more than one key:
 #   $CONFIG{'keyid'} = [ qw{0123456789ABCDEF 89ABCDEF76543210} ];
-#$CONFIG{'keyid'} = [ qw{0123456789ABCDEF 89ABCDEF76543210} ];
+$CONFIG{'keyid'} = [ qw{6FD15F4B164650CC} ];
 
 # Select this/these keys to sign with
-#$CONFIG{'local-user'} = [ qw{0123456789ABCDEF 89ABCDEF76543210} ];
+$CONFIG{'local-user'} = [ qw{6FD15F4B164650CC} ];
 
 # Additionally encrypt messages for these keyids
 #$CONFIG{'also-encrypt-to'} = [ qw{0123456789ABCDEF 89ABCDEF76543210} ];
