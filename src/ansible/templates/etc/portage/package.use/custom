@@ -38,7 +38,7 @@ dev-vcs/git subversion
 dev-vcs/subversion -dso perl
 
 # yanofsky.org postfix setup
-mail-mta/postfix sasl
+mail-mta/postfix sasl berkdb
 dev-libs/cyrus-sasl gdbm
 
 # yanofsky.org viewvc/cvs/svn setup
