@@ -94,7 +94,7 @@ update() {
 
         local patch
         for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
-            if [ -f "$patch" ]; then
+            if [ -f "$patch" ] && [ -z "$fixup" ]; then
                 run git apply --index -3 --verbose "$patch"
                 patched[$patch]=1
             fi
