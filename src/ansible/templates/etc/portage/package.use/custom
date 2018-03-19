@@ -100,6 +100,7 @@ media-tv/kodi -system-ffmpeg
 dev-libs/gom -python
 dev-libs/libcec -python
 net-dns/avahi -python
+net-fs/samba -python
 app-text/asciidoc python_single_target_python2_7 python_targets_python2_7
 dev-python/PySocks python_targets_python3_5
 dev-python/asn1crypto python_targets_python3_5
@@ -221,3 +222,9 @@ media-sound/gnome-music python_single_target_python3_5 python_targets_python3_5
 
 # required by media-video/ffmpeg[vaapi], avoid X and x11-libs/libva-vdpau-driver dependencies on jumpy
 x11-libs/libva -video_cards_nouveau
+
+# required by media-video/vlc-3.0.1::gentoo[bidi]
+# required by media-libs/phonon-vlc-0.10.1::gentoo
+# required by media-libs/phonon-4.10.0::gentoo[vlc]
+# required by media-libs/phonon-gstreamer-4.9.0-r2::gentoo
+>=media-libs/freetype-2.9 harfbuzz
