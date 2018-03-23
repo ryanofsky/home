@@ -9,7 +9,7 @@ def sub(m):
     d1, d2, d3 = m.groups()
     if d1 == d2:
         return d3
-    elif d2 == d3:
+    elif d2 == d3 or d1 == d3:
         return d1
     return m.group(0)
 
