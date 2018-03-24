@@ -18,6 +18,8 @@ def main():
     parser.add_argument("git_dir2")
     parser.add_argument("--subdir")
     parser.add_argument("--ignore-temp", "-t", action="store_true")
+    parser.add_argument("--ignore-bup-temp", action="store_true")
+    parser.add_argument("--ignore-packs", action="store_true")
     args = parser.parse_args()
     obj1 = set()
     obj2 = set()
@@ -31,8 +33,19 @@ def main():
             list_files(subdir) if subdir else []):
         if args.ignore_temp and (f in ("COMMIT_EDITMSG", "FETCH_HEAD", "ORIG_HEAD", "gitk.cache") or re.match(r"^objects/pack/pack-[0-9a-f]{40}\.keep$", f)):
             continue
+        if args.ignore_bup_temp and (f == "objects/pack/bup.bloom" or re.match(r"^objects/pack/midx-[0-9a-f]{40}\.midx$", f)):
+            continue
         p1 = os.path.join(args.git_dir1, f) if in_git1 else None
         p2 = os.path.join(subdir, f) if in_subdir else os.path.join(args.git_dir2, f) if in_git2 else None
+
+        if args.ignore_packs and p1 and p2 and re.match(r"^objects/pack/pack-[0-9a-f]{40}\.(pack|idx|par2|vol[0-9]{3}\+[0-9]{3}\.par2)$", f):
+            s1 = os.stat(p1, follow_symlinks=True)
+            s2 = os.stat(p2, follow_symlinks=True)
+            if s1.st_size == s2.st_size and s1.st_mtime == s2.st_mtime:
+                continue
+            else:
+                error("Mismatched packs {!r} {!r}\n  {!r}\n  {!r}".format(p1, p2, s1, s2))
+
         if any((p1 and add_objs(p1, f, obj1, ref1), p2 and add_objs(p2, f, obj2, ref2))):
             continue
         if not p1:
