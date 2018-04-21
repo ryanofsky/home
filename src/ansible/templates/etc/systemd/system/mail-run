@@ -10,7 +10,7 @@ LOG=$(tempfile run)
 STATUS=${PIPESTATUS[0]}
 
 if [ -s "$LOG" -o "$STATUS" -ne 0 ]; then
-  mail -s "$SUBJECT" russ+systemd@yanofsky.org -- -f russ+systemd@yanofsky.org <<EOS
+  mail -s "$SUBJECT" -r russ+systemd@yanofsky.org -- russ+systemd@yanofsky.org <<EOS
 Command line: $@
 Status: $STATUS
 Output ($(stat --printf "%s" $LOG) bytes):
