@@ -1,6 +1,6 @@
 from ansible import constants as C
 from ansible.plugins.action import ActionBase
-from ansible.utils.unicode import to_bytes, to_unicode
+from ansible.module_utils._text import to_bytes, to_text
 from collections import OrderedDict
 import datetime
 import yaml
@@ -136,7 +136,7 @@ class ActionModule(ActionBase):
     def _fill_template(self, source, task_vars):
             # Copied from https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/template.py
             with open(source, 'r') as f:
-                template_data = to_unicode(f.read())
+                template_data = to_text(f.read())
 
             try:
                 template_uid = pwd.getpwuid(os.stat(source).st_uid).pw_name
