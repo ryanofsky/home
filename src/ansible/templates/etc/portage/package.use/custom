@@ -21,6 +21,9 @@ gnome-base/gvfs mtp
 # font size fix, netflix support
 www-client/chromium hidpi widevine
 
+# needed for systemd-journal-remote
+sys-apps/systemd http
+
 # docker features
 app-emulation/docker btrfs overlay
 
