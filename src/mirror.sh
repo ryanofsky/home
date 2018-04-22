@@ -47,7 +47,7 @@ mirror-send() {
             local local_subvol="${local_ls[$i]}"
             if ((j < ${#remote_ls[@]})); then
                 remote_subvol="${remote_ls[$j]}"
-                if [ "$remote_subvol" \< "$local_subvol" ]; then ((j++)); continue; fi
+                if [ "$remote_subvol" \< "$local_subvol" ]; then ((++j)); continue; fi
             fi
 
             if [ "$remote_subvol" = "$local_subvol" ]; then
@@ -59,7 +59,7 @@ mirror-send() {
             fi
 
             if [ "$remote_subvol" \< "$local_subvol" ]; then remote_subvol="$local_subvol"; fi
-            ((i++))
+            ((++i))
         done
     done
 }
