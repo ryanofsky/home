@@ -40,6 +40,9 @@ net-fs/openafs fuse
 dev-vcs/git subversion
 dev-vcs/subversion -dso perl
 
+# avoid ruby dependencies
+dev-vcs/git-lfs -doc
+
 # yanofsky.org postfix setup
 mail-mta/postfix sasl berkdb
 dev-libs/cyrus-sasl gdbm
@@ -231,3 +234,16 @@ x11-libs/libva -video_cards_nouveau
 # required by media-libs/phonon-4.10.0::gentoo[vlc]
 # required by media-libs/phonon-gstreamer-4.9.0-r2::gentoo
 >=media-libs/freetype-2.9 harfbuzz
+
+# required by dev-python/requests-2.18.4::gentoo
+# required by media-sound/gnome-music-3.24.2::gentoo
+# required by gnome-base/gnome-extra-apps-3.24.2::gentoo[tracker]
+# required by gnome-base/gnome-3.24.2::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=dev-python/certifi-2018.4.16 python_targets_python3_5
+
+# required by media-tv/emby-server-3.2.70.0::megacoffee
+# required by @selected
+# required by @world (argument)
+>=media-gfx/imagemagick-7.0.7.31 jpeg png webp jpeg2k

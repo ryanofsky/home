@@ -1,4 +1,4 @@
-#	$OpenBSD: sshd_config,v 1.101 2017/03/14 07:19:07 djm Exp $
+#	$OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $
 
 # This is the sshd server system-wide configuration file.  See
 # sshd_config(5) for more information.
@@ -20,7 +20,6 @@ Port {{ lookup('password', 'credentials/sshd_port.jumpy') }}
 #ListenAddress ::
 
 #HostKey /etc/ssh/ssh_host_rsa_key
-#HostKey /etc/ssh/ssh_host_dsa_key
 #HostKey /etc/ssh/ssh_host_ecdsa_key
 #HostKey /etc/ssh/ssh_host_ed25519_key
 
@@ -97,7 +96,6 @@ X11Forwarding yes
 PrintMotd no
 PrintLastLog no
 #TCPKeepAlive yes
-#UseLogin no
 #PermitUserEnvironment no
 #Compression delayed
 #ClientAliveInterval 0
@@ -111,22 +109,6 @@ PrintLastLog no
 
 # no default banner path
 #Banner none
-
-# here are the new patched ldap related tokens
-# entries in your LDAP must have posixAccount & ldapPublicKey objectclass
-#UseLPK yes
-#LpkLdapConf /etc/ldap.conf
-#LpkServers  ldap://10.1.7.1/ ldap://10.1.7.2/
-#LpkUserDN   ou=users,dc=phear,dc=org
-#LpkGroupDN  ou=groups,dc=phear,dc=org
-#LpkBindDN cn=Manager,dc=phear,dc=org
-#LpkBindPw secret
-#LpkServerGroup mail
-#LpkFilter (hostAccess=master.phear.org)
-#LpkForceTLS no
-#LpkSearchTimelimit 3
-#LpkBindTimelimit 3
-#LpkPubKeyAttr sshPublicKey
 
 # override default of no subsystems
 Subsystem	sftp	/usr/lib64/misc/sftp-server
