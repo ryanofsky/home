@@ -208,6 +208,22 @@ ntag() {
     echo git tag "$name.$((prev+1))" "$name"
 }
 
+whatconf() {
+    git reset --hard
+    if [ -n "$2" ]; then
+        git checkout $(git merge-base origin/master "$2")
+    else
+        git checkout origin/master
+    fi
+    git -c rerere.enabled=false merge --no-edit "$1"
+    for c in $(
+                  for f in $(git grep -l '>>>>>>> '); do
+                      git blame "$f"
+                  done | sed -n -e '/<<<<<<</,/>>>>>>>/{ /Not Committed Yet/d; p}' | cut -c1-6 | sort -u); do
+        echo "--- $c --- $(git log -n1 --grep="$c" --date=iso --format='%cd %s')"
+    done | sort -k4
+}
+
 ppush() {
     local name
     if [ -n "$1" ]; then
@@ -263,6 +279,7 @@ ppush() {
     echo "pr ${name#pr/}"
     echo "set-pr $name ${prnum:-###}"
     echo "vi $descpath"
+    echo "whatconf $b1 $b2"
     if [ -n "$prnum" ]; then
         echo "https://github.com/bitcoin/bitcoin/pull/$prnum"
     fi
