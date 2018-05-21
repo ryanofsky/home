@@ -79,7 +79,7 @@ handle-gnome-monitor() {
         done
 }
 
-if [ "$XDG_CURRENT_DESKTOP" = GNOME ]; then
+if [ "$XDG_CURRENT_DESKTOP" = GNOME ] || [ "$XDG_CURRENT_DESKTOP" = ubuntu:GNOME ]; then
     DESKTOP=gnome
 elif [ "$XDG_CURRENT_DESKTOP" = Unity ]; then
     DESKTOP=unity
