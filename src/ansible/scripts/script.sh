@@ -726,6 +726,14 @@ kconfig() {
       -m NET_SCH_INGRESS \
       -m NET_SCH_SFQ
 
+    # https://wiki.gentoo.org/wiki/ISCSI/Initiator
+    scripts/config \
+      -e INET \
+      -e BLK_DEV_SD \
+      -e SCSI_LOWLEVEL \
+      -m ISCSI_TCP \
+      -m SCSI_ISCSI_ATTRS
+
     # net-firewall/ipset-6.32 unknown type name ‘sctp_sctphdr_t’
     scripts/config -m IP_SCTP
 
