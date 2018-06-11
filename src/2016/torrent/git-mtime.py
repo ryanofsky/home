@@ -6,6 +6,7 @@ import os
 import re
 import posixpath
 import datetime
+import errno
 
 
 def main():
@@ -72,7 +73,12 @@ def apply(unmodified=False):
                 print("Skipping modified {!r}".format(root_path))
                 continue
             root_path = os.path.join(root, path)
-            st = os.lstat(root_path)
+            try:
+                st = os.lstat(root_path)
+            except OSError as e:
+                if e.errno == errno.ENAMETOOLONG:
+                    print("Skipping {!r}".format(root_path), file=sys.stderr)
+                    continue
             if mtime_ns != st.st_mtime_ns:
                 print(repr(path), format_mtime(mtime_ns), format_mtime(st.st_mtime_ns))
                 os.utime(root_path,

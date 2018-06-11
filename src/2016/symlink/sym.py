@@ -268,6 +268,8 @@ def set_path_attr(path, attr, follow_symlinks):
     os.utime(path, ns=(atime_ns, mtime_ns), follow_symlinks=follow_symlinks)
     try:
         os.chmod(path, mode, follow_symlinks=follow_symlinks)
+    except NotImplementedError:
+        pass
     except SystemError:
         pass
     if flags is not None:

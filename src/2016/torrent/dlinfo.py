@@ -105,6 +105,12 @@ def main():
                     size = None
                 else:
                     metadata = json.loads(metadata_str)
+                    if metadata["state"] != 1:
+                      import pprint
+                      pprint.pprint(url)
+                      pprint.pprint(filename)
+                      pprint.pprint(metadata)
+                      continue
                     assert metadata["state"] == 1
                     size = metadata["fileSize"]
                     dtime = metadata["endTime"] * 1000 * 1000
