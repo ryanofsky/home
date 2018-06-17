@@ -1,1 +1,4 @@
 {{ lookup('password', 'credentials/russ.pubkey') }}
+{% if inventory_hostname == "jumpy" %}
+{{ lookup('password', 'credentials/vdud.pubkey') }}
+{% endif %}

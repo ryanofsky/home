@@ -88,7 +88,7 @@ UsePAM yes
 
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
-#GatewayPorts no
+GatewayPorts clientspecified
 X11Forwarding yes
 #X11DisplayOffset 10
 #X11UseLocalhost yes
