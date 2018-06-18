@@ -41,6 +41,6 @@ else
         T="$1"
         shift
     fi
-    echo "$T" >> $TMPDIR/pom.d
     echo "$(date) pom $T $@" | tee -a ~/.ln/org/date
+    echo "$T" >> $TMPDIR/pom.d
 fi
