@@ -76,7 +76,7 @@ def apply(unmodified=False):
             try:
                 st = os.lstat(root_path)
             except OSError as e:
-                if e.errno == errno.ENAMETOOLONG:
+                if e.errno == errno.ENAMETOOLONG or e.errno == errno.EBADMSG:
                     print("Skipping {!r}".format(root_path), file=sys.stderr)
                     continue
             if mtime_ns != st.st_mtime_ns:
