@@ -6,6 +6,7 @@ import re
 import shlex
 import stat
 import sys
+import errno
 
 
 def main():
@@ -254,7 +255,13 @@ def path_attr(path, follow_symlinks):
     mode = stat.S_IMODE(st.st_mode)
     flags = st.st_flags if hasattr(st, "st_flags") else None
     xattr = []
-    names = os.listxattr(path, follow_symlinks=follow_symlinks)
+    try:
+        names = os.listxattr(path, follow_symlinks=follow_symlinks)
+    except OSError as e:
+        if e.errno == errno.EOPNOTSUPP:
+            names = ()
+        else:
+            raise
     for name in names:
         xattr.append(name,
                      os.getxattr(path,
