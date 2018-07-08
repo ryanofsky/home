@@ -2,6 +2,8 @@
 
 FIFO="$TMPDIR/pom.d"
 TIMEOUT=300
+#export TZ=WET
+#export TZ=CET
 
 popup() {
     if test "$1" != 0; then while test $(xprintidle) -lt 2000; do sleep 1; done; fi
