@@ -102,148 +102,25 @@ media-tv/kodi -system-ffmpeg
 # 32 bit crap for adobe
 */* abi_x86_32
 
-# old python packages
-dev-libs/gom -python
-dev-libs/libcec -python
+# avoid error from "python? ( gdbm )" requirement
 net-dns/avahi -python
-net-fs/samba -python
-app-text/asciidoc python_single_target_python2_7 python_targets_python2_7
-dev-python/PySocks python_targets_python3_5
-dev-python/asn1crypto python_targets_python3_5
-dev-python/cffi python_targets_python3_5
-dev-python/chardet python_targets_python3_5
-dev-python/cryptography python_targets_python3_5
-dev-python/dbus-python python_targets_python3_5
-dev-python/idna python_targets_python3_5
-dev-python/ply python_targets_python3_5
-dev-python/pycairo python_targets_python3_5
-dev-python/pycparser python_targets_python3_5
-dev-python/pygments python_targets_python3_5
-dev-python/pygobject python_targets_python3_5
-dev-python/pyopenssl python_targets_python3_5
-dev-python/requests python_targets_python3_5
-dev-python/setuptools python_targets_python3_5
-dev-python/six python_targets_python3_5
-dev-python/urllib3 python_targets_python3_5
-dev-python/xonsh python_targets_python3_5
-gnome-base/gnome-shell python_targets_python3_5
-media-sound/gnome-music python_single_target_python3_5 python_targets_python3_5
 
-## (dependency required by "dev-lang/ruby-2.4.3::gentoo" [ebuild])
-## (dependency required by "net-libs/webkit-gtk-2.18.6::gentoo" [installed])
-## (dependency required by "gnome-extra/yelp-3.22.0::gentoo" [installed])
-## (dependency required by "gnome-base/gnome-core-apps-3.24.2::gentoo" [installed])
-## (dependency required by "gnome-base/gnome-3.24.2::gentoo" [installed])
-## (dependency required by "@selected" [set])
-## (dependency required by "@world" [argument])
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/did_you_mean-1.1.2:2.4 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/minitest-5.11.1 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/net-telnet-0.1.1-r1 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/power_assert-1.1.1 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/rake-12.3.0 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/test-unit-3.2.7 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/xmlrpc-0.3.0 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/json-2.1.0 ruby_targets_ruby24
-# required by dev-lang/ruby-2.4.3::gentoo[rdoc]
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/racc-1.4.14::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/rdoc-6.0.1 ruby_targets_ruby24
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24]
-# required by dev-lang/ruby-2.4.3::gentoo[rdoc]
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/racc-1.4.14::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/kpeg-1.1.0 ruby_targets_ruby24
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24]
-# required by dev-lang/ruby-2.4.3::gentoo[rdoc]
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-ruby/kpeg-1.1.0::gentoo[ruby_targets_ruby24,-test]
->=dev-ruby/racc-1.4.14 ruby_targets_ruby24
-# required by dev-ruby/racc-1.4.14::gentoo[ruby_targets_ruby24,-test]
-# required by dev-ruby/rdoc-6.0.1::gentoo[ruby_targets_ruby24]
-# required by dev-lang/ruby-2.4.3::gentoo[rdoc]
-# required by dev-ruby/rubygems-2.7.4::gentoo[ruby_targets_ruby24]
->=virtual/rubygems-14 ruby_targets_ruby24
-# required by virtual/rubygems-14::gentoo[ruby_targets_ruby24]
-# required by dev-lang/ruby-2.4.3::gentoo
-# required by dev-ruby/did_you_mean-1.1.2::gentoo[ruby_targets_ruby24]
->=dev-ruby/rubygems-2.7.4 ruby_targets_ruby24
+# python version override
+app-text/asciidoc python_single_target_python2_7 # required by "net-vpn/tor-0.3.4.2_alpha::gentoo"
 
-# required by media-gfx/gnome-photos-3.24.5::gentoo
-# required by gnome-base/gnome-extra-apps-3.24.2::gentoo
-# required by gnome-base/gnome-3.24.2::gentoo
-# required by @selected
-# required by @world (argument)
->=media-libs/gegl-0.3.28 raw jpeg2k
-
-# required by media-tv/kodi-17.6-r2::gentoo
-# required by @selected
-# required by @world (argument)
->=net-libs/libmicrohttpd-0.9.59 messages
-
-# required by dev-scheme/guile-2.2.3::gentoo
-# required by @__auto_slot_operator_replace_installed__ (argument)
->=dev-libs/boehm-gc-7.6.4 threads
-
-# required by dev-dotnet/libgdiplus-4.2-r3::gentoo
-# required by dev-lang/mono-5.4.1.6::gentoo
-# required by media-tv/emby-server-3.2.60.0::megacoffee
-# required by @selected
-# required by @world (argument)
->=x11-libs/cairo-1.14.12 X
-
-# required by media-video/ffmpeg[vaapi], avoid X and x11-libs/libva-vdpau-driver dependencies on jumpy
-x11-libs/libva -video_cards_nouveau
-
-# required by media-video/vlc-3.0.1::gentoo[bidi]
+# required by media-video/vlc-3.0.3-r1::gentoo[bidi]
 # required by media-libs/phonon-vlc-0.10.1::gentoo
-# required by media-libs/phonon-4.10.0::gentoo[vlc]
-# required by media-libs/phonon-gstreamer-4.9.0-r2::gentoo
->=media-libs/freetype-2.9 harfbuzz
-
-# required by dev-python/requests-2.18.4::gentoo
-# required by media-sound/gnome-music-3.24.2::gentoo
-# required by gnome-base/gnome-extra-apps-3.24.2::gentoo[tracker]
-# required by gnome-base/gnome-3.24.2::gentoo[extras]
+# required by media-libs/phonon-4.10.1::gentoo[vlc]
+# required by kde-frameworks/knotifications-5.48.0::gentoo
+# required by kde-frameworks/kwallet-5.48.0::gentoo
+# required by kde-frameworks/kio-5.48.0::gentoo[kwallet]
+# required by kde-frameworks/kinit-5.48.0::gentoo
+# required by kde-frameworks/kded-5.48.0::gentoo
+>=media-libs/freetype-2.9.1-r4 harfbuzz
+# required by dev-python/pygobject-3.24.1::gentoo[cairo]
+# required by app-i18n/ibus-1.5.18::gentoo[python]
+# required by gnome-base/gnome-shell-3.24.3::gentoo[ibus]
+# required by gnome-extra/chrome-gnome-shell-10::gentoo
 # required by @selected
 # required by @world (argument)
->=dev-python/certifi-2018.4.16 python_targets_python3_5
-
-# required by media-tv/emby-server-3.2.70.0::megacoffee
-# required by @selected
-# required by @world (argument)
->=media-gfx/imagemagick-7.0.7.31 jpeg png webp jpeg2k
+>=dev-python/pycairo-1.17.0 python_targets_python3_6
