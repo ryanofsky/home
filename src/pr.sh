@@ -215,6 +215,9 @@ whatconf() {
     else
         git checkout origin/master
     fi
+    echo "---"
+    git log --graph --oneline --min-parents=2 --date=iso --format='%cd %s' --name-status $(git merge-base origin/master "$1")..HEAD
+    echo "---"
     git -c rerere.enabled=false merge --no-edit "$1"
     for c in $(
                   for f in $(git grep -l '>>>>>>> '); do
@@ -269,6 +272,7 @@ ppush() {
     fi
 
     echo "== Tag and push =="
+    echo "test/lint/lint-all.sh && make -j12 -k check && test/functional/test_runner.py"
     ntag "$name"
     echo git push -u russ $name.$cur +$name
     echo "sleep 10; git fetch origin"
@@ -279,7 +283,7 @@ ppush() {
     echo "pr ${name#pr/}"
     echo "set-pr $name ${prnum:-###}"
     echo "vi $descpath"
-    echo "whatconf $b1 $b2"
+    echo "whatconf $b1 $name"
     if [ -n "$prnum" ]; then
         echo "https://github.com/bitcoin/bitcoin/pull/$prnum"
     fi
