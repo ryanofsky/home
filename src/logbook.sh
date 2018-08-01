@@ -6,8 +6,8 @@ while read weekday month day time tz year rest; do
     test "$prev" = "$date" || echo "CLOCK: [${prev:-$date}]--[$date] =>  0:00"
     echo "- $rest"
     prev="$date"
-done < ~/.ln/org/date
+done < ~/work/logbook
 
 if [ "$1" = 1 ]; then
-    mv ~/.ln/org/date{,.old}
+    mv ~/work/logbook{,.old}
 fi

@@ -44,11 +44,11 @@ idle-str() {
 }
 
 handle-locked() {
-    echo "$(date) -- locked idle $(idle-str)" | tee -a ~/.ln/org/date
+    echo "$(date) -- locked idle $(idle-str)" | tee -a ~/work/logbook
 }
 
 handle-unlocked() {
-    echo "$(date) -- unlocked idle $(idle-str)" | tee -a ~/.ln/org/date
+    echo "$(date) -- unlocked idle $(idle-str)" | tee -a ~/work/logbook
 }
 
 handle-unity-monitor() {
