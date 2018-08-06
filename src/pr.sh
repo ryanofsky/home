@@ -606,5 +606,5 @@ script-get() {
 }
 
 script-check() {
-  contrib/devtools/commit-script-check.sh "$1^..$1"
+  test/lint/commit-script-check.sh "$1^..$1"
 }
