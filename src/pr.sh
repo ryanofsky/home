@@ -272,7 +272,7 @@ ppush() {
     fi
 
     echo "== Tag and push =="
-    echo "test/lint/lint-all.sh && make -j12 -k check && test/functional/test_runner.py"
+    echo "TRAVIS_COMMIT_RANGE=\$(git merge-base HEAD origin/master)...HEAD test/lint/lint-all.sh && make -j12 -k check && test/functional/test_runner.py"
     ntag "$name"
     echo git push -u russ $name.$cur +$name
     echo "sleep 10; git fetch origin"
