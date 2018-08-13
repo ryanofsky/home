@@ -415,6 +415,13 @@ you should place your code here."
      (frame-parameter (or frame (selected-frame)) 'outer-window-id)))
 (add-hook 'server-switch-hook 'raise-frame)
 
+; evil search bug workaround https://github.com/larebsyed
+(defun kill-minibuffer ()
+  (interactive)
+  (when (windowp (active-minibuffer-window))
+    (evil-ex-search-exit)))
+(add-hook 'mouse-leave-buffer-hook #'kill-minibuffer)
+
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
 (custom-set-variables
