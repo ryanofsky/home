@@ -195,6 +195,21 @@ mirror-git-pack() {
     done
 
     if [ -n "$(find "$git_dir/refs" -type f -'(' -name HEAD -prune -o -print -')')" ]; then
+        if [ -e "$git_dir/refs/tags" ]; then
+          local f
+          local g
+          f=$(mktemp)
+          find "$git_dir/refs/tags" -type f -printf '%T++%TZ %P\n' > "$f"
+          if [ -e "$git_dir/mtime-tags" ]; then
+            g=$(mktemp)
+            sort -u -k2 "$f" "$git_dir/mtime-tags" > "$g"
+            if ! cmp "$g" "$git_dir/mtime-tags"; then
+              mv -fv "$g" "$git_dir/mtime-tags"
+            fi
+          else
+            sort -u -k2 "$f" > "$git_dir/mtime-tags"
+          fi
+        fi
         GIT_DIR="$git_dir" run git pack-refs --all
     fi
     find "$git_dir/refs" -depth -mindepth 1 -type d -empty -delete
