@@ -86,13 +86,13 @@ mirror-ls() {
 
 # print current date in format used for snapshots
 mirror-date() {
-    date -u +"%Y%m%dT%H%M%SZ"
+    date -u +"%Y%m%d"
 }
 
 # print latest date in format used for snapshots
 mirror-latest() {
     local dir="$1"
-    date -u +"%Y%m%dT%H%M%SZ" --date=@$(find "$dir" -printf '%T@\n' | sort -n | tail -n1)
+    date -u +"%Y%m%d" --date=@$(find "$dir" -printf '%T@\n' | sort -n | tail -n1)
 }
 
 # snap (src) (dst) (sdate)
@@ -372,7 +372,7 @@ mirror-snap-finish() {
         run btrfs property set -ts "$new" ro true
     elif [ -z "$(rsync $sum -niaDHX --delete "$tmp/" "$prev")" ]; then
         run btrfs su delete "$tmp"
-    elif [[ $prev < $new ]]; then
+    elif [[ "${prev/@/-}" < "${new/@/-}" ]]; then
         run mv -vT "$tmp" "$new"
         run btrfs property set -ts "$new" ro true
     else
@@ -386,7 +386,7 @@ mirror-ssh-ls() {
     local remote_host="$1"
     local remote_dir="$2"
     local subvol="$3"
-    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* 2>/dev/null || true"
+    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1rtd ${subvol@Q}@* ${subvol@Q}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* 2>/dev/null || true"
 }
 
 mirror-log() {
