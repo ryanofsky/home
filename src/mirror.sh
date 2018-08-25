@@ -316,8 +316,10 @@ mirror-git-rsync() {
         --exclude=/{worktrees/*/,}FETCH_HEAD \
         --exclude=/{worktrees/*/,}COMMIT_EDITMSG \
         --exclude=/{worktrees/*/,}gitk.cache \
+        --exclude=/{worktrees/*/,}MERGE_MODE \
         --exclude=/{worktrees/*/,}MERGE_RR \
         --exclude=/{worktrees/*/,}qgit_cache.dat \
+        --exclude=/{worktrees/*/,}refs/bisect/ \
         --delete --delete-excluded "$@"
 }
 
