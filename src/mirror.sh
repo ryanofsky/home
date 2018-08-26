@@ -388,7 +388,7 @@ mirror-ssh-ls() {
     local remote_host="$1"
     local remote_dir="$2"
     local subvol="$3"
-    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1rtd ${subvol@Q}@* ${subvol@Q}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* 2>/dev/null || true"
+    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* ${subvol@Q}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* 2>/dev/null || true" | perl -pe 's/(?:(.*?)(20[0-9]{6}))?(.*)/\2\t\1\2\3/s' | sort -n | perl -pe 's/[0-9]*?\t//'
 }
 
 mirror-log() {
