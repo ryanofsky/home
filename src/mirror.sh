@@ -25,12 +25,12 @@ mirror-send() {
     fi
     shift
     for subvol in "$@"; do
-        readarray -t local_ls < <(cd "$local_dir"; ls -1d "$subvol@"* 2>/dev/null || true)
+        readarray -t local_ls < <(mirror-snap-ls "$local_dir" "$subvol")
         readarray -t remote_ls < <(
             if [ -n "$remote_host" ]; then
                 mirror-ssh-ls "$remote_host" "$remote_dir" "$subvol"
             else
-               cd "$remote_dir"; ls -1d "$subvol@"* 2>/dev/null || true
+                mirror-snap-ls "$remote_dir" "$subvol"
             fi
         )
 
@@ -96,7 +96,7 @@ mirror-latest() {
 }
 
 # snap (src) (dst) (sdate)
-# print command to create $dst@$sdate snapshot from $src ONLY if $src has been
+# print command to create $dst-$sdate snapshot from $src ONLY if $src has been
 # modified since the previous snapshot
 mirror-snap() {
     local src="$1"
@@ -104,7 +104,7 @@ mirror-snap() {
     local sdate="$3"
     local prev=$(ls -1d "$dst@"* 2>/dev/null | tail -n1 || true)
     if test -z "$prev" || mirror-changed "$prev" "$src"; then
-        echo btrfs su snapshot -r "$src" "$dst@$sdate"
+        echo btrfs su snapshot -r "$src" "$dst-$sdate"
     else
         echo "# $prev is up to date"
     fi
@@ -140,6 +140,9 @@ mirror-check() {
     local -A bad
     while read subvol; do
         local base="${subvol%@*}"
+        if [ "$base" = "$subvol" ]; then
+            base="${subvol/-20[0-9][0-9][0-9][0-9][0-9][0-9]/}"
+        fi
         local expect="${EXPECT[${base}]}"
         if [ -z "$expect" ]; then
             echo "Error: Unknown snapshot $subvol" >&2
@@ -383,12 +386,22 @@ mirror-snap-finish() {
     fi
 }
 
+mirror-snap-sort() {
+    perl -pe 's/(?:(.*?)(20[0-9]{6}))?(.*)/\2\t\1\2\3/s' | sort -n | perl -pe 's/[0-9]*?\t//'
+}
+
+mirror-snap-ls() {
+    local remote_dir="$1"
+    local subvol="$2"
+    (cd "$remote_dir"; ls -1d "${subvol}"@* "${subvol}"-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* 2>/dev/null || true) | mirror-snap-sort
+}
+
 # remotely list snapshots matching pattern
 mirror-ssh-ls() {
     local remote_host="$1"
     local remote_dir="$2"
     local subvol="$3"
-    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* ${subvol@Q}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* 2>/dev/null || true" | perl -pe 's/(?:(.*?)(20[0-9]{6}))?(.*)/\2\t\1\2\3/s' | sort -n | perl -pe 's/[0-9]*?\t//'
+    ssh -n "$remote_host" "cd ${remote_dir@Q}; ls -1d ${subvol@Q}@* ${subvol@Q}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* 2>/dev/null || true" | mirror-snap-sort
 }
 
 mirror-log() {
