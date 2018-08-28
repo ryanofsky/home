@@ -216,7 +216,7 @@ whatconf() {
         git checkout origin/master
     fi
     echo "---"
-    git log --graph --oneline --min-parents=2 --date=iso --format='%cd %s' --name-status $(git merge-base origin/master "$1")..HEAD
+    git log --graph --oneline --min-parents=2 --date=iso --format='%cd %s' --name-status $(git merge-base origin/master "$1")..HEAD | cat
     echo "---"
     git -c rerere.enabled=false merge --no-edit "$1"
     for c in $(
