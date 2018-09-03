@@ -598,44 +598,203 @@ kconfig() {
       -e RT_GROUP_SCHED \
       -d AUDIT
 
-    # nf_tables modules
+    # netfilter
     scripts/config \
-        -m NF_TABLES \
-        -m NF_TABLES_INET \
-        -m NFT_EXTHDR \
-        -m NFT_META \
-        -m NFT_CT \
-        -m NFT_HASH \
-        -m NFT_COUNTER \
-        -m NFT_LOG \
-        -m NFT_LIMIT \
-        -m NFT_MASQ \
-        -m NFT_REDIR \
-        -m NFT_NAT \
-        -m NFT_QUEUE \
-        -m NFT_REJECT \
-        -m NFT_REJECT_INET \
-        -m NFT_COMPAT \
-        -m NF_TABLES_NETDEV \
-        -m NF_DUP_NETDEV \
-        -m NFT_DUP_NETDEV \
-        -m NFT_FWD_NETDEV \
-        -m NF_TABLES_BRIDGE \
-        -m NFT_BRIDGE_META \
-        -m NFT_BRIDGE_REJECT \
-        -m NF_LOG_BRIDGE \
-        -m NF_TABLES_IPV4 \
-        -m NFT_CHAIN_ROUTE_IPV4 \
-        -m NFT_REJECT_IPV4 \
-        -m NFT_DUP_IPV4 \
-        -m NF_TABLES_ARP \
-        -m NF_TABLES_IPV6 \
-        -m NFT_CHAIN_ROUTE_IPV6 \
-        -m NFT_REJECT_IPV6 \
-        -m NFT_DUP_IPV6
-
-    # netfilter modules
-    scripts/config \
+      -m IP_SET \
+      -e NETFILTER_ADVANCED \
+      -e NF_TABLES_BRIDGE \
+      -m NFT_BRIDGE_REJECT \
+      -m NF_LOG_BRIDGE \
+      -m BRIDGE_EBT_BROUTE \
+      -m BRIDGE_EBT_T_FILTER \
+      -m BRIDGE_EBT_T_NAT \
+      -m BRIDGE_EBT_802_3 \
+      -m BRIDGE_EBT_AMONG \
+      -m BRIDGE_EBT_ARP \
+      -m BRIDGE_EBT_IP \
+      -m BRIDGE_EBT_IP6 \
+      -m BRIDGE_EBT_LIMIT \
+      -m BRIDGE_EBT_MARK \
+      -m BRIDGE_EBT_PKTTYPE \
+      -m BRIDGE_EBT_STP \
+      -m BRIDGE_EBT_VLAN \
+      -m BRIDGE_EBT_ARPREPLY \
+      -m BRIDGE_EBT_DNAT \
+      -m BRIDGE_EBT_MARK_T \
+      -m BRIDGE_EBT_REDIRECT \
+      -m BRIDGE_EBT_SNAT \
+      -m BRIDGE_EBT_LOG \
+      -m BRIDGE_EBT_NFLOG \
+      -m NF_DEFRAG_IPV4 \
+      -m NF_CONNTRACK_IPV4 \
+      -m NF_SOCKET_IPV4 \
+      -m NF_TPROXY_IPV4 \
+      -e NF_TABLES_IPV4 \
+      -m NFT_CHAIN_ROUTE_IPV4 \
+      -m NFT_REJECT_IPV4 \
+      -m NFT_DUP_IPV4 \
+      -m NFT_FIB_IPV4 \
+      -e NF_TABLES_ARP \
+      -m NF_FLOW_TABLE_IPV4 \
+      -m NF_DUP_IPV4 \
+      -m NF_LOG_ARP \
+      -m NF_LOG_IPV4 \
+      -m NF_REJECT_IPV4 \
+      -m NF_NAT_IPV4 \
+      -m NFT_CHAIN_NAT_IPV4 \
+      -e NF_NAT_MASQUERADE_IPV4 \
+      -m NFT_MASQ_IPV4 \
+      -m NFT_REDIR_IPV4 \
+      -m NF_NAT_SNMP_BASIC \
+      -m NF_NAT_PROTO_GRE \
+      -m NF_NAT_PPTP \
+      -m NF_NAT_H323 \
+      -m IP_NF_IPTABLES \
+      -m IP_NF_MATCH_AH \
+      -m IP_NF_MATCH_ECN \
+      -m IP_NF_MATCH_RPFILTER \
+      -m IP_NF_MATCH_TTL \
+      -m IP_NF_FILTER \
+      -m IP_NF_TARGET_REJECT \
+      -m IP_NF_TARGET_SYNPROXY \
+      -m IP_NF_NAT \
+      -m IP_NF_TARGET_MASQUERADE \
+      -m IP_NF_TARGET_NETMAP \
+      -m IP_NF_TARGET_REDIRECT \
+      -m IP_NF_MANGLE \
+      -m IP_NF_TARGET_CLUSTERIP \
+      -m IP_NF_TARGET_ECN \
+      -m IP_NF_TARGET_TTL \
+      -m IP_NF_RAW \
+      -m IP_NF_SECURITY \
+      -m IP_NF_ARPTABLES \
+      -m IP_NF_ARPFILTER \
+      -m IP_NF_ARP_MANGLE \
+      -m NF_DEFRAG_IPV6 \
+      -m NF_CONNTRACK_IPV6 \
+      -m NF_SOCKET_IPV6 \
+      -m NF_TPROXY_IPV6 \
+      -e NF_TABLES_IPV6 \
+      -m NFT_CHAIN_ROUTE_IPV6 \
+      -m NFT_CHAIN_NAT_IPV6 \
+      -m NFT_MASQ_IPV6 \
+      -m NFT_REDIR_IPV6 \
+      -m NFT_REJECT_IPV6 \
+      -m NFT_DUP_IPV6 \
+      -m NFT_FIB_IPV6 \
+      -m NF_FLOW_TABLE_IPV6 \
+      -m NF_DUP_IPV6 \
+      -m NF_REJECT_IPV6 \
+      -m NF_LOG_IPV6 \
+      -m NF_NAT_IPV6 \
+      -e NF_NAT_MASQUERADE_IPV6 \
+      -m IP6_NF_IPTABLES \
+      -m IP6_NF_MATCH_AH \
+      -m IP6_NF_MATCH_EUI64 \
+      -m IP6_NF_MATCH_FRAG \
+      -m IP6_NF_MATCH_OPTS \
+      -m IP6_NF_MATCH_HL \
+      -m IP6_NF_MATCH_IPV6HEADER \
+      -m IP6_NF_MATCH_MH \
+      -m IP6_NF_MATCH_RPFILTER \
+      -m IP6_NF_MATCH_RT \
+      -m IP6_NF_MATCH_SRH \
+      -m IP6_NF_TARGET_HL \
+      -m IP6_NF_FILTER \
+      -m IP6_NF_TARGET_REJECT \
+      -m IP6_NF_TARGET_SYNPROXY \
+      -m IP6_NF_MANGLE \
+      -m IP6_NF_RAW \
+      -m IP6_NF_SECURITY \
+      -m IP6_NF_NAT \
+      -m IP6_NF_TARGET_MASQUERADE \
+      -m IP6_NF_TARGET_NPT \
+      -e NETFILTER_INGRESS \
+      -m NETFILTER_NETLINK \
+      -e NETFILTER_FAMILY_BRIDGE \
+      -e NETFILTER_FAMILY_ARP \
+      -m NETFILTER_NETLINK_ACCT \
+      -m NETFILTER_NETLINK_QUEUE \
+      -m NETFILTER_NETLINK_LOG \
+      -m NF_CONNTRACK \
+      -m NF_LOG_COMMON \
+      -m NF_LOG_NETDEV \
+      -m NETFILTER_CONNCOUNT \
+      -e NF_CONNTRACK_MARK \
+      -e NF_CONNTRACK_SECMARK \
+      -e NF_CONNTRACK_ZONES \
+      -e NF_CONNTRACK_PROCFS \
+      -e NF_CONNTRACK_EVENTS \
+      -e NF_CONNTRACK_TIMEOUT \
+      -e NF_CONNTRACK_TIMESTAMP \
+      -e NF_CONNTRACK_LABELS \
+      -e NF_CT_PROTO_DCCP \
+      -m NF_CT_PROTO_GRE \
+      -e NF_CT_PROTO_SCTP \
+      -e NF_CT_PROTO_UDPLITE \
+      -m NF_CONNTRACK_AMANDA \
+      -m NF_CONNTRACK_FTP \
+      -m NF_CONNTRACK_H323 \
+      -m NF_CONNTRACK_IRC \
+      -m NF_CONNTRACK_BROADCAST \
+      -m NF_CONNTRACK_NETBIOS_NS \
+      -m NF_CONNTRACK_SNMP \
+      -m NF_CONNTRACK_PPTP \
+      -m NF_CONNTRACK_SANE \
+      -m NF_CONNTRACK_SIP \
+      -m NF_CONNTRACK_TFTP \
+      -m NF_CT_NETLINK \
+      -m NF_CT_NETLINK_TIMEOUT \
+      -m NF_CT_NETLINK_HELPER \
+      -e NETFILTER_NETLINK_GLUE_CT \
+      -m NF_NAT \
+      -e NF_NAT_NEEDED \
+      -e NF_NAT_PROTO_DCCP \
+      -e NF_NAT_PROTO_UDPLITE \
+      -e NF_NAT_PROTO_SCTP \
+      -m NF_NAT_AMANDA \
+      -m NF_NAT_FTP \
+      -m NF_NAT_IRC \
+      -m NF_NAT_SIP \
+      -m NF_NAT_TFTP \
+      -e NF_NAT_REDIRECT \
+      -m NETFILTER_SYNPROXY \
+      -m NF_OSF \
+      -m NF_TABLES \
+      -m NF_TABLES_SET \
+      -e NF_TABLES_INET \
+      -e NF_TABLES_NETDEV \
+      -m NFT_NUMGEN \
+      -m NFT_CT \
+      -m NFT_FLOW_OFFLOAD \
+      -m NFT_COUNTER \
+      -m NFT_CONNLIMIT \
+      -m NFT_LOG \
+      -m NFT_LIMIT \
+      -m NFT_MASQ \
+      -m NFT_REDIR \
+      -m NFT_NAT \
+      -m NFT_OBJREF \
+      -m NFT_QUEUE \
+      -m NFT_QUOTA \
+      -m NFT_REJECT \
+      -m NFT_REJECT_INET \
+      -m NFT_COMPAT \
+      -m NFT_HASH \
+      -m NFT_FIB \
+      -m NFT_FIB_INET \
+      -m NFT_SOCKET \
+      -m NF_DUP_NETDEV \
+      -m NFT_DUP_NETDEV \
+      -m NFT_FWD_NETDEV \
+      -m NFT_FIB_NETDEV \
+      -m NF_FLOW_TABLE_INET \
+      -m NF_FLOW_TABLE \
+      -m NETFILTER_XTABLES \
+      -m NETFILTER_XT_MARK \
+      -m NETFILTER_XT_CONNMARK \
+      -m NETFILTER_XT_SET \
+      -m NETFILTER_XT_TARGET_AUDIT \
       -m NETFILTER_XT_TARGET_CHECKSUM \
       -m NETFILTER_XT_TARGET_CLASSIFY \
       -m NETFILTER_XT_TARGET_CONNMARK \
@@ -652,12 +811,11 @@ kconfig() {
       -m NETFILTER_XT_TARGET_NETMAP \
       -m NETFILTER_XT_TARGET_NFLOG \
       -m NETFILTER_XT_TARGET_NFQUEUE \
+      -m NETFILTER_XT_TARGET_NOTRACK \
       -m NETFILTER_XT_TARGET_RATEEST \
       -m NETFILTER_XT_TARGET_REDIRECT \
       -m NETFILTER_XT_TARGET_TEE \
       -m NETFILTER_XT_TARGET_TPROXY \
-      -m IP_NF_RAW \
-      -m IP6_NF_RAW \
       -m NETFILTER_XT_TARGET_TRACE \
       -m NETFILTER_XT_TARGET_SECMARK \
       -m NETFILTER_XT_TARGET_TCPMSS \
@@ -683,6 +841,7 @@ kconfig() {
       -m NETFILTER_XT_MATCH_HL \
       -m NETFILTER_XT_MATCH_IPCOMP \
       -m NETFILTER_XT_MATCH_IPRANGE \
+      -m NETFILTER_XT_MATCH_IPVS \
       -m NETFILTER_XT_MATCH_L2TP \
       -m NETFILTER_XT_MATCH_LENGTH \
       -m NETFILTER_XT_MATCH_LIMIT \
@@ -707,8 +866,6 @@ kconfig() {
       -m NETFILTER_XT_MATCH_TCPMSS \
       -m NETFILTER_XT_MATCH_TIME \
       -m NETFILTER_XT_MATCH_U32 \
-      -m NF_SOCKET_IPV4 \
-      -m NF_SOCKET_IPV6
 
     # libvirt modules (from emerge output)
     scripts/config \
