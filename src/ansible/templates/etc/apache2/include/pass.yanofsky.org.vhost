@@ -1,6 +1,0 @@
-DocumentRoot /var/www/pass
-
-<Directory /var/www/pass>
-  DirectoryIndex index.html
-  Require all granted
-</Directory>
