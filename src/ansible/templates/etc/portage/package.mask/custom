@@ -2,9 +2,3 @@
 */*::ultrabug
 */*::fkmclane
 */*::megacoffee
-
-# broken dev-haskell/persistent-template-2.5.2
-#   Configuring persistent-template-2.5.2...
-#   setup: Encountered missing dependencies:
-#   aeson >=0.7 && <1.2
->=dev-haskell/aeson-1.2

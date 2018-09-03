@@ -3,7 +3,7 @@ media-libs/xine-lib aalib bluray -dvb -dxr3 -fbcon fusion imagemagick -jack -lib
 media-sound/pulseaudio equalizer -jack -libressl libsamplerate -lirc native-headset ofono-headset orc realtime sox -xen -zeroconf
 media-tv/kodi airplay avahi bluray caps cec css -debug -gles -java -joystick midi -mysql nfs rtmp sftp upnp vaapi -vdpau webserver
 media-tv/mythtv -autostart avahi bluray cec crystalhd -debug -dvb -egl fftw ieee1394 -jack -lcd libass -lirc -perl vaapi -vdpau xmltv
-media-video/ffmpeg aacplus amr amrenc bluray bs2b cdio celt cpudetection faac fdk flite -fontconfig frei0r fribidi gme -gnutls gsm ec61883 iec61883 ieee1394 -jack jpeg2k ladspa libass -libressl librtmp libsoxr libv4l modplug openal -openssl opus -oss quvi schroedinger snappy speex ssh -static-libs theora twolame v4l vaapi -vdpau vpx wavpack webp x265 zvbi
+media-video/ffmpeg aacplus amr amrenc bluray bs2b cdio celt cpudetection faac fdk flite -fontconfig frei0r fribidi gme -gnutls gsm ec61883 iec61883 ieee1394 -jack jpeg2k ladspa libass -libressl librtmp libsoxr libv4l modplug openal openssl opus -oss quvi schroedinger snappy speex ssh -static-libs theora twolame v4l vaapi -vdpau vpx wavpack webp x265 zvbi
 media-video/mplayer aalib bidi bluray bs2b cddb cdparanoia cpudetection dv -dvb faac faad ftp  gsm jpeg2k libmpeg2 live nas nut openal pnm pvr radio rtc speex tga theora toolame tremor twolame v4l -vcd xanim xvmc yuv4mpeg -zoran
 media-video/mpv archive bluray -doc drm -dvb -gbm -jack -libav libguess libmpv openal -oss rubberband -sdl uchardet v4l vaapi -vdpau vf-dlopen -wayland
 media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad fdk fluidsynth -fontconfig gme -gnutls growl httpd ieee1394 -jack kate -kde libass -libav libtar libtiger linsys -lirc live lua matroska modplug mtp musepack omxil opencv -optimisememory opus postproc projectm rdp rtsp -run-as-root schroedinger sdl-image sftp shout sid skins speex taglib theora tremor twolame upnp v4l vaapi -vcdx -vdpau vlm vnc vpx wma-fixed x265 zeroconf zvbi
@@ -93,9 +93,6 @@ net-fs/samba client
 # required by net-mail/notmuch
 dev-libs/gmime smime
 
-# https://bugs.gentoo.org/636722
-media-sound/audacity id3tag
-
 # https://bugs.gentoo.org/645000#c5
 media-tv/kodi -system-ffmpeg
 
@@ -105,8 +102,11 @@ media-tv/kodi -system-ffmpeg
 # avoid error from "python? ( gdbm )" requirement
 net-dns/avahi -python
 
-# python version override
-app-text/asciidoc python_single_target_python2_7 # required by "net-vpn/tor-0.3.4.2_alpha::gentoo"
+# nscd nix install workaround https://github.com/NixOS/nix/issues/687
+sys-libs/glibc nscd
+
+# asciidoc python2.7 error
+app-text/asciidoc python_single_target_python2_7
 
 # required by media-video/vlc-3.0.3-r1::gentoo[bidi]
 # required by media-libs/phonon-vlc-0.10.1::gentoo
@@ -117,10 +117,13 @@ app-text/asciidoc python_single_target_python2_7 # required by "net-vpn/tor-0.3.
 # required by kde-frameworks/kinit-5.48.0::gentoo
 # required by kde-frameworks/kded-5.48.0::gentoo
 >=media-libs/freetype-2.9.1-r4 harfbuzz
-# required by dev-python/pygobject-3.24.1::gentoo[cairo]
-# required by app-i18n/ibus-1.5.18::gentoo[python]
-# required by gnome-base/gnome-shell-3.24.3::gentoo[ibus]
-# required by gnome-extra/chrome-gnome-shell-10::gentoo
+# required by media-tv/kodi-17.6-r4::gentoo[webserver]
 # required by @selected
 # required by @world (argument)
->=dev-python/pycairo-1.17.0 python_targets_python3_6
+>=net-libs/libmicrohttpd-0.9.59 messages
+# required by media-gfx/gnome-photos-3.24.6::gentoo
+# required by gnome-base/gnome-extra-apps-3.24.2::gentoo[tracker]
+# required by gnome-base/gnome-3.24.2::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=media-libs/gegl-0.3.34:0.3 jpeg2k raw
