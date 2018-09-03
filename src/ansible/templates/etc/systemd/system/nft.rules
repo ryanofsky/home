@@ -8,12 +8,22 @@ table inet firewall {
     type filter hook input priority 0
     ct state established,related accept
     iifname lo accept
-    tcp dport { 80, 443, 2401, 8096, {{ lookup('password', 'credentials/smtp_port.jumpy') }}, {{ lookup('password', 'credentials/sshd_port.jumpy') }}, {{ lookup('password', 'credentials/znc_port.jumpy') }} } accept
+    tcp dport { 80, 443, 2401, 8096, 8920, {{ lookup('password', 'credentials/smtp_port.jumpy') }}, {{ lookup('password', 'credentials/sshd_port.jumpy') }}, {{ lookup('password', 'credentials/znc_port.jumpy') }} } accept
     meta nfproto ipv4 icmp type { echo-request } accept
     meta nfproto ipv6 icmpv6 type { nd-neighbor-solicit, echo-request, nd-router-advert, nd-neighbor-advert } accept
     #ip saddr XXX accept
     #ip6 saddr XXX/64 accept
     reject
   }
+}
+table ip nat {
+	chain prerouting {
+		type nat hook prerouting priority 0; policy accept;
+		ip daddr 97.107.140.182 tcp dport { 8096, 8920 } dnat to 10.241.66.34
+	}
+
+	chain postrouting {
+		type nat hook postrouting priority 100; policy accept;
+	}
 }
 {% endif %}
