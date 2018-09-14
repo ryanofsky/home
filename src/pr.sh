@@ -408,7 +408,7 @@ pr-rev() {
     echo utACK "$new"
 
     local rev=origin/pull/$1/head
-    local base=$(git merge-base origin/master "$rev")
+    local base=$(git rev-list -n1 --min-parents=2 "$rev")
     local -a revs
     readarray revs < <(git rev-list --reverse $base..$rev)
     echo "Started review (will update this comment with progress)."
