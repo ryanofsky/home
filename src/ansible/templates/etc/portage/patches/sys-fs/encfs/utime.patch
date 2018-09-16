@@ -1,0 +1,25 @@
+From 3d060783eea3790b8d6ea9920db8a0dc6e73d184 Mon Sep 17 00:00:00 2001
+From: Russell Yanofsky <russ@yanofsky.org>
+Date: Sun, 16 Sep 2018 15:41:11 -0400
+Subject: [PATCH 1/1] Fix setting nanosecond times
+
+utimensat function was never being called due to missing cmake define
+---
+ config.h.cmake | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/config.h.cmake b/config.h.cmake
+index 8548d70..32ddf2b 100644
+--- a/config.h.cmake
++++ b/config.h.cmake
+@@ -6,6 +6,7 @@
+ #cmakedefine XATTR_LLIST
+ 
+ #cmakedefine HAVE_LCHMOD
++#cmakedefine HAVE_UTIMENSAT
+ #cmakedefine HAVE_FDATASYNC
+ 
+ #cmakedefine HAVE_DIRENT_D_TYPE
+-- 
+2.18.0
+
