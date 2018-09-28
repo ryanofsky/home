@@ -180,6 +180,11 @@ make-kernel() {
         ROOT_DEV_UUID=$(blkid -s UUID -o value "$ROOT_DEV")
         test -n "$ROOT_DEV_UUID"
 
+        BOOTCMD=
+        if [ "$INVENTORY_HOSTNAME" = mini ]; then
+          BOOTCMD=" rd.neednet=1 ip=dhcp"
+        fi
+
         # UEFI/secure boot setup
         # https://wiki.gentoo.org/wiki/EFI_stub_kernel
         # https://wiki.gentoo.org/wiki/Efibootmgr
@@ -187,9 +192,8 @@ make-kernel() {
         # https://github.com/sakaki-/buildkernel/blob/master/buildkernel
         # http://kroah.com/log/blog/2013/09/02/booting-a-self-signed-linux-kernel/
         # efibootmgr command lines: https://bbs.archlinux.org/viewtopic.php?id=147965
-        efibootmgr -v -c -d "$BOOT_DISK_DEV" -p "$BOOT_PART_NUM" -L "linux-$V" -l "\\vmlinuz-$V" -u "initrd=\\initramfs-$V.img ro root=UUID=$ROOT_FS_UUID rd.luks.uuid=$ROOT_DEV_UUID rootflags=subvol=root,noatime"
+        efibootmgr -v -c -d "$BOOT_DISK_DEV" -p "$BOOT_PART_NUM" -L "linux-$V" -l "\\vmlinuz-$V" -u "initrd=\\initramfs-$V.img ro root=UUID=$ROOT_FS_UUID rootflags=subvol=root,noatime rd.luks.uuid=$ROOT_DEV_UUID${BOOTCMD}"
     fi
-
 }
 
 kconfig() {
