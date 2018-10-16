@@ -4,7 +4,7 @@ FIFO="$TMPDIR/pom.d"
 TIMEOUT=300
 #export TZ=WET
 #export TZ=CET
-export TZ=Asia/Tokyo
+#export TZ=Asia/Tokyo
 
 popup() {
     if test "$1" != 0; then while test $(xprintidle) -lt 2000; do sleep 1; done; fi
