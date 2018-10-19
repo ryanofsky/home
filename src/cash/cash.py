@@ -2759,9 +2759,12 @@ class GnuCash:
         The split.memo field can hold various other dates in freeform
         text format, see ChaseStr and PaypalStr classes for details.
         """
+        try:
+            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            dt = datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S")
         return datetime.datetime.fromtimestamp(
-            datetime.datetime.strptime(date_str, "%Y%m%d%H%M%S")
-            .replace(tzinfo=datetime.timezone.utc).timestamp()).date()
+            dt.replace(tzinfo=datetime.timezone.utc).timestamp()).date()
 
     @staticmethod
     def date_str(date):
