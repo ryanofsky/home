@@ -30,7 +30,6 @@ fi
 
 
 # Put your fun stuff here.
-alias s='stty sane'
 
 # dump emacsclient kill buffer
 ekill() {
@@ -92,20 +91,4 @@ v () {
       gvim --remote-tab "$FILE"
     fi
   done
-}
-
-r () {
-  title="Remind Me:"
-  message="${@:2}"
-
-  if [[ "${1:0:1}" == "@" ]]
-  then
-    echo "notify-send -t 1000000 --icon=dialog-information \"$title\" \"$message\"" | at ${1:1}
-  else
-    sleep $1 && notify-send -t 1000000 --icon=dialog-information "$title" "$message" &
-  fi
-}
-
-p () {
-  r 25m "-"
 }
