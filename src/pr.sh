@@ -411,7 +411,7 @@ pr-rev() {
     local base=$(git rev-list -n1 --min-parents=2 "$rev")
     local -a revs
     readarray revs < <(git rev-list --reverse $base..$rev)
-    echo "Started review (will update this comment with progress)."
+    echo "Started review (will update list below with progress)."
     i=1
     for r in "${revs[@]}"; do
         git log -n1 --format="- [ ] %H %s ($i/${#revs[@]})" $r
