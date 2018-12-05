@@ -137,3 +137,12 @@ app-text/asciidoc python_single_target_python2_7
 # required by @selected
 # required by @world (argument)
 >=net-libs/nodejs-9.11.2 inspector
+# required by x11-apps/igt-gpu-tools-1.23::gentoo
+# required by @selected
+# required by @world (argument)
+>=x11-libs/libdrm-2.4.96 video_cards_nouveau video_cards_amdgpu
+# required by net-libs/shairplay-0_pre20180824-r1::gentoo
+# required by media-tv/kodi-18.0_rc1::gentoo[airplay]
+# required by @selected
+# required by @world (argument)
+>=net-dns/avahi-0.7-r2 mdnsresponder-compat
