@@ -1,6 +1,0 @@
-DocumentRoot /var/www/fam
-
-<Directory /var/www/fam>
-  DirectoryIndex index.html
-  Require all granted
-</Directory>
