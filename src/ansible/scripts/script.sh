@@ -338,7 +338,7 @@ kconfig() {
         # PCI bridge [0604]: Intel Corporation 8 Series PCI Express Root Port 5 [8086:9c18] (rev e4)
         # Kernel driver in use: pcieport
         # Kernel modules: shpchp
-        scripts/config -e PCIEPORTBUS -m HOTPLUG_PCI_SHPC
+        scripts/config -e PCIEPORTBUS -e HOTPLUG_PCI_SHPC
         # USB controller [0c03]: Intel Corporation 8 Series USB EHCI #1 [8086:9c26] (rev 04)
         # Subsystem: Hewlett-Packard Company 8 Series USB EHCI [103c:2b38]
         # Kernel driver in use: ehci-pci
@@ -365,7 +365,8 @@ kconfig() {
         # Subsystem: Hewlett-Packard Company RTS5229 PCI Express Card Reader [103c:2b38]
         # Kernel driver in use: rtsx_pci
         # Kernel modules: rtsx_pci
-        scripts/config -m MFD_RTSX_PCI
+        # scripts/config -m MFD_RTSX_PCI
+        scripts/config -m MISC_RTSX -m MISC_RTSX_PCI -m MISC_RTSX_USB
         # Network controller [0280]: Broadcom Corporation BCM43142 802.11b/g/n [14e4:4365] (rev 01)
         # Subsystem: Hewlett-Packard Company BCM43142 802.11b/g/n [103c:804a]
         # Kernel driver in use: bcma-pci-bridge
@@ -630,7 +631,6 @@ kconfig() {
       -m BRIDGE_EBT_LOG \
       -m BRIDGE_EBT_NFLOG \
       -m NF_DEFRAG_IPV4 \
-      -m NF_CONNTRACK_IPV4 \
       -m NF_SOCKET_IPV4 \
       -m NF_TPROXY_IPV4 \
       -e NF_TABLES_IPV4 \
@@ -675,7 +675,6 @@ kconfig() {
       -m IP_NF_ARPFILTER \
       -m IP_NF_ARP_MANGLE \
       -m NF_DEFRAG_IPV6 \
-      -m NF_CONNTRACK_IPV6 \
       -m NF_SOCKET_IPV6 \
       -m NF_TPROXY_IPV6 \
       -e NF_TABLES_IPV6 \
@@ -763,7 +762,6 @@ kconfig() {
       -m NF_NAT_TFTP \
       -e NF_NAT_REDIRECT \
       -m NETFILTER_SYNPROXY \
-      -m NF_OSF \
       -m NF_TABLES \
       -m NF_TABLES_SET \
       -e NF_TABLES_INET \
@@ -798,6 +796,7 @@ kconfig() {
       -m NETFILTER_XT_MARK \
       -m NETFILTER_XT_CONNMARK \
       -m NETFILTER_XT_SET \
+      -e AUDIT \
       -m NETFILTER_XT_TARGET_AUDIT \
       -m NETFILTER_XT_TARGET_CHECKSUM \
       -m NETFILTER_XT_TARGET_CLASSIFY \
