@@ -59,6 +59,9 @@ www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modu
 app-eselect/eselect-php -apache2 fpm
 dev-lang/php fpm -truetype -exif
 
+# anki features
+app-misc/anki latex
+
 # lyx features
 app-office/lyx dia dot html monolithic-build -qt4 qt5 rtf gnumeric
 
@@ -81,6 +84,9 @@ media-plugins/audacious-plugins -gtk gtk3 -qt5
 # required for app-text/calibre
 dev-python/PyQt5 webkit
 
+# required app-misc/anki
+dev-python/PyQt5 webengine
+
 # required for x11-wm/xpra, net-misc/chrome-remote-desktop
 x11-base/xorg-server xvfb
 
@@ -93,56 +99,11 @@ net-fs/samba client
 # required by net-mail/notmuch
 dev-libs/gmime smime
 
-# https://bugs.gentoo.org/645000#c5
-media-tv/kodi -system-ffmpeg
-
 # 32 bit crap for adobe
 */* abi_x86_32
-
-# avoid error from "python? ( gdbm )" requirement
-net-dns/avahi -python
 
 # nscd nix install workaround https://github.com/NixOS/nix/issues/687
 sys-libs/glibc nscd
 
-# asciidoc python2.7 error
-app-text/asciidoc python_single_target_python2_7
-
-# required by media-video/vlc-3.0.3-r1::gentoo[bidi]
-# required by media-libs/phonon-vlc-0.10.1::gentoo
-# required by media-libs/phonon-4.10.1::gentoo[vlc]
-# required by kde-frameworks/knotifications-5.48.0::gentoo
-# required by kde-frameworks/kwallet-5.48.0::gentoo
-# required by kde-frameworks/kio-5.48.0::gentoo[kwallet]
-# required by kde-frameworks/kinit-5.48.0::gentoo
-# required by kde-frameworks/kded-5.48.0::gentoo
->=media-libs/freetype-2.9.1-r4 harfbuzz
-# required by media-tv/kodi-17.6-r4::gentoo[webserver]
-# required by @selected
-# required by @world (argument)
->=net-libs/libmicrohttpd-0.9.59 messages
-# required by media-gfx/gnome-photos-3.24.6::gentoo
-# required by gnome-base/gnome-extra-apps-3.24.2::gentoo[tracker]
-# required by gnome-base/gnome-3.24.2::gentoo[extras]
-# required by @selected
-# required by @world (argument)
->=media-libs/gegl-0.3.34:0.3 jpeg2k raw
-# required by gnome-extra/gnome-calculator-3.30.1::gentoo
-# required by gnome-base/gnome-extra-apps-3.24.2::gentoo
-# required by gnome-base/gnome-3.24.2::gentoo[extras]
-# required by @selected
-# required by @world (argument)
->=x11-libs/gtksourceview-3.24.8 vala
-# required by www-client/chromium-70.0.3538.22::gentoo
-# required by @selected
-# required by @world (argument)
->=net-libs/nodejs-9.11.2 inspector
-# required by x11-apps/igt-gpu-tools-1.23::gentoo
-# required by @selected
-# required by @world (argument)
->=x11-libs/libdrm-2.4.96 video_cards_nouveau video_cards_amdgpu
-# required by net-libs/shairplay-0_pre20180824-r1::gentoo
-# required by media-tv/kodi-18.0_rc1::gentoo[airplay]
-# required by @selected
-# required by @world (argument)
->=net-dns/avahi-0.7-r2 mdnsresponder-compat
+# required by gnome-extra/gnome-boxes-3.24.1-r1:0/0::gentoo
+app-emulation/spice smartcard

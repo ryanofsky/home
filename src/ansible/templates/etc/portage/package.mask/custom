@@ -2,3 +2,23 @@
 */*::ultrabug
 */*::fkmclane
 */*::megacoffee
+*/*::crocket-overlay
+
+{% if inventory_hostname == "mini" %}
+<www-client/chromium-71.0.3578.62
+>www-client/chromium-71.0.3578.62
+{% elif inventory_hostname == "think" %}
+<www-client/chromium-71.0.3578.62
+>www-client/chromium-71.0.3578.62
+{% endif %}
+
+{% if inventory_hostname == "think" %}
+# required by app-emulation/docker-compose-1.23.2:0/0::gentoo
+>=dev-python/requests-2.21
+# required by dev-python/requests-2.19.1-r1:0/0::gentoo
+>=dev-python/idna-2.8
+# required by dev-python/requests-2.19.1-r1:0/0::gentoo
+>=dev-python/urllib3-1.24
+# last version with webengine USE flag, required by anki
+>dev-python/PyQt5-5.10.1-r1
+{% endif %}
