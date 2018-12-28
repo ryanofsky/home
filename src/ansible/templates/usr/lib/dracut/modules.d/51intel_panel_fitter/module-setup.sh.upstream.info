@@ -1,0 +1,2 @@
+usr/lib/dracut/modules.d/51intel_panel_fitter/module-setup.sh.upstream: {}
+info: {require_existing: 1}

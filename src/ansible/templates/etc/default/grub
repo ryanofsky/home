@@ -13,23 +13,35 @@
 GRUB_DISTRIBUTOR="Gentoo"
 
 # Default menu entry
-GRUB_DEFAULT=0
+#GRUB_DEFAULT=0
 
 # Boot the default entry this many seconds after the menu is displayed
+{% if inventory_hostname == "jumpy" %}
 GRUB_TIMEOUT=5
+{% elif inventory_hostname == "mini" %}
+GRUB_TIMEOUT=1
+{% else %}
+#GRUB_TIMEOUT=5
+{% endif %}
 #GRUB_TIMEOUT_STYLE=menu
 
 # Grub translates DEVICE_UUID into a kernel root= parameter
 GRUB_DEVICE_UUID={{root_fs_uuid.stdout}}
 
+{% if inventory_hostname == "jumpy" %}
 # Args for dracut cryptsetup scripts.
 GRUB_CMDLINE_LINUX="rd.luks.uuid={{root_dev_uuid.stdout}} rd.luks.options=discard rootflags=subvol=root,noatime,discard,ssd console=ttyS0"
-
 GRUB_DISABLE_RECOVERY="true"
 GRUB_DISABLE_SUBMENU=true
 GRUB_GFXPAYLOAD_LINUX="text"
 GRUB_SERIAL_COMMAND="serial"
 GRUB_TERMINAL="serial"
+{% elif inventory_hostname == "mini" %}
+GRUB_CMDLINE_LINUX="rd.luks.uuid={{root_dev_uuid.stdout}} rootflags=subvol=root,noatime rd.neednet=1 ip=dhcp"
+{% else %}
+# Append parameters to the linux kernel command line
+#GRUB_CMDLINE_LINUX=""
+{% endif %}
 
 #
 # Examples:

@@ -1,0 +1,10 @@
+[Unit]
+Description=Intel panel fitter
+Before=gdm.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/intel_panel_fitter -p A -x 1216 -y 684
+
+[Install]
+WantedBy=basic.target
