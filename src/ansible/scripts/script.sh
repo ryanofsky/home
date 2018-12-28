@@ -397,6 +397,7 @@ kconfig() {
       -m FUSE_FS \
       -m CUSE \
       -m OVERLAY_FS \
+      -m UDF_FS \
       -m 9P_FS \
       -e 9P_FSCACHE \
       -e 9P_FS_POSIX_ACL \
