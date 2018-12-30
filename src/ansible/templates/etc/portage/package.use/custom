@@ -5,7 +5,7 @@ media-tv/kodi airplay avahi bluray caps cec css -debug -gles -java -joystick mid
 media-tv/mythtv -autostart avahi bluray cec crystalhd -debug -dvb -egl fftw ieee1394 -jack -lcd libass -lirc -perl vaapi -vdpau xmltv
 media-video/ffmpeg aacplus amr amrenc bluray bs2b cdio celt cpudetection faac fdk flite -fontconfig frei0r fribidi gme -gnutls gsm ec61883 iec61883 ieee1394 -jack jpeg2k ladspa libass -libressl librtmp libsoxr libv4l modplug openal openssl opus -oss quvi schroedinger snappy speex ssh -static-libs theora twolame v4l vaapi -vdpau vpx wavpack webp x265 zvbi
 media-video/mplayer aalib bidi bluray bs2b cddb cdparanoia cpudetection dv -dvb faac faad ftp  gsm jpeg2k libmpeg2 live nas nut openal pnm pvr radio rtc speex tga theora toolame tremor twolame v4l -vcd xanim xvmc yuv4mpeg -zoran
-media-video/mpv archive bluray -doc drm -dvb -gbm -jack -libav libguess libmpv openal -oss rubberband -sdl uchardet v4l vaapi -vdpau vf-dlopen -wayland
+media-video/mpv archive bluray cli cplugins doc drm dvb javascript libguess libmpv openal rubberband uchardet v4l vaapi vf-dlopen
 media-video/vlc aalib -atmo bidi bluray cddb chromaprint dc1394 -debug -dvb faad fdk fluidsynth -fontconfig gme -gnutls growl httpd ieee1394 -jack kate -kde libass -libav libtar libtiger linsys -lirc live lua matroska modplug mtp musepack omxil opencv -optimisememory opus postproc projectm rdp rtsp -run-as-root schroedinger sdl-image sftp shout sid skins speex taglib theora tremor twolame upnp v4l vaapi -vcdx -vdpau vlm vnc vpx wma-fixed x265 zeroconf zvbi
 media-video/xine-ui aalib curl -lirc vdr
 
@@ -84,9 +84,6 @@ media-plugins/audacious-plugins -gtk gtk3 -qt5
 # required for app-text/calibre
 dev-python/PyQt5 webkit
 
-# required app-misc/anki
-dev-python/PyQt5 webengine
-
 # required for x11-wm/xpra, net-misc/chrome-remote-desktop
 x11-base/xorg-server xvfb
 
@@ -102,8 +99,59 @@ dev-libs/gmime smime
 # 32 bit crap for adobe
 */* abi_x86_32
 
+# avoid error from "python? ( gdbm )" requirement
+net-dns/avahi -python
+
 # nscd nix install workaround https://github.com/NixOS/nix/issues/687
 sys-libs/glibc nscd
 
+# asciidoc python2.7 error
+app-text/asciidoc python_single_target_python2_7
+
 # required by gnome-extra/gnome-boxes-3.24.1-r1:0/0::gentoo
 app-emulation/spice smartcard
+
+# required by app-emulation/libvirt-4.10.0:0/4.10.0::gentoo
+sys-block/parted device-mapper
+
+# required by app-misc/anki-2.1.7:0/0::crocket-overlay
+# webengine? ( widgets? ( webchannel ) )
+dev-python/PyQt5 webengine webchannel
+
+# required by dev-qt/qtwebengine-5.11.3:5/5.11::gentoo
+dev-qt/qtwebchannel qml
+
+# required by gnome-extra/gnome-contacts-3.30.1:0/0::gentoo
+net-libs/gnome-online-accounts vala
+
+# required by x11-apps/igt-gpu-tools-1.23::gentoo
+# required by @selected
+# required by @world (argument)
+>=x11-libs/libdrm-2.4.96 video_cards_nouveau video_cards_amdgpu
+# required by gnome-extra/gnome-boxes-3.24.1-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=app-emulation/qemu-3.1.0 spice smartcard usbredir
+# required by media-video/vlc-3.0.4::gentoo[bidi]
+# required by @selected
+# required by @world (argument)
+>=media-libs/freetype-2.9.1-r4 harfbuzz
+# required by media-tv/kodi-18.0_rc3::gentoo[webserver]
+# required by @selected
+# required by @world (argument)
+>=net-libs/libmicrohttpd-0.9.62 messages
+# required by net-libs/shairplay-0_pre20180824-r1::gentoo
+# required by media-tv/kodi-18.0_rc3::gentoo[airplay]
+# required by @selected
+# required by @world (argument)
+>=net-dns/avahi-0.7-r2 mdnsresponder-compat
+# required by www-client/chromium-72.0.3626.28-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=net-libs/nodejs-8.15.0 inspector
+# required by net-misc/vinagre-3.22.0-r3::gentoo[zeroconf]
+# required by gnome-base/gnome-extra-apps-3.24.2::gentoo
+# required by gnome-base/gnome-3.24.2::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=net-dns/avahi-0.7-r2 gtk3

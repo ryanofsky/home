@@ -5,11 +5,11 @@
 */*::crocket-overlay
 
 {% if inventory_hostname == "mini" %}
-<www-client/chromium-71.0.3578.62
->www-client/chromium-71.0.3578.62
+<www-client/chromium-72.0.3626.28-r1
+>www-client/chromium-72.0.3626.28-r1
 {% elif inventory_hostname == "think" %}
-<www-client/chromium-71.0.3578.62
->www-client/chromium-71.0.3578.62
+<www-client/chromium-72.0.3626.28-r1
+>www-client/chromium-72.0.3626.28-r1
 {% endif %}
 
 {% if inventory_hostname == "think" %}
