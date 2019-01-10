@@ -129,6 +129,10 @@ add-subj() {
   GIT_EDITOR="sed -i '1 s/.*/$@ # &\n\n&/g'" git commit --amend
 }
 
+add-auth() {
+    GIT_EDITOR="sed -i '\$ a Co-authored-by: $1'" git commit --amend
+}
+
 ntag() {
     local name
     if [ -n "$1" ]; then
