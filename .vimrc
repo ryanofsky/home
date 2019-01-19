@@ -13,3 +13,5 @@ set ruler               " show the cursor position all the time
 set showcmd             " display incomplete commands
 let g:load_doxygen_syntax=1
 let g:openssl_backup = 1
+set undofile
+set undodir=~/.vim/undodir
