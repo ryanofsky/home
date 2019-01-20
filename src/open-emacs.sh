@@ -1,5 +1,9 @@
 #!/bin/bash
 
+frameid() {
+  xwininfo -root -tree | sed -n 's/^        \(0x[0-9a-f]\+\) .*: ("emacs" "Emacs").*/\1/p' | head -n1
+}
+
 O=()
 while test -n "$1"; do
   case "$1" in
@@ -21,6 +25,15 @@ while test -n "$1"; do
 done
 
 O=("${O[@]}" "-n")
+
+if [ -n "$DISPLAY" ]; then
+  f=$(frameid)
+  if [ -z "$f" ]; then
+     run.sh emacsclient -c -n
+     f=$(frameid)
+  fi
+  test -z "$f" || run.sh xdotool windowactivate "$f"
+fi
 
 for ARG in "$@"; do
   FILE="${ARG%%:*}"
