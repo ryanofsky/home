@@ -3,3 +3,4 @@ dev-python/yapf::ultrabug
 media-tv/plex-media-server::fkmclane
 media-tv/emby-server::megacoffee
 app-misc/anki::crocket-overlay
+app-mobilephone/scrcpy::Local

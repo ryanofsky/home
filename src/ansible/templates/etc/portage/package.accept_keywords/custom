@@ -1,3 +1,4 @@
+app-mobilephone/scrcpy **
 sys-devel/gcc **
 {% if inventory_hostname == "think" %}
 sys-fs/hfsplusutils **
