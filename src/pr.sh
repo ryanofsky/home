@@ -269,6 +269,7 @@ ppush() {
         local b2="$name.$cur"
         local u="https://github.com/ryanofsky/bitcoin/commits"
         local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
+        local cd="https://github.com/ryanofsky/bitcoin/compare/$b1..$b2"
         local r="$r1 -> $r2"
         local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
@@ -303,7 +304,7 @@ ppush() {
             elif git diff --quiet "$r1".."$r2"; then
                 echo "Squashed $r ($b)"
             else
-                echo "Updated $r ($b)"
+                echo "Updated $r ($b, [compare]($cd))"
             fi
         else
             echo "Rebased $r ($b)"
