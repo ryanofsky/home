@@ -12,16 +12,18 @@ class Source:
 for dirpath, dirnames, filenames in os.walk("src/wallet"):
     for filename in filenames:
         if filename.endswith(".cpp"):
-            sources[filename] = Source(os.path.join(dirpath, filename))
+            sources.setdefault(filename, []).append(Source(os.path.join(dirpath, filename)))
+sources["wallet.cpp"].append(Source("src/interfaces/wallet.cpp"))
 
 for line in sys.stdin:
   m = regex.match("^([^:]+):.*? undefined reference to `(.*?)'$", line)
   if m:
       filename, sym = m.groups()
       if filename in sources:
-          sources[filename].syms.add(sym)
+          for source in sources[filename]:
+              source.syms.add(sym)
 
-for source in sources.values():
+for source in (s for sl in sources.values() for s in sl):
     with open(source.path) as fp:
         code = fp.read()
 
