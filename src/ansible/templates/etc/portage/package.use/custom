@@ -108,12 +108,6 @@ sys-libs/glibc nscd
 # asciidoc python2.7 error
 app-text/asciidoc python_single_target_python2_7
 
-# required by gnome-extra/gnome-boxes-3.24.1-r1:0/0::gentoo
-app-emulation/spice smartcard
-
-# required by app-emulation/libvirt-4.10.0:0/4.10.0::gentoo
-sys-block/parted device-mapper
-
 # required by app-misc/anki-2.1.7:0/0::crocket-overlay
 # webengine? ( widgets? ( webchannel ) )
 dev-python/PyQt5 webengine webchannel
@@ -121,37 +115,46 @@ dev-python/PyQt5 webengine webchannel
 # required by dev-qt/qtwebengine-5.11.3:5/5.11::gentoo
 dev-qt/qtwebchannel qml
 
-# required by gnome-extra/gnome-contacts-3.30.1:0/0::gentoo
-net-libs/gnome-online-accounts vala
+# required by (net-misc/vinagre-3.22.0-r3:0/0::gentoo, installed)
+>=net-dns/avahi-0.6.26 gtk3
 
-# required by x11-apps/igt-gpu-tools-1.23::gentoo
+# required by (media-tv/kodi-18.1:0/0::gentoo, installed)
+>=net-libs/libmicrohttpd-0.9.55 messages
+
+# required by (net-misc/vino-3.22.0-r1:0/0::gentoo, installed)
+>=sys-apps/dbus-1.6 user-session
+>=net-wireless/bluez-5.50-r1 user-session
+
+# required by (x11-apps/igt-gpu-tools-1.23:0/0::gentoo, installed)
+>=x11-libs/libdrm-2.4.82 video_cards_amdgpu video_cards_nouveau
+
+# required by www-client/firefox-65.0.2::gentoo[system-libvpx]
 # required by @selected
 # required by @world (argument)
->=x11-libs/libdrm-2.4.96 video_cards_nouveau video_cards_amdgpu
-# required by gnome-extra/gnome-boxes-3.24.1-r1::gentoo
+>=media-libs/libvpx-1.7.0 postproc
+
+# required by (www-client/firefox-65.0.2:0/0::gentoo, installed)
+>=dev-db/sqlite-3.25.3:3 secure-delete
+
+# required by (net-libs/shairplay-0_pre20180824-r1:0/0::gentoo, installed)
+# required by (net-misc/ntp-4.2.8_p12-r1:0/0::gentoo, installed)
+net-dns/avahi mdnsresponder-compat
+
+# required by (app-emulation/libvirt-5.0.0:0/5.0.0::gentoo, installed)
+>=sys-block/parted-1.8 device-mapper
+
+# required by (gnome-extra/gnome-boxes-3.26.4:0/0::gentoo, installed)
+>=net-misc/spice-gtk-0.32 smartcard usbredir
+
+# required by (media-video/vlc-3.0.6-r1:0/5-9::gentoo, installed)
+media-libs/freetype:2 harfbuzz
+
+# required by gnome-extra/gnome-boxes-3.26.4::gentoo
 # required by @selected
 # required by @world (argument)
->=app-emulation/qemu-3.1.0 spice smartcard usbredir
-# required by media-video/vlc-3.0.4::gentoo[bidi]
+>=app-emulation/qemu-3.1.0-r2 spice usbredir smartcard
+
+# required by www-client/chromium-73.0.3683.27::gentoo
 # required by @selected
 # required by @world (argument)
->=media-libs/freetype-2.9.1-r4 harfbuzz
-# required by media-tv/kodi-18.0_rc3::gentoo[webserver]
-# required by @selected
-# required by @world (argument)
->=net-libs/libmicrohttpd-0.9.62 messages
-# required by net-libs/shairplay-0_pre20180824-r1::gentoo
-# required by media-tv/kodi-18.0_rc3::gentoo[airplay]
-# required by @selected
-# required by @world (argument)
->=net-dns/avahi-0.7-r2 mdnsresponder-compat
-# required by www-client/chromium-72.0.3626.28-r1::gentoo
-# required by @selected
-# required by @world (argument)
->=net-libs/nodejs-8.15.0 inspector
-# required by net-misc/vinagre-3.22.0-r3::gentoo[zeroconf]
-# required by gnome-base/gnome-extra-apps-3.24.2::gentoo
-# required by gnome-base/gnome-3.24.2::gentoo[extras]
-# required by @selected
-# required by @world (argument)
->=net-dns/avahi-0.7-r2 gtk3
+>=net-libs/nodejs-10.15.3 inspector
