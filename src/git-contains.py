@@ -21,6 +21,10 @@ def main():
     parser.add_argument("--ignore-bup-temp", action="store_true")
     parser.add_argument("--ignore-packs", action="store_true")
     args = parser.parse_args()
+    git_contains(args)
+
+
+def git_contains(args):
     obj1 = set()
     obj2 = set()
     ref1 = {}
