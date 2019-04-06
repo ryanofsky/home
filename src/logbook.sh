@@ -1,8 +1,10 @@
 #!/bin/bash
 
 prev=
-while read weekday month day time tz year rest; do
-    date=$(date --date="$weekday $month $day $time $tz $year" '+%Y-%m-%d %a %H:%M')
+while read line; do
+    date="${line%% -- *}"
+    rest="${line#* -- }"
+    date=$(date --date="$date" '+%Y-%m-%d %a %H:%M')
     dsec=$(date --date="$date" '+%s')
     sec=$((dsec-psec))
     min=$((sec/60))
