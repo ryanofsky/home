@@ -59,6 +59,12 @@ www-servers/apache apache2_modules_proxy apache2_modules_proxy_fcgi apache2_modu
 app-eselect/eselect-php -apache2 fpm
 dev-lang/php fpm -truetype -exif
 
+# kde-misc/kdeconnect features
+kde-misc/kdeconnect app mousepad
+
+# wasm
+sys-devel/llvm llvm_targets_WebAssembly
+
 # anki features
 app-misc/anki latex
 
@@ -158,3 +164,16 @@ media-libs/freetype:2 harfbuzz
 # required by @selected
 # required by @world (argument)
 >=net-libs/nodejs-10.15.3 inspector
+
+# required by gnome-extra/gnome-boxes-3.30.3::gentoo
+# required by @selected
+# required by @world (argument)
+>=net-misc/spice-gtk-0.35-r1 vala
+
+# https://bugs.gentoo.org/680464
+net-libs/webkit-gtk jit
+
+# required by dev-python/PyQtWebEngine-5.12.1::gentoo
+# required by app-misc/anki-2.1.11::Local
+# required by anki (argument)
+>=dev-qt/qtwebengine-5.12.2 widgets

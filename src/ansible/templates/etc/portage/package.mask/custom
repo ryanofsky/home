@@ -6,9 +6,9 @@
 */*::maggu2810-overlay
 
 {% if inventory_hostname == "mini" %}
->www-client/chromium-73.0.3683.27
-<www-client/chromium-73.0.3683.27
+>www-client/chromium-73.0.3683.86
+<www-client/chromium-73.0.3683.86
 {% elif inventory_hostname == "think" %}
->www-client/chromium-73.0.3683.27
-<www-client/chromium-73.0.3683.27
+>www-client/chromium-73.0.3683.86
+<www-client/chromium-73.0.3683.86
 {% endif %}
