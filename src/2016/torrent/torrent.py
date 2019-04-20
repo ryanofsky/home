@@ -367,7 +367,7 @@ def compute_sums(json_dir, torrent_dir):
         md5_file = 0  # Index of first file in md5s array.
 
         for i, (rel_path, file_length) in enumerate(get_torrent_files(info)):
-            assert total_bytes % piece_length == piece_bytes
+            assert total_bytes % piece_length == piece_bytes or file_length == 0, "total_bytes={} piece_length={} piece_bytes={}".format(total_bytes, piece_length, piece_bytes)
             abs_path = os.path.join(torrent_dir, torrent_id, rel_path)
             size = os.path.getsize(abs_path) if os.path.exists(abs_path) else None
             file_skip_bytes = 0  # Number of bytes to skip from reading current file.
@@ -402,7 +402,7 @@ def compute_sums(json_dir, torrent_dir):
                         file_bytes += file_skip_bytes
                         md5 = None
                     while True:
-                        assert total_bytes % piece_length == piece_bytes
+                        assert total_bytes % piece_length == piece_bytes or file_length == 0
                         piece = fp.read(piece_length - piece_bytes)
                         total_bytes += len(piece)
                         piece_bytes += len(piece)
@@ -417,8 +417,9 @@ def compute_sums(json_dir, torrent_dir):
                             assert md5
                             sha1_digest = sha1.digest()
                             sha = shas.read(20)
-                            check(len(sha) == 20, repr(sha))
-                            if sha == sha1_digest:
+                            trailing_empty = len(sha) == 0 and file_length == 0
+                            check(len(sha) == 20 or trailing_empty, repr(sha))
+                            if sha == sha1_digest or trailing_empty:
                                 for j, md5_hexdigest in enumerate(md5s, md5_file):
                                     assert md5_hexdigest
                                     check(not download_md5[j] or download_md5[j] == md5_hexdigest)
@@ -428,7 +429,7 @@ def compute_sums(json_dir, torrent_dir):
                             md5_file += len(md5s)
                             del md5s[:]
 
-                            if sha != sha1_digest:
+                            if sha != sha1_digest and not trailing_empty:
                                 print >> sys.stderr, "Bad checksum {!r} pos {}".format(rel_path, file_bytes - len(piece))
                                 file_skip_bytes = file_length - file_bytes
                                 if total_bytes + file_skip_bytes < total_length:
