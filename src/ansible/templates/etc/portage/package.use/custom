@@ -87,6 +87,9 @@ app-emulation/libvirt apparmor audit firewalld fuse iscsi libssh lvm lxc nfs par
 media-sound/audacious -gtk gtk3 -qt5
 media-plugins/audacious-plugins -gtk gtk3 -qt5
 
+# git features
+dev-vcs/git tk
+
 # required for app-text/calibre
 dev-python/PyQt5 webkit
 

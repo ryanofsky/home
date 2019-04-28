@@ -1,2 +1,7 @@
-etc/iscsi/iscsid.conf.upstream: {st_mode: 33152, st_uid: 0, st_gid: 0, st_atime: 1528335932.9508739,
-  st_mtime: 1528335932.9508739, st_ctime: 1528335939.0029228}
+etc/iscsi/iscsid.conf.upstream:
+  st_mode: 33152
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1528335932.9508739
+  st_mtime: 1528335932.9508739
+  st_ctime: 1528335939.0029228

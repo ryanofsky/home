@@ -1,2 +1,7 @@
-etc/nsswitch.conf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1543796269.54476,
-  st_mtime: 1543796269.54476, st_ctime: 1543796297.45176}
+etc/nsswitch.conf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1543796269.54476
+  st_mtime: 1543796269.54476
+  st_ctime: 1543796297.45176

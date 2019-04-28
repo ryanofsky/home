@@ -1,2 +1,7 @@
-etc/systemd/resolved.conf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1552201273.527244,
-  st_mtime: 1552201273.527244, st_ctime: 1552202218.065433}
+etc/systemd/resolved.conf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1555927948.457126
+  st_mtime: 1555927948.457126
+  st_ctime: 1555928304.9421523

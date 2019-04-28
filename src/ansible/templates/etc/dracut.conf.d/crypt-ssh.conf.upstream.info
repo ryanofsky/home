@@ -1,2 +1,7 @@
-etc/dracut.conf.d/crypt-ssh.conf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0,
-  st_atime: 1537995106.3155057, st_mtime: 1537995106.3155057, st_ctime: 1537995109.9715383}
+etc/dracut.conf.d/crypt-ssh.conf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1537995106.3155057
+  st_mtime: 1537995106.3155057
+  st_ctime: 1537995109.9715383

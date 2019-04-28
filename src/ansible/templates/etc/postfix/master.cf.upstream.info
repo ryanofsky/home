@@ -1,2 +1,7 @@
-etc/postfix/master.cf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1552161445.5499053,
-  st_mtime: 1552161445.5499053, st_ctime: 1552161462.6276705}
+etc/postfix/master.cf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1552161445.5499053
+  st_mtime: 1552161445.5499053
+  st_ctime: 1552161462.6276705

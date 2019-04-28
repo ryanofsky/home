@@ -1,2 +1,7 @@
-etc/conf.d/apache2.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1460365362.4961586,
-  st_mtime: 1460365362.4961586, st_ctime: 1460365368.1851585}
+etc/conf.d/apache2.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1460365362.4961586
+  st_mtime: 1460365362.4961586
+  st_ctime: 1460365368.1851585

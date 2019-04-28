@@ -1,2 +1,7 @@
-etc/portage/make.profile.upstream: {st_mode: 41471, st_uid: 0, st_gid: 0, st_atime: 1460075709.774462,
-  st_mtime: 1459448478.855252, st_ctime: 1460075709.774462}
+etc/portage/make.profile.upstream:
+  st_mode: 41471
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1460075709.774462
+  st_mtime: 1459448478.855252
+  st_ctime: 1460075709.774462

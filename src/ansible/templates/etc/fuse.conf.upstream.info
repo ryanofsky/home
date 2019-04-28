@@ -1,2 +1,7 @@
-etc/fuse.conf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1526087349.669399,
-  st_mtime: 1526087349.6703992, st_ctime: 1526087352.1344173}
+etc/fuse.conf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1526087349.669399
+  st_mtime: 1526087349.6703992
+  st_ctime: 1526087352.1344173

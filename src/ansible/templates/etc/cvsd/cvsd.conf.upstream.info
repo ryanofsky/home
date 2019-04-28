@@ -1,2 +1,7 @@
-etc/cvsd/cvsd.conf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1467595606.5890777,
-  st_mtime: 1467595606.5900779, st_ctime: 1467595608.9491}
+etc/cvsd/cvsd.conf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1467595606.5890777
+  st_mtime: 1467595606.5900779
+  st_ctime: 1467595608.9491

@@ -1,2 +1,7 @@
-etc/locale.gen.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1460081171.1111286,
-  st_mtime: 1460081171.114462, st_ctime: 1460081191.7077954}
+etc/locale.gen.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1460081171.1111286
+  st_mtime: 1460081171.114462
+  st_ctime: 1460081191.7077954

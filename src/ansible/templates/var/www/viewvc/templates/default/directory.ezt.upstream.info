@@ -1,4 +1,14 @@
-var/www/src/viewvc/templates/default/directory.ezt.upstream: {st_mode: 33152, st_uid: 1002,
-  st_gid: 1002, st_atime: 1469984519.9737957, st_mtime: 1382362423.0, st_ctime: 1469984519.9737957}
-var/www/viewvc/templates/default/directory.ezt.upstream: {st_mode: 33188, st_uid: 1002,
-  st_gid: 1002, st_atime: 1470008520.7840385, st_mtime: 1470008636.0048633, st_ctime: 1470008636.0058632}
+var/www/src/viewvc/templates/default/directory.ezt.upstream:
+  st_mode: 33152
+  st_uid: 1002
+  st_gid: 1002
+  st_atime: 1469984519.9737957
+  st_mtime: 1382362423.0
+  st_ctime: 1469984519.9737957
+var/www/viewvc/templates/default/directory.ezt.upstream:
+  st_mode: 33188
+  st_uid: 1002
+  st_gid: 1002
+  st_atime: 1470008520.7840385
+  st_mtime: 1470008636.0048633
+  st_ctime: 1470008636.0058632

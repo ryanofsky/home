@@ -1,2 +1,7 @@
-etc/sasl2/smtpd.conf.upstream: {st_mode: 33188, st_uid: 0, st_gid: 0, st_atime: 1464372019.7929976,
-  st_mtime: 1464372019.7929976, st_ctime: 1464372027.7579978}
+etc/sasl2/smtpd.conf.upstream:
+  st_mode: 33188
+  st_uid: 0
+  st_gid: 0
+  st_atime: 1464372019.7929976
+  st_mtime: 1464372019.7929976
+  st_ctime: 1464372027.7579978

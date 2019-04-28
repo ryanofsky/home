@@ -1,2 +1,3 @@
 etc/systemd/system/intel_panel_fitter.service.upstream: {}
-info: {require_existing: 1}
+info:
+  require_existing: 1
