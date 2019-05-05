@@ -23,4 +23,4 @@ for arg in "$@"; do
     fi
     s="$s $(printf "%q" "$arg")"
 done
-echo "$s" >> /home/russ/russ/2016/audacious.log
+echo "$s" >> "$HOME/.ln/org/log/$(date +"%Y-%m-%d")-audacious.log"
