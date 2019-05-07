@@ -92,14 +92,6 @@ update() {
 
         echo "==== $COMMIT name=$name merge=$merge fixup=$fixup revert=$revert squash=$squash desc='$desc' first=$first committed=$committed ===="
 
-        local patch
-        for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
-            if [ -f "$patch" ] && [ -z "$fixup" ]; then
-                run git apply --index -3 --verbose "$patch"
-                patched[$patch]=1
-            fi
-        done
-
         if [ -n "$first" ]; then
             first=
             if ! git rev-parse --verify "pr/$want"; then
@@ -164,6 +156,14 @@ update() {
         elif [ -n "$merge" ]; then
             echo "Error: ignoring merge list '$merge' since not first commit of pr"
         fi
+
+        local patch
+        for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
+            if [ -f "$patch" ] && [ -z "$fixup" ]; then
+                run git apply --index -3 --verbose "$patch"
+                patched[$patch]=1
+            fi
+        done
 
         # Based on https://github.com/dingram/git-scripts/blob/master/scripts/git-cherry-pick-with-committer
         local metacommit=$COMMIT
