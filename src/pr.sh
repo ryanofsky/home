@@ -302,7 +302,7 @@ ppush() {
             if [ "$(git merge-base "$r1" "$r2")" = "$r1" ]; then
                 echo "Added $(git rev-list "$r1..$r2" | wc -l) commits $r ($b, [compare]($c))"
             elif git diff --quiet "$r1".."$r2"; then
-                echo "Squashed $r ($b)"
+                echo "Squashed $r ($b, [compare]($c))"
             else
                 echo "Updated $r ($b, [compare]($cd))"
             fi
