@@ -904,6 +904,10 @@ kconfig() {
 
     # dev-libs/libcec
     scripts/config -m USB_ACM
+
+    # sys-apps/lm_sensors
+    scripts/config \
+      -m I2C_CHARDEV
 }
 
 root-passwd() {
