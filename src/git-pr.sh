@@ -6,6 +6,7 @@ EXPORT=
 if [ -z "$BASE" ]; then BASE=$(git rev-list --min-parents=2 --max-count=1 HEAD); fi
 if [ -z "$XBASE" ]; then XBASE="$BASE"; fi
 BRANCH=$(git symbolic-ref --short HEAD || git rev-parse HEAD)
+if [ "$BASE" = orphan ]; then SPAN="$BRANCH"; else SPAN="$BASE..$BRANCH"; fi
 
 . ~/src/pr.sh
 
@@ -95,13 +96,22 @@ update() {
         if [ -n "$first" ]; then
             first=
             if ! git rev-parse --verify "pr/$want"; then
-                run git branch "pr/$want" "$XBASE"
-                RESET=1
+                if [ "$XBASE" = orphan ]; then
+                    git checkout --orphan "pr/$want"
+                else
+                    run git branch "pr/$want" "$XBASE"
+                    run git checkout "pr/$want"
+                    RESET=1
+                fi
+            else
+                run git checkout "pr/$want"
             fi
-            run git checkout "pr/$want"
 
             if [ -z "$RESET" ]; then
                 run git reset --hard $(git rev-list --min-parents=2 --max-count=1 HEAD)
+            elif [ "$XBASE" = orphan ]; then
+                run git rm -r .
+                run rm -fv .git/refs/heads/"pr/$want" .git/index
             else
                 run git reset --hard "$XBASE"
             fi
@@ -242,7 +252,7 @@ update() {
         if [[ $rest == *"SPECIAL"* ]]; then
             run make -j12
         fi
-    done < <(git log --format=format:'%H %s' --reverse "$BASE..$BRANCH" && echo)
+    done < <(git log --format=format:'%H %s' --reverse "$SPAN" && echo)
     run git checkout $BRANCH
     echo "== Successfully exported branch pr/$want =="
     echo "ppush pr/$want"
@@ -273,7 +283,7 @@ while test -n "$1"; do
 done
 
 if [ "$#" = 0 ]; then
-    git log --format=format:'%H %s' --reverse "$BASE..$BRANCH"
+    git log --format=format:'%H %s' --reverse "$SPAN"
     exit 0
 fi
 
