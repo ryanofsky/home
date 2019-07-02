@@ -408,6 +408,7 @@ pr-rev() {
         echo dump-patch "_$((num))" "$tag.$((num))"
         echo "diff -ru -I'^index ' -I'^@@' _$((num-1)) _$((num)) | cdiff"
         echo meld "_$((num-1))" "_$((num))"
+        echo ren-patches "_$((num-1))" "_$((num))"
     fi
     echo git checkout "$branch"
     echo utACK "$new"
@@ -427,6 +428,18 @@ pr-rev() {
     for r in "${revs[@]}"; do
         git log -n1 --format="In commit \"%s\" (%H)" $r
         ((++i))
+    done
+}
+
+ren-patches() {
+    ls -A1 "$1" | while read p1; do
+        if [ -e "$2/$p1" ]; then
+            continue
+        fi
+        p2=$(cd "$2" && echo ????-"${p1#????-}")
+        if [ -e "$2/$p2" ]; then
+           echo mv -iv "$1/$p1" "$1/$p2"
+        fi
     done
 }
 
