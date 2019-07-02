@@ -1,6 +1,7 @@
 [user]
 	email = russ@yanofsky.org
 	name = Russell Yanofsky
+	signingkey = EDDD266173A28656DE751E52C639D32D5A0EFCCD!
 [color]
 	ui = true
 [merge]
