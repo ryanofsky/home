@@ -31,6 +31,10 @@ fi
 
 # Put your fun stuff here.
 
+et() {
+    emacsclient -t "$@"
+}
+
 # dump emacsclient kill buffer
 ekill() {
     python -c "print($(emacsclient -e '(substring-no-properties (car kill-ring))'))"
