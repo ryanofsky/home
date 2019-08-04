@@ -37,18 +37,36 @@ handle-gnome-lock() {
 }
 
 idle-str() {
-    local idle=$(xprintidle)
+    local idle="$1"
     local min=$((idle/60000))
     local ms=$((idle%60000))
     printf "%s (%dm %d.%03ds)" "$idle" "$min" "$((ms/1000))" "$((ms%1000))"
 }
 
+host-str() {
+    local host="$(hostname)"
+    if [ "$host" = think ]; then
+        host="laptop"
+    elif [ "$host" = russ ]; then
+        host="workstation"
+    fi
+    echo "$host"
+}
+
 handle-locked() {
-    echo "$(date) -- locked idle $(idle-str)" | tee -a ~/work/logbook
+    local idle=$(xprintidle)
+    local host=$(host-str)
+    if [ "$idle" -lt 3000 ]; then
+        echo "$(date) -- $host" | tee -a ~/work/logbook
+    else
+        echo "$(date --date "-$((idle/1000)) seconds") -- $host" | tee -a ~/work/logbook
+        echo "$(date) -- $host idle $(idle-str "$idle")" | tee -a ~/work/logbook
+    fi
 }
 
 handle-unlocked() {
-    echo "$(date) -- unlocked idle $(idle-str)" | tee -a ~/work/logbook
+    local host=$(host-str)
+    echo "$(date) -- unlock $host" | tee -a ~/work/logbook
 }
 
 handle-unity-monitor() {
