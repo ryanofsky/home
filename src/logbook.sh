@@ -18,6 +18,4 @@ while read line; do
     psec="$dsec"
 done < ~/work/logbook
 
-if [ "$1" = 1 ]; then
-    mv ~/work/logbook{,.old}
-fi
+mv --backup=numbered ~/work/logbook ~/work/logbook.prev
