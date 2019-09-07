@@ -96,3 +96,15 @@ v () {
     fi
   done
 }
+
+# https://www.reddit.com/r/spacemacs/comments/544rdw/vimdiff_or_diffthis_in_spacemacs/d7z9aao/
+# https://gist.github.com/tasmo/c6bd7576f7f090a9c206099cf88a58d9
+function ediff () {
+    if [ "X${2}" = "X" ]; then
+        echo "USAGE: ediff <FILE 1> <FILE 2>"
+    else
+        quoted1=${1//\\/\\\\}; quoted1=${quoted1//\"/\\\"}
+        quoted2=${2//\\/\\\\}; quoted2=${quoted2//\"/\\\"}
+        emacsclient -tc -a emacs -e "(ediff \"$quoted1\" \"$quoted2\")"
+    fi
+}
