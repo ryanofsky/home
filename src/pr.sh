@@ -411,7 +411,7 @@ pr-rev() {
         echo ren-patches "_$((num-1))" "_$((num))"
     fi
     echo git checkout "$branch"
-    echo utACK "$new"
+    echo Code review ACK "$new"
 
     local rev=origin/pull/$1/head
     local base=$(git rev-list -n1 --min-parents=2 "$rev")
