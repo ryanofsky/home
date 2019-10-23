@@ -3,6 +3,7 @@
 import sys
 import re
 import pathlib
+import subprocess
 
 _r = re.compile(r"^<<<<<<<[^\n]*\n(.*?)\|\|\|\|\|\|\|[^\n]*\n(.*?)=======[^\n]*\n(.*?)>>>>>>>[^\n]*\n", re.DOTALL | re.M)
 
@@ -26,7 +27,14 @@ fp2 = pathlib.Path("d2")
 fp3 = pathlib.Path("d3")
 if fp1.is_file() and fp2.is_file() and fp3.is_file(): fp1.unlink(), fp2.unlink(), fp3.unlink()
 
-for f in sys.argv[1:]:
+
+if len(sys.argv) == 1:
+    args = subprocess.check_output("git diff --name-only --diff-filter=U".split()).decode("utf8").rstrip("\n").split("\n")
+    print(f"Conflicts: {args!r}")
+else:
+    args = sys.argv[1:]
+
+for f in args:
     with open(f) as fp:
         s = fp.read()
     with open(f, "w") as fp:
