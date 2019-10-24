@@ -39,3 +39,7 @@ for f in args:
         s = fp.read()
     with open(f, "w") as fp:
         fp.write(_r.sub(sub, s))
+
+if fp1.is_file() and fp2.is_file() and fp3.is_file():
+    print("diff -U1000000 d2 d1 | cdiff")
+    print("diff -U1000000 d2 d3 | cdiff")
