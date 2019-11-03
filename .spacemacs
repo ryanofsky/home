@@ -433,10 +433,16 @@ you should place your code here."
  '(c-basic-offset 4)
  '(electric-indent-mode nil)
  '(evil-search-module (quote evil-search))
- '(evil-want-Y-yank-to-eol t)
+ '(evil-want-Y-yank-to-eol nil)
  '(evil-want-fine-undo t)
  '(global-evil-search-highlight-persist t)
- '(js-indent-level 2))
+ '(js-indent-level 2)
+ '(evil-respect-visual-line-mode t)
+ '(global-visual-line-mode t)
+ '(org-startup-truncated nil)
+ '(truncate-lines nil)
+ '(truncate-partial-width-windows nil)
+ '(visual-line-fringe-indicators (quote (left-curly-arrow right-curly-arrow))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
