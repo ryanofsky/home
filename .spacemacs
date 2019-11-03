@@ -403,18 +403,6 @@ you should place your code here."
           (select-window first-win)
           (if this-win-2nd (other-window 1))))))
 
-; Fix emacsclient not bringing window to foreground
-; http://root42.blogspot.com/2012/05/make-emacsclient-work-with-raise-frame.html
-; http://emacswiki.org/emacs/Gyom#toc1
-(defadvice raise-frame (after make-it-work (&optional frame) activate)
-    "Work around some bug? in raise-frame/Emacs/GTK/Metacity/something.
-     Katsumi Yamaoka posted this in
-     http://article.gmane.org/gmane.emacs.devel:39702"
-     (call-process
-     "wmctrl" nil nil nil "-i" "-R"
-     (frame-parameter (or frame (selected-frame)) 'outer-window-id)))
-(add-hook 'server-switch-hook 'raise-frame)
-
 ; evil search bug workaround https://github.com/larebsyed
 (defun kill-minibuffer ()
   (interactive)
