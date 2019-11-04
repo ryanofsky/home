@@ -271,7 +271,7 @@ ppush() {
         local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
         local cd="https://github.com/ryanofsky/bitcoin/compare/$b1..$b2"
         local r="$r1 -> $r2"
-        local b="[$b1]($u/$b1) -> [$b2]($u/$b2)"
+        local b="[\`$b1\`]($u/$b1) -> [\`$b2\`]($u/$b2)"
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
     fi
