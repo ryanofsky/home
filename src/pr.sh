@@ -270,6 +270,7 @@ ppush() {
         local u="https://github.com/ryanofsky/bitcoin/commits"
         local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
         local cd="https://github.com/ryanofsky/bitcoin/compare/$b1..$b2"
+        local cbd="https://github.com/ryanofsky/bitcoin/compare/$b1-rebase..$b2"
         local r="$r1 -> $r2"
         local b="[\`$b1\`]($u/$b1) -> [\`$b2\`]($u/$b2)"
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
@@ -279,7 +280,13 @@ ppush() {
     echo "== Tag and push =="
     echo "TRAVIS_COMMIT_RANGE=\$(git merge-base HEAD origin/master)...HEAD test/lint/lint-all.sh && make -j12 -k check && test/functional/test_runner.py"
     ntag "$name"
-    echo git push -u russ $name.$cur +$name
+    local namecmp=
+    if [ "$base1" != "$base2" ]; then
+        namecmp="$b1-rebase"
+        echo "git checkout -b $namecmp $b2 && git -c rerere.enabled=false rebase --committer-date-is-author-date $base2 # FIXME: automatically check in conflicts"
+        echo "git push russ $b1-rebase"
+    fi
+    echo git push -u russ $name.$cur +$name $namecmp
     echo "sleep 10; git fetch origin"
     echo
 
@@ -307,7 +314,7 @@ ppush() {
                 echo "Updated $r ($b, [compare]($cd))"
             fi
         else
-            echo "Rebased $r ($b)"
+            echo "Rebased $r ($b, [compare]($cbd))"
         fi
     fi
         echo
