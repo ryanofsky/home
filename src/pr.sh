@@ -283,8 +283,10 @@ ppush() {
     local namecmp=
     if [ "$base1" != "$base2" ]; then
         namecmp="$b1-rebase"
-        echo "git checkout -b $namecmp $b2 && git -c rerere.enabled=false rebase --committer-date-is-author-date $base2 # FIXME: automatically check in conflicts"
-        echo "git push russ $b1-rebase"
+        echo "git checkout -b $namecmp $b1 && git -c rerere.enabled=false rebase --committer-date-is-author-date $base2 # FIXME: automatically check in conflicts"
+        echo "git diff $namecmp..$b2"
+    else
+        echo "git diff $b1..$b2"
     fi
     echo git push -u russ $name.$cur +$name $namecmp
     echo "sleep 10; git fetch origin"
@@ -309,7 +311,7 @@ ppush() {
             if [ "$(git merge-base "$r1" "$r2")" = "$r1" ]; then
                 echo "Added $(git rev-list "$r1..$r2" | wc -l) commits $r ($b, [compare]($c))"
             elif git diff --quiet "$r1".."$r2"; then
-                echo "Squashed $r ($b, [compare]($c))"
+                echo "Squashed $r ($b, [compare]($cd))"
             else
                 echo "Updated $r ($b, [compare]($cd))"
             fi
