@@ -283,7 +283,9 @@ ppush() {
     local namecmp=
     if [ "$base1" != "$base2" ]; then
         namecmp="$b1-rebase"
-        echo "git checkout -b $namecmp $b1 && git -c rerere.enabled=false rebase --committer-date-is-author-date $base2 # FIXME: automatically check in conflicts"
+        echo "git checkout -b $namecmp $b1 && git -c rerere.enabled=false rebase --committer-date-is-author-date $base2"
+        echo "  git add -u && git -c rerere.enabled=false am --committer-date-is-author-date --continue"
+        echo "  mv -iv .git/rebase-apply .git/rebase-merge && git rebase --continue"
         echo "git diff $namecmp..$b2"
     else
         echo "git diff $b1..$b2"
