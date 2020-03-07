@@ -190,7 +190,7 @@ make-kernel() {
         # https://github.com/sakaki-/buildkernel/blob/master/buildkernel
         # http://kroah.com/log/blog/2013/09/02/booting-a-self-signed-linux-kernel/
         # efibootmgr command lines: https://bbs.archlinux.org/viewtopic.php?id=147965
-        efibootmgr -v -c -d "$BOOT_DISK_DEV" -p "$BOOT_PART_NUM" -L "linux-$V" -l "\\vmlinuz-$V" -u "initrd=\\initramfs-$V.img ro root=UUID=$ROOT_FS_UUID rootflags=subvol=root,noatime rd.luks.uuid=$ROOT_DEV_UUID"
+        efibootmgr -v -c -d "$BOOT_DISK_DEV" -p "$BOOT_PART_NUM" -L "linux-$V" -l "\\vmlinuz-$V" -u "initrd=\\initramfs-$V.img ro root=UUID=$ROOT_FS_UUID rootflags=subvol=root,noatime rd.luks.uuid=$ROOT_DEV_UUID systemd.unified_cgroup_hierarchy=0"
     fi
 }
 

@@ -30,7 +30,7 @@ GRUB_DEVICE_UUID={{root_fs_uuid.stdout}}
 
 {% if inventory_hostname == "jumpy" %}
 # Args for dracut cryptsetup scripts.
-GRUB_CMDLINE_LINUX="rd.luks.uuid={{root_dev_uuid.stdout}} rd.luks.options=discard rootflags=subvol=root,noatime,discard,ssd console=ttyS0"
+GRUB_CMDLINE_LINUX="rd.luks.uuid={{root_dev_uuid.stdout}} rd.luks.options=discard rootflags=subvol=root,noatime,discard,ssd console=ttyS0 systemd.unified_cgroup_hierarchy=0"
 GRUB_DISABLE_RECOVERY="true"
 GRUB_DISABLE_SUBMENU=true
 GRUB_GFXPAYLOAD_LINUX="text"
