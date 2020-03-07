@@ -374,6 +374,9 @@ you should place your code here."
                              (global-set-key (kbd "<f9>") 'toggle-window-split)
                              (global-set-key (kbd "<f11>") 'kill-this-buffer)
                              (global-set-key (kbd "<f12>") 'helm-mini)
+                             (global-set-key (kbd "\C-p") 'toggle-window-split)
+                             (global-set-key (kbd "\C-k") 'kill-this-buffer)
+                             (global-set-key (kbd "\C-s") 'helm-mini)
                         )
   )
 
@@ -419,17 +422,21 @@ you should place your code here."
  ;; If there is more than one, they won't work right.
  '(browse-url-browser-function (quote browse-url-chromium))
  '(c-basic-offset 4)
+ '(delete-old-versions (quote other))
  '(electric-indent-mode nil)
+ '(evil-respect-visual-line-mode t)
  '(evil-search-module (quote evil-search))
  '(evil-want-Y-yank-to-eol nil)
  '(evil-want-fine-undo t)
+ '(global-auto-revert-mode nil)
  '(global-evil-search-highlight-persist t)
- '(js-indent-level 2)
- '(evil-respect-visual-line-mode t)
  '(global-visual-line-mode t)
+ '(js-indent-level 2)
+ '(make-backup-files t)
  '(org-startup-truncated nil)
  '(truncate-lines nil)
  '(truncate-partial-width-windows nil)
+ '(version-control t)
  '(visual-line-fringe-indicators (quote (left-curly-arrow right-curly-arrow))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
