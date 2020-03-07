@@ -1,6 +1,7 @@
 www-client/google-chrome google-chrome
 net-misc/chrome-remote-desktop google-chrome
 media-sound/google-musicmanager Google-TOS
+www-plugins/adobe-flash AdobeFlash-11.x
 
 # required by media-video/vlc
 media-libs/fdk-aac FraunhoferFDK
@@ -10,9 +11,3 @@ www-plugins/chrome-binary-plugins google-chrome
 
 # required by app-emulation/virtualbox-extpack-oracle (argument)
 app-emulation/virtualbox-extpack-oracle PUEL
-
-www-plugins/adobe-flash AdobeFlash-11.x
-
-# required by media-tv/emby-server-3.2.19.0-r1::megacoffee
-# required by emby-server (argument)
-dev-dotnet/referenceassemblies-pcl dotnet-eula

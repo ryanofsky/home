@@ -1,14 +1,11 @@
 # Mask overlay packages
-*/*::ultrabug
-*/*::fkmclane
-*/*::megacoffee
-*/*::crocket-overlay
-*/*::maggu2810-overlay
+#*/*::ultrabug
 
-{% if inventory_hostname == "mini" %}
->www-client/chromium-73.0.3683.86
-<www-client/chromium-73.0.3683.86
-{% elif inventory_hostname == "think" %}
->www-client/chromium-73.0.3683.86
-<www-client/chromium-73.0.3683.86
-{% endif %}
+# Mask slow packages
+www-client/chromium
+
+# https://bugs.gentoo.org/705974
+>=sys-devel/make-4.3
+
+# required by (dev-python/rst2pdf-0.93-r3:0/0::gentoo, installed)
+>=dev-python/pillow-7

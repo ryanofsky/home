@@ -1,0 +1,52 @@
+sys-apps/dbus user-session
+net-wireless/bluez user-session
+
+dev-util/cdiff PYTHON_TARGETS: python2_7
+dev-vcs/subversion PYTHON_TARGETS: python2_7
+x11-misc/icewmcp PYTHON_TARGETS: python2_7
+media-tv/kodi PYTHON_TARGETS: python2_7 PYTHON_SINGLE_TARGET: python2_7
+x11-misc/icewmcp PYTHON_TARGETS: python2_7 PYTHON_SINGLE_TARGET: python2_7
+app-office/lyx PYTHON_TARGETS: python2_7 PYTHON_SINGLE_TARGET: python2_7
+dev-libs/libnatspec -python
+dev-libs/libxslt -python
+net-dns/avahi -python
+dev-lang/yasm -python
+net-misc/vde -python
+app-office/dia -python
+app-office/gnumeric -introspection -python
+
+# (dependency required by "x11-misc/icewmcp-3.2-r4::gentoo" [installed])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+=dev-python/pygtk-2.24.0-r4::gentoo PYTHON_TARGETS: python2_7
+
+# (dependency required by "media-video/mpv-0.32.0::gentoo[doc]" [ebuild])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+=dev-python/rst2pdf-0.93-r3::gentoo PYTHON_TARGETS: python2_7
+
+# (dependency required by "dev-vcs/subversion-1.13.0::gentoo[ctypes-python]" [ebuild])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+=dev-python/ctypesgen-0_p72-r1::gentoo PYTHON_TARGETS: python2_7
+
+# (dependency required by "net-misc/chrome-remote-desktop-77.0.3865.32::gentoo" [installed])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+=gnome-base/gconf-3.2.6-r4::gentoo PYTHON_TARGETS: python2_7
+
+# (dependency required by "dev-python/rst2pdf-0.93-r3::gentoo[svg]" [ebuild])
+# (dependency required by "media-video/mpv-0.32.0::gentoo[doc]" [ebuild])
+# (dependency required by "@selected" [set])
+# (dependency required by "@world" [argument])
+=media-gfx/svg2rlg-0.3::gentoo PYTHON_TARGETS: python2_7
+
+# https://wiki.gentoo.org/wiki/Docker#Docker_service_fails_because_cgroup_device_not_mounted_.28systemd.29
+# [blocks B      ] sys-apps/systemd[-cgroup-hybrid(+)] ("sys-apps/systemd[-cgroup-hybrid(+)]" is blocking app-emulation/docker-19.03.5)
+sys-apps/systemd cgroup-hybrid
+
+# required by (dev-python/rst2pdf-0.93-r3:0/0::gentoo, installed)
+dev-python/pillow PYTHON_TARGETS: python2_7 PYTHON_SINGLE_TARGET: python2_7
+
+# required by (dev-qt/qtwebengine-5.14.1:5/5.14::gentoo, installed)
+=dev-qt/qtwebchannel-5.14.1:5/5.14::gentoo qml

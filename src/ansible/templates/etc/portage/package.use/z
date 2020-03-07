@@ -1,0 +1,209 @@
+# required by x11-misc/xvfb-run-1.19.3_p2::gentoo
+# required by @selected
+# required by @world (argument)
+>=x11-base/xorg-server-1.20.7 xvfb
+# required by www-client/firefox-73.0_beta11::mozilla[system-libvpx]
+# required by @selected
+# required by @world (argument)
+=media-libs/libvpx-1.7.0-r1 postproc
+# required by x11-misc/colord-1.3.5::gentoo
+# required by x11-libs/gtk+-3.24.13::gentoo[colord]
+# required by net-dns/avahi-0.7-r5::gentoo[gtk3]
+# required by net-libs/shairplay-0_pre20180824-r1::gentoo
+# required by media-tv/kodi-18.5-r1::gentoo[airplay]
+# required by @selected
+# required by @world (argument)
+>=dev-db/sqlite-3.30.1 secure-delete abi_x86_32
+# required by media-libs/freetype-2.10.1::gentoo[bzip2]
+# required by media-libs/fontconfig-2.13.1-r2::gentoo
+# required by x11-libs/gtk+-2.24.32-r1::gentoo
+# required by net-dns/avahi-0.7-r5::gentoo[gtk]
+# required by net-libs/shairplay-0_pre20180824-r1::gentoo
+# required by media-tv/kodi-18.5-r1::gentoo[airplay]
+# required by @selected
+# required by @world (argument)
+>=app-arch/bzip2-1.0.8 abi_x86_32
+# required by dev-libs/glib-2.60.7-r1::gentoo
+# required by x11-libs/gtk+-2.24.32-r1::gentoo
+# required by net-dns/avahi-0.7-r5::gentoo[gtk]
+# required by net-libs/shairplay-0_pre20180824-r1::gentoo
+# required by media-tv/kodi-18.5-r1::gentoo[airplay]
+# required by @selected
+# required by @world (argument)
+>=sys-apps/util-linux-2.35.1 abi_x86_32
+# required by www-client/chromium-80.0.3987.85::gentoo
+# required by @selected
+# required by @world (argument)
+>=net-libs/nodejs-13.7.0-r1 inspector
+# required by dev-python/rst2pdf-0.93-r3::gentoo
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+>=dev-python/docutils-0.15.2 python_targets_python2_7
+# required by dev-python/rst2pdf-0.93-r3::gentoo
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+>=dev-python/pdfrw-0.4 python_targets_python2_7
+# required by dev-python/rst2pdf-0.93-r3::gentoo
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+>=dev-python/reportlab-3.5.13-r1 python_targets_python2_7
+# required by net-print/cups-2.3.1::gentoo[dbus]
+# required by net-misc/freerdp-2.0.0_rc4_p1129::gentoo[cups]
+# required by @selected
+# required by @world (argument)
+>=sys-apps/dbus-1.12.16 abi_x86_32 user-session
+# required by dev-python/PyQtWebEngine-5.14.0::gentoo
+# required by app-text/calibre-4.9.1-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-qt/qtwebengine-5.14.1 widgets
+# required by www-client/chromium-80.0.3987.85::gentoo
+# required by @selected
+# required by @world (argument)
+>=sys-libs/zlib-1.2.11-r2 abi_x86_32 minizip
+# required by dev-db/sqlite-3.30.1::gentoo[icu]
+# required by @selected
+# required by @world (argument)
+>=dev-libs/icu-65.1 abi_x86_32
+# required by dev-db/sqlite-3.30.1::gentoo[readline]
+# required by @selected
+# required by @world (argument)
+>=sys-libs/readline-8.0_p1-r1 abi_x86_32
+# required by sys-libs/readline-8.0_p1-r1::gentoo
+# required by net-firewall/nftables-0.9.3-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=sys-libs/ncurses-6.1_p20190609 abi_x86_32
+# required by sys-libs/ncurses-6.1_p20190609::gentoo[gpm]
+# required by sys-libs/readline-8.0_p1-r1::gentoo
+# required by net-firewall/nftables-0.9.3-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=sys-libs/gpm-1.20.7-r2 abi_x86_32
+# required by dev-python/PyQtWebEngine-5.14.0::gentoo
+# required by app-text/calibre-4.9.1-r1::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-python/PyQt5-5.14.1 webchannel
+# required by sys-apps/unscd-0.53::gentoo
+# required by @selected
+# required by @world (argument)
+>=sys-libs/glibc-2.30-r3 nscd
+# required by net-misc/vinagre-3.22.0-r3::gentoo[zeroconf]
+# required by gnome-base/gnome-extra-apps-3.32.2::gentoo
+# required by gnome-base/gnome-3.32.2::gentoo[extras]
+# required by @selected
+# required by @world (argument)
+>=net-dns/avahi-0.7-r5 gtk3 mdnsresponder-compat
+# required by dev-python/reportlab-3.5.13-r1::gentoo
+# required by media-gfx/svg2rlg-0.3::gentoo
+# required by dev-python/rst2pdf-0.93-r3::gentoo[svg]
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+=dev-python/pillow-6.2.2 python_targets_python2_7
+# required by dev-python/pillow-6.2.2::gentoo
+# required by dev-python/reportlab-3.5.13-r1::gentoo
+# required by media-gfx/svg2rlg-0.3::gentoo
+# required by dev-python/rst2pdf-0.93-r3::gentoo[svg]
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+>=dev-python/olefile-0.46 python_targets_python2_7
+# required by dev-python/certifi-2019.11.28::gentoo
+>=dev-python/setuptools-44.0.0 python_targets_python2_7
+# required by dev-python/setuptools-44.0.0::gentoo
+# required by dev-python/pygments-2.5.2::gentoo
+# required by dev-python/rst2pdf-0.93-r3::gentoo
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+>=dev-python/certifi-2019.11.28 python_targets_python2_7
+# required by dev-python/pygtk-2.24.0-r4::gentoo
+# required by x11-misc/icewmcp-3.2-r4::gentoo
+# required by @selected
+# required by @world (argument)
+>=dev-python/pycairo-1.18.2 python_targets_python2_7
+# required by dev-python/rst2pdf-0.93-r3::gentoo
+# required by media-video/mpv-0.32.0::gentoo[doc]
+# required by @selected
+# required by @world (argument)
+>=dev-python/pygments-2.5.2 python_targets_python2_7
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/minitest-5.14.0 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/net-telnet-0.2.0 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/power_assert-1.1.5 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/rake-13.0.1 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/test-unit-3.3.5 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/xmlrpc-0.3.0 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+>=dev-ruby/json-2.3.0 ruby_targets_ruby27
+# required by dev-lang/ruby-2.7.0::gentoo[rdoc]
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/racc-1.4.16-r1::gentoo[ruby_targets_ruby27,-test]
+>=dev-ruby/rdoc-6.2.0 ruby_targets_ruby27
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/racc-1.4.16-r1::gentoo[ruby_targets_ruby27,-test]
+>=dev-ruby/kpeg-1.1.0-r1 ruby_targets_ruby27
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/kpeg-1.1.0-r1::gentoo[ruby_targets_ruby27,-test]
+>=dev-ruby/racc-1.4.16-r1 ruby_targets_ruby27
+# required by dev-ruby/did_you_mean-1.4.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/rubygems-3.1.2::gentoo[ruby_targets_ruby27]
+>=virtual/rubygems-16 ruby_targets_ruby27
+# required by virtual/rubygems-16::gentoo[ruby_targets_ruby27]
+# required by dev-ruby/rdoc-6.2.0::gentoo[ruby_targets_ruby27,-test]
+# required by dev-ruby/bundler-2.1.4::gentoo[doc,ruby_targets_ruby27]
+# required by dev-lang/ruby-2.7.0::gentoo
+# required by dev-ruby/minitest-5.14.0::gentoo[ruby_targets_ruby27]
+>=dev-ruby/rubygems-3.1.2 ruby_targets_ruby27
+# required by sys-apps/util-linux-2.35.1::gentoo[nls]
+# required by @system
+# required by @world (argument)
+>=virtual/libintl-0-r2 abi_x86_32

@@ -1,5 +1,6 @@
 # Unmask overlay packages
-dev-python/yapf::ultrabug
-media-tv/plex-media-server::fkmclane
-media-tv/emby-server::megacoffee
-app-mobilephone/scrcpy::Local
+# eix --installed-from-overlay
+#dev-python/yapf::ultrabug
+
+# https://wiki.gentoo.org/wiki/Version_specifier
+=www-client/chromium-80.0.3987.85::gentoo
