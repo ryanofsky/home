@@ -5,7 +5,7 @@ import re
 import pathlib
 import subprocess
 
-_r = re.compile(r"^<<<<<<<[^\n]*\n(.*?)\|\|\|\|\|\|\|[^\n]*\n(.*?)=======[^\n]*\n(.*?)>>>>>>>[^\n]*\n", re.DOTALL | re.M)
+_r = re.compile(r"^<<<<<<<(?: [^\n]+)?\n(.*?\n|)\|\|\|\|\|\|\|(?: [^\n]+)?\n(.*?\n|)=======(?: [^\n]+)?\n(.*?\n|)>>>>>>>(?: [^\n]+)?\n", re.DOTALL | re.M)
 
 def sub(m):
     d1, d2, d3 = m.groups()
