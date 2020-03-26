@@ -8,7 +8,7 @@ inherit meson ninja-utils git-r3
 EGIT_REPO_URI="https://github.com/Genymobile/scrcpy.git"
 
 if [[ ${PV} = 9999* ]]; then
-	MY_SERVER_PV="1.6"
+	MY_SERVER_PV="1.12.1"
 else
 	EGIT_COMMIT="v${PV}"
 	MY_SERVER_PV="${PV}"
@@ -16,7 +16,7 @@ else
 fi
 
 MY_SERVER_PN="scrcpy-server"
-MY_SERVER_P="${MY_SERVER_PN}-v${MY_SERVER_PV}.jar"
+MY_SERVER_P="${MY_SERVER_PN}-v${MY_SERVER_PV}"
 
 SRC_URI="https://github.com/Genymobile/${PN}/releases/download/v${MY_SERVER_PV}/${MY_SERVER_P}"
 
