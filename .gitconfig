@@ -17,3 +17,6 @@
 [rerere]
 	enabled = true
 	autoupdate = true
+[diff]
+	algorithm = histogram
+	indentHeuristic = true
