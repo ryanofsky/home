@@ -261,6 +261,7 @@ ppush() {
         r2=$(git rev-parse "$name")
     fi
     local descpath="$HOME/src/meta/refs/heads/$name/.prdesc.md"
+    local rebasepath="$HOME/src/meta/refs/heads/$name/.rebase.md"
     local prnum="$(get-pr "$name")"
     if [ -z "$prnum" ]; then
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
@@ -299,6 +300,7 @@ ppush() {
     echo "pr ${name#pr/}"
     echo "set-pr $name ${prnum:-###}"
     echo "vi $descpath"
+    echo "vi $rebasepath"
     echo "whatconf $b1 $name"
     if [ -n "$prnum" ]; then
         echo "https://github.com/bitcoin/bitcoin/pull/$prnum"
