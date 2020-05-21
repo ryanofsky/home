@@ -291,6 +291,10 @@ ppush() {
     else
         echo "git diff $b1..$b2"
     fi
+    echo "rm -rvf _$prev _$cur"
+    echo "dump-patch _$prev $b1"
+    echo "dump-patch _$cur $b2"
+    echo "diff -ru -I'^index ' -I'^@@' _$prev _$cur | cdiff"
     echo git push -u russ $name.$cur +$name $namecmp
     echo "sleep 10; git fetch origin"
     echo
