@@ -153,9 +153,9 @@ update() {
                         run git cherry-pick $(git rev-list --min-parents=2 --max-count=1 "$merge_source")..$merge_source
                     elif [ -n "$RESET" ]; then # skip merges if not resetting
                         if [ -n "$merge_log" ]; then
-                            run git merge --no-ff --no-edit "$merge_source" -m "$merge_log"
+                            run git merge --no-ff --no-edit "$merge_source" -m "$merge_log" || git commit --no-edit
                         else
-                            run git merge --no-ff --no-edit "$merge_source"
+                            run git merge --no-ff --no-edit "$merge_source" || git commit --no-edit
                         fi
                     fi
                     unset GIT_AUTHOR_DATE
@@ -168,6 +168,8 @@ update() {
         fi
 
         local patch
+
+        echo PREPTACH ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc*"
         for patch in ~/src/meta/refs/heads/pr/"$want"/.prepatch-"$desc"*; do
             if [ -f "$patch" ] && [ -z "$fixup" ]; then
                 run git apply --index -3 --verbose "$patch"
