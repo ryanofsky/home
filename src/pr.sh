@@ -386,19 +386,25 @@ pr-merge() {
 }
 
 pr-rev() {
-    local branch="origin/pull/$1/head"
-    local tag="review.$1"
+    local remote="${1%-*}"
+    local prnum="${1##*-}"
+    local tag="review-$remote.$prnum"
+    if [ "$remote" = "$1" ]; then
+        remote=origin
+        tag="review.$prnum"
+    fi
+    local branch="$remote/pull/$prnum/head"
     local num=$(getnum "refs/tags/$tag.*")
     local new=$(git rev-parse "$branch")
     local t
     declare -A seen
-    for t in $(git reflog "origin/pull/$1/head" --format='%gd' | tac) $(git for-each-ref --format='%(refname:short)' "refs/tags/$tag.*"); do
+    for t in $(git reflog "$branch" --format='%gd' | tac) $(git for-each-ref --format='%(refname:short)' "refs/tags/$tag.*"); do
       local r=$(git rev-parse --short "$t")
       if [ -n "${seen[$r]}" ]; then
          continue
       fi
       seen[$r]=1
-      local b=$(git merge-base "$t" origin/master)
+      local b=$(git merge-base "$t" $remote/master)
       local bs=$(git rev-parse --short "$b")
       local c=$(git rev-list "$b..$t" | wc -l)
       local d=$(git diff --shortstat "$b..$t")
@@ -431,10 +437,9 @@ pr-rev() {
     echo git checkout "$branch"
     echo Code review ACK "$new"
 
-    local rev=origin/pull/$1/head
-    local base=$(git rev-list -n1 --min-parents=2 "$rev")
+    local base=$(git rev-list -n1 --min-parents=2 "$branch")
     local -a revs
-    readarray revs < <(git rev-list --reverse $base..$rev)
+    readarray revs < <(git rev-list --reverse $base..$branch)
     echo "Started review (will update list below with progress)."
     i=1
     for r in "${revs[@]}"; do
