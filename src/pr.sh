@@ -39,12 +39,24 @@ meta-read() {
     ! test -e "$HOME/src/meta/$name" || cat "$HOME/src/meta/$name"
 }
 
+# Format pr number as branch name
+#   123       ->   origin/pull/123/head
+#   gui-123   ->   gui/pull/123/head
+parse-prnum() {
+    local remote="${1%-*}"
+    local prnum="${1##*-}"
+    if [ "$remote" = "$1" ]; then
+        remote=origin
+    fi
+    echo "$remote/pull/$prnum/head"
+}
+
 # Associate PR name with PR number
-set-pr() {
+set-pr () {
   local name="$1"
   local num="$2"
   local rname="refs/heads/$name"
-  local rnum="refs/remotes/origin/pull/$num/head"
+  local rnum="refs/remotes/$(parse-prnum "$num")"
   meta-write "$rname/.prbranch" "$rnum"
   meta-write "$rnum/.prlocal" "$rname"
 }
@@ -232,6 +244,7 @@ whatconf() {
 }
 
 ppush() {
+    # FIX: use parse-prnum and write more mapping functions to fix for "pr/ipc-guiarg" etc
     local name
     if [ -n "$1" ]; then
         name="$1"
@@ -386,6 +399,7 @@ pr-merge() {
 }
 
 pr-rev() {
+    # FIX: dedup with parse-prnum
     local remote="${1%-*}"
     local prnum="${1##*-}"
     local tag="review-$remote.$prnum"
