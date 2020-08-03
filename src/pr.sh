@@ -64,12 +64,48 @@ set-pr () {
 # map pr/name to number and vice versa
 get-pr() {
     local pr="$1"
-    if [[ "$pr" =~ ^[0-9]*$ ]]; then
-        local rnum="refs/remotes/origin/pull/$pr/head"
+    if [[ "$pr" =~ ^([a-z]+-)?[0-9]*$ ]]; then
+        local rnum="refs/remotes/$(parse-prnum "$pr")"
         meta-read "$rnum/.prlocal"
     else
-        local rname="refs/heads/$pr"
-        meta-read "$rname/.prbranch" | sed 's:refs/remotes/origin/pull/\(.*\)/head:\1:'
+        get-branch-pr-url "$pr"
+    fi
+}
+
+get-branch-pr-url() {
+    local branch="$1"
+    local origin=$(get-branch-pr-origin "$branch")
+    local gh=$(get-origin-proj "$origin")
+    local num=$(get-branch-pr-num "$branch")
+    echo "$gh/pull/$num"
+}
+
+get-branch-pr-origin() {
+    local branch="$1"
+    meta-read "refs/heads/$branch/.prbranch" | sed 's:refs/remotes/\(.*\)/pull/\(.*\)/head:\1:'
+}
+
+get-branch-pr-num() {
+    local branch="$1"
+    meta-read "refs/heads/$branch/.prbranch" | sed 's:refs/remotes/\(.*\)/pull/\(.*\)/head:\2:'
+}
+
+get-origin-proj() {
+    local origin="$1"
+    git config "remote.$origin.url" | sed 's,^github:,,'
+}
+
+get-origin-projname() {
+    local origin="$1"
+    git config "remote.$origin.url" | sed 's,^github:[^/]\+/,,'
+}
+
+get-origin-push() {
+    local origin="$1"
+    if [ "$origin" = origin ]; then
+       echo russ
+    else
+       echo "r$origin"
     fi
 }
 
@@ -275,16 +311,20 @@ ppush() {
     fi
     local descpath="$HOME/src/meta/refs/heads/$name/.prdesc.md"
     local rebasepath="$HOME/src/meta/refs/heads/$name/.rebase.md"
-    local prnum="$(get-pr "$name")"
-    if [ -z "$prnum" ]; then
+    local prurl="$(get-branch-pr-url "$name")"
+    local origin=$(get-branch-pr-origin "$name")
+    local num=$(get-branch-pr-num "$name")
+    local push=$(get-origin-push "$origin")
+    local projname=$(get-origin-projname "$origin")
+    if test "$cur" = 1; then
         local base2=$(git rev-list --min-parents=2 --max-count=1 "$name" --)
     else
         local b1="$name.$prev"
         local b2="$name.$cur"
-        local u="https://github.com/ryanofsky/bitcoin/commits"
-        local c="https://github.com/ryanofsky/bitcoin/compare/$b1...$b2"
-        local cd="https://github.com/ryanofsky/bitcoin/compare/$b1..$b2"
-        local cbd="https://github.com/ryanofsky/bitcoin/compare/$b1-rebase..$b2"
+        local u="https://github.com/ryanofsky/$projname/commits"
+        local c="https://github.com/ryanofsky/$projname/compare/$b1...$b2"
+        local cd="https://github.com/ryanofsky/$projname/compare/$b1..$b2"
+        local cbd="https://github.com/ryanofsky/$projname/compare/$b1-rebase..$b2"
         local r="$r1 -> $r2"
         local b="[\`$b1\`]($u/$b1) -> [\`$b2\`]($u/$b2)"
         local base1=$(git rev-list --min-parents=2 --max-count=1 "$b1")
@@ -309,25 +349,27 @@ ppush() {
     echo "dump-patch _$prev $b1"
     echo "dump-patch _$cur $b2"
     echo "diff -ru -I'^index ' -I'^@@' _$prev _$cur | cdiff"
-    echo git push -u russ $name.$cur +$name $namecmp
+    echo git push -u $push $name.$cur +$name $namecmp
     echo "sleep 10; git fetch origin"
     echo
 
     echo "== Update =="
     echo "git checkout $(meta-read refs/heads/$name/.export)"
     echo "pr ${name#pr/}"
-    echo "set-pr $name ${prnum:-###}"
+    if [ -z "$prurl" ]; then
+        echo "set-pr $name ###"
+    fi
     echo "vi $descpath"
     echo "vi $rebasepath"
     echo "whatconf $b1 $name"
-    if [ -n "$prnum" ]; then
-        echo "https://github.com/bitcoin/bitcoin/pull/$prnum"
+    if [ -n "$prurl" ]; then
+        echo "https://github.com/$prurl"
     fi
-    echo "https://github.com/ryanofsky/bitcoin/pull/new/$name"
-    echo "https://github.com/ryanofsky/bitcoin/commits/$name"
+    echo "https://github.com/ryanofsky/$projname/pull/new/$name"
+    echo "https://github.com/ryanofsky/$projname/commits/$name"
     echo
 
-    if [ -n "$prnum" ]; then
+    if [ -n "$prurl" ]; then
         echo "== Comment =="
         if [ "$base1" = "$base2" ]; then
             if [ "$(git merge-base "$r1" "$r2")" = "$r1" ]; then
@@ -346,7 +388,7 @@ ppush() {
         echo "== Description =="
         local desc=$(cat "$descpath" 2>/dev/null || true)
         if [ -n "$desc" ]; then
-          local commits=$(git log --reverse $base2..$r2 --format=format:'[`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)')
+          local commits=$(git log --reverse $base2..$r2 --format=format:'[`%h` %s](https://github.com/'"$prurl"'/commits/%H)')
           python3 -c '
 import sys
 
@@ -384,8 +426,8 @@ print(sys.argv[1].format(commit=Commits(sys.argv[2])))' "$desc" "$commits"
         fi
         echo
 
-    if [ -n "$prnum" ]; then
-        git log --reverse $base2..$r2 --format=format:'- [`%h` %s](https://github.com/bitcoin/bitcoin/pull/'"$prnum"'/commits/%H)'
+    if [ -n "$prurl" ]; then
+        git log --reverse $base2..$r2 --format=format:'- [`%h` %s](https://github.com/'"$prurl"'/commits/%H)'
     else
         git log --reverse $base2..$r2 --format=format:'- %H %s'
     fi

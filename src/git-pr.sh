@@ -202,7 +202,7 @@ update() {
         # Try to push past failure. Useful with:
         #   git config --global rerere.enabled true
         #   git config --global rerere.autoupdate true
-        run git cherry-pick --no-commit "$COMMIT" || true
+           run git cherry-pick --no-commit "$COMMIT" || git diff --exit-code
         else
            run bash -c "$scr"
            git add -u
