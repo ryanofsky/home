@@ -332,7 +332,7 @@ ppush() {
     fi
 
     echo "== Tag and push =="
-    echo "TRAVIS_COMMIT_RANGE=\$(git merge-base HEAD origin/master)...HEAD test/lint/lint-all.sh && make -j12 -k check && test/functional/test_runner.py"
+    echo "COMMIT_RANGE=\$(git merge-base HEAD origin/master)...HEAD test/lint/lint-all.sh && make -j12 -k check && test/functional/test_runner.py"
     ntag "$name"
     local namecmp=
     if [ "$base1" != "$base2" ]; then
