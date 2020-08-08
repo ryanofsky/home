@@ -108,3 +108,8 @@ function ediff () {
         emacsclient -tc -a emacs -e "(ediff \"$quoted1\" \"$quoted2\")"
     fi
 }
+
+# https://unix.stackexchange.com/questions/76628/gnu-screen-weird-characters-on-click
+fm() {
+    printf '\033[?9l'
+}
