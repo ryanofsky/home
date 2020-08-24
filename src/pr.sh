@@ -77,12 +77,18 @@ get-branch-pr-url() {
     local origin=$(get-branch-pr-origin "$branch")
     local gh=$(get-origin-proj "$origin")
     local num=$(get-branch-pr-num "$branch")
-    echo "$gh/pull/$num"
+    if [ -n "$num" ]; then
+       echo "$gh/pull/$num"
+    fi
 }
 
 get-branch-pr-origin() {
     local branch="$1"
-    meta-read "refs/heads/$branch/.prbranch" | sed 's:refs/remotes/\(.*\)/pull/\(.*\)/head:\1:'
+    local origin"$(meta-read "refs/heads/$branch/.prbranch" | sed 's:refs/remotes/\(.*\)/pull/\(.*\)/head:\1:')"
+    if [ -z "$origin" ]; then
+        origin=origin
+    fi
+    echo "$origin"
 }
 
 get-branch-pr-num() {
