@@ -84,7 +84,7 @@ get-branch-pr-url() {
 
 get-branch-pr-origin() {
     local branch="$1"
-    local origin"$(meta-read "refs/heads/$branch/.prbranch" | sed 's:refs/remotes/\(.*\)/pull/\(.*\)/head:\1:')"
+    local origin="$(meta-read "refs/heads/$branch/.prbranch" | sed 's:refs/remotes/\(.*\)/pull/\(.*\)/head:\1:')"
     if [ -z "$origin" ]; then
         origin=origin
     fi
