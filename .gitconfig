@@ -20,3 +20,4 @@
 [diff]
 	algorithm = histogram
 	indentHeuristic = true
+	colorMoved = dimmed_zebra
