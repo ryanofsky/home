@@ -151,9 +151,10 @@ dump-patch() {
     local dir="$1"
     local rev="${2:-HEAD}"
     local n="$3"
+    local b="$(git rev-list --min-parents=2 --max-count=1 "$rev" --)"
     if [ -z "$3" ]; then
-        git format-patch -o "$dir" $(git merge-base origin/master "$rev").."$rev"
-        git diff $(git merge-base origin/master "$rev").."$rev" > "$dir/diff"
+        git format-patch -o "$dir" "$b..$rev"
+        git diff "$b..$rev" > "$dir/diff"
     else
         git format-patch -o "$dir" -n"$n" "$rev"
         git diff "$rev~$n..$rev" > "$dir/diff"
