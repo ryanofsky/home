@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 prev=
 while read line; do

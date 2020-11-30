@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 FIFO="$TMPDIR/pom.d"
 TIMEOUT=300

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 handle-unity-check() {
     # https://askubuntu.com/questions/505681/unity-how-to-detect-if-the-screen-is-locked

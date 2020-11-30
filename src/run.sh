@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 space=""
 for arg in "$@"; do
