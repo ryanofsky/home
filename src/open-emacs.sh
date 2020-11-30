@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 frameid() {
-  xwininfo -root -tree | sed -n 's/^        \(0x[0-9a-f]\+\) .*: ("emacs" "Emacs").*/\1/p' | head -n1
+  xwininfo -root -tree | sed -n 's/^        \(   \)\?\(0x[0-9a-f]\+\) .*: ("emacs" "Emacs").*/\2/p' | head -n1
 }
 
 O=()
