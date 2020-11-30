@@ -1,3 +1,4 @@
+source $VIMRUNTIME/defaults.vim
 colorscheme torte
 colors torte
 set ignorecase
