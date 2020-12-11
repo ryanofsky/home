@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if ! git diff --quiet --cached; then
   echo "Error: uncommitted staged changes."  >&2

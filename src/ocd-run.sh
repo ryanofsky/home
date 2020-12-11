@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 export DIR="$HOME/run/$1/$(date -d "$NOW" +"%Y-%m-%dT%H%M%SZ")"

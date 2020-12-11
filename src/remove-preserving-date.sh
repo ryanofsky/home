@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Move files from $PWD to $D preserving directory structure and directory
 # timestamps.

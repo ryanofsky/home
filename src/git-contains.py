@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Check if git_dir2 is superset of git_dir1
 """

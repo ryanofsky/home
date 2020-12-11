@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import os
 os.environ["DJANGO_SETTINGS_MODULE"] = "read.settings"

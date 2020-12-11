@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This script can be used to add git-annex metadata to files when they're
 # committed. It is typically installed as .git/hooks/pre-commit-annex

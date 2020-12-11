@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export CHROME_REMOTE_DESKTOP_LOG_FILE=/var/log/chrome-remote-desktop.$USER.log
 if [ ! -f $CHROME_REMOTE_DESKTOP_LOG_FILE ]; then

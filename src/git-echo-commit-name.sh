@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ $# != 1 ]; then
   echo "Error: expected 1 arg" 1>&2

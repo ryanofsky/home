@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # from http://stackoverflow.com/questions/12339165/how-to-pack-all-loose-objects-in-git
 set -e
 set -x

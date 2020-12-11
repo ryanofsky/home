@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 testEquality() {
   local D=$(mktemp -d)

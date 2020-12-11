@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # sudo pip-python3.2 install pyflakes
 # sudo chmod -R a+rX /usr/lib64/python3.2/site-packages/pyflakes*
