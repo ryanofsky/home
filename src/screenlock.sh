@@ -57,16 +57,16 @@ handle-locked() {
     local idle=$(xprintidle)
     local host=$(host-str)
     if [ "$idle" -lt 3000 ]; then
-        echo "$(date) -- $host" | tee -a ~/work/logbook
+        echo "$(date) -- $host" | tee -a ~/work/logbook/logbook
     else
-        echo "$(date --date "-$((idle/1000)) seconds") -- $host" | tee -a ~/work/logbook
-        echo "$(date) -- $host idle $(idle-str "$idle")" | tee -a ~/work/logbook
+        echo "$(date --date "-$((idle/1000)) seconds") -- $host" | tee -a ~/work/logbook/logbook
+        echo "$(date) -- $host idle $(idle-str "$idle")" | tee -a ~/work/logbook/logbook
     fi
 }
 
 handle-unlocked() {
     local host=$(host-str)
-    echo "$(date) -- unlock $host" | tee -a ~/work/logbook
+    echo "$(date) -- unlock $host" | tee -a ~/work/logbook/logbook
 }
 
 handle-unity-monitor() {

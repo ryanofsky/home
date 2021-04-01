@@ -16,6 +16,6 @@ while read line; do
     echo "- $rest"
     prev="$date"
     psec="$dsec"
-done < ~/work/logbook
+done < ~/work/logbook/logbook
 
-mv --backup=numbered ~/work/logbook ~/work/logbook.prev
+mv --backup=numbered ~/work/logbook/logbook ~/work/logbook/logbook.prev
