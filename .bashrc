@@ -112,3 +112,5 @@ function ediff () {
 fm() {
     printf '\033[?9l'
 }
+
+eval "$(direnv hook bash)"
