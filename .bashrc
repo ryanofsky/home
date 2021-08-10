@@ -20,6 +20,11 @@ if [ -e "$HOME/.ln/bashrc" ]; then
   . "$HOME/.ln/bashrc"
 fi
 
+# dump emacsclient kill buffer
+ekill() {
+    python -c "print($(emacsclient -e '(substring-no-properties (car kill-ring))'))"
+}
+
 # Test for an interactive shell.  There is no need to set anything
 # past this point for scp and rcp, and it's important to refrain from
 # outputting anything in those cases.
@@ -28,16 +33,10 @@ if [[ $- != *i* ]] ; then
 	return
 fi
 
-
 # Put your fun stuff here.
 
 et() {
     emacsclient -t "$@"
-}
-
-# dump emacsclient kill buffer
-ekill() {
-    python -c "print($(emacsclient -e '(substring-no-properties (car kill-ring))'))"
 }
 
 # Look for file in parent directories, print relative path.
