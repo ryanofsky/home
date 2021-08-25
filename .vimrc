@@ -16,3 +16,8 @@ let g:load_doxygen_syntax=1
 let g:openssl_backup = 1
 set undofile
 set undodir=~/.vim/undodir
+set ttymouse=
+set mouse=c
+set encoding=utf-8
+set fileencoding=utf-8
+set fileencodings=utf-8
