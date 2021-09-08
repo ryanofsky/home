@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import copy
 import datetime
@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from io import StringIO
+from io import BytesIO
 from collections import OrderedDict
 from deluge import bencode
 from deluge.core.torrentmanager import TorrentState, TorrentManagerState
@@ -27,8 +27,8 @@ def import_torrents(in_dir, out_dir):
         if not f.endswith(".torrent"):
             continue
         torrent_path = os.path.join(in_dir, f)
-        data = bencode.bdecode(open(torrent_path).read())
-        torrent_id = hashlib.sha1(bencode.bencode(data["info"])).hexdigest()
+        data = bencode.bdecode(open(torrent_path, "rb").read())
+        torrent_id = hashlib.sha1(bencode.bencode(data[b"info"])).hexdigest()
         torrent_name = f[:-len(".torrent")]
         if re.match("^[0-9a-f]{40}$", torrent_name):
             check(torrent_name == torrent_id, torrent_name)
@@ -39,7 +39,7 @@ def import_torrents(in_dir, out_dir):
 
     state_file = os.path.join(in_dir, "torrents.state")
     if os.path.exists(state_file):
-        state = pickle.load(open(state_file))
+        state = pickle.load(open(state_file, "rb"))
         check(set(obj_dict(state).keys()) == {"torrents"})
         default_torrent = TorrentState()
         for st in state.torrents:
@@ -52,9 +52,9 @@ def import_torrents(in_dir, out_dir):
 
     resume_file = os.path.join(in_dir, "torrents.fastresume")
     if os.path.exists(resume_file):
-        resume = bencode.bdecode(open(resume_file).read())
+        resume = bencode.bdecode(open(resume_file, "rb").read())
         for torrent_id, rt in resume.items():
-            t = torrents.setdefault(torrent_id, OrderedDict())
+            t = torrents.setdefault(torrent_id.decode("utf8"), OrderedDict())
             t["fastresume"] = bencode.bdecode(rt)
 
     # Sort dictionary keys
@@ -74,18 +74,20 @@ def export_torrents(torrents, out_dir):
         for k, v in t.items():
             if k == "data":
                 with open(os.path.join(out_dir, torrent_id + ".torrent"),
-                          "w") as fp:
+                          "wb") as fp:
+                    make_bytes(v)
                     fp.write(bencode.bencode(v))
             elif k == "state":
                 v = unsort_dicts(v)
                 tm.torrents.append(TorrentState(**v))
             elif k == "fastresume":
-                fr[torrent_id] = bencode.bencode(v)
+                make_bytes(v)
+                fr[torrent_id.encode("utf8")] = bencode.bencode(v)
 
-    with open(os.path.join(out_dir, "torrents.state"), "w") as fp:
+    with open(os.path.join(out_dir, "torrents.state"), "wb") as fp:
         pickle.dump(tm, fp)
 
-    with open(os.path.join(out_dir, "torrents.fastresume"), "w") as fp:
+    with open(os.path.join(out_dir, "torrents.fastresume"), "wb") as fp:
         fp.write(bencode.bencode(fr))
 
 
@@ -149,8 +151,10 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None, ro_download_path=Non
         #    continue
         #if skip_files:
         #    continue
-        if torrent_id == "690ca6f1308ff383711d989a195e2e5ca6d0f5ba":
+        if True:
             tags.append("rw")
+        elif torrent_id == "690ca6f1308ff383711d989a195e2e5ca6d0f5ba":
+            pass
         elif torrent_id == "d20428b15019aac7a6e3c31aa1448a01cf3247f2":
             pass
         elif torrent_id == "7e0d8d17699c2deb17a9ce845ff15194ea06ce07":
@@ -342,7 +346,6 @@ def compute_sums(json_dir, torrent_dir):
     torrent_dir directory unchanged."""
     for torrent_id in list_json_torrents(json_dir):
         torrent = load_json_torrent(json_dir, torrent_id)
-        make_str(torrent)
 
         if not "data" in torrent:
             continue
@@ -361,7 +364,7 @@ def compute_sums(json_dir, torrent_dir):
         total_bytes = 0  # Current byte position in torrent data.
         piece_bytes = 0  # Current byte position in piece.
         sha1 = hashlib.sha1()
-        shas = StringIO(info["pieces"])  # SHA1 checksums of pieces.
+        shas = BytesIO(encode_ascii_surrogateescape(info["pieces"]))  # SHA1 checksums of pieces.
         check(((total_length + piece_length - 1) // piece_length)*20 == len(shas.getvalue()))
         md5s = []  # MD5 checksums of files starting with md5_file.
         md5_file = 0  # Index of first file in md5s array.
@@ -475,7 +478,6 @@ def load_torrents(json_dir):
     torrents = {}
     for torrent_id in list_json_torrents(json_dir):
         torrents[torrent_id] = load_json_torrent(json_dir, torrent_id)
-    make_str(torrents)
     return torrents
 
 
@@ -520,7 +522,7 @@ def torrent_file(torrent, i):
 
 def obj_dict(obj):
     assert set(dir(obj)) - set(obj.__dict__.keys()) == {
-        "__doc__", "__init__", "__module__"}
+        "__new__", "__delattr__", "__module__", "__getattribute__", "__init_subclass__", "__class__", "__sizeof__", "__str__", "__subclasshook__", "__dict__", "__format__", "__dir__", "__ge__", "__doc__", "__gt__", "__init__", "__ne__", "__weakref__", "__hash__", "__reduce__", "__le__", "__eq__", "__repr__", "__reduce_ex__", "__setattr__", "__lt__"}
     return obj.__dict__.copy()
 
 
@@ -537,10 +539,10 @@ def unsort_dicts(obj):
 def make_unicode(obj):
     return update_obj(obj,
                       lambda v: decode_ascii_surrogateescape(v)
-                      if isinstance(v, str) else v)
+                      if isinstance(v, bytes) else v)
 
 
-def make_str(obj):
+def make_bytes(obj):
     return update_obj(obj,
                       lambda v: encode_ascii_surrogateescape(v)
                       if isinstance(v, str) else v)
@@ -572,16 +574,15 @@ def sort_keys(ordered_dict, keys):
 
 # Equivalent to python3: bytestr.decode("ascii", errors="surrogateescape"))
 def decode_ascii_surrogateescape(bytestr):
-    assert isinstance(bytestr, str)
+    assert isinstance(bytestr, bytes)
     return "".join(chr(b if b < 128 else b + 0xdc00)
-                    for b in map(ord, bytestr))
+                    for b in bytestr)
 
 
 # Equivalent to python3: unicodestr.encode("ascii", errors="surrogateescape"))
 def encode_ascii_surrogateescape(unicodestr):
     assert isinstance(unicodestr, str)
-    return "".join(chr(c if c < 128 else c - 0xdc00)
-                   for c in map(ord, unicodestr))
+    return bytes((c if c < 128 else c - 0xdc00) for c in map(ord, unicodestr))
 
 
 def field(obj, *path, **kwargs):
@@ -608,20 +609,21 @@ def monkeypatch_bencode():
     """Change deluge bencode decoder to preserve dict key order."""
     def decode_dict(x, f):
         r, f = OrderedDict(), f+1
-        while x[f] != "e":
+        while x[f] != b"e":
             k, f = bencode.decode_string(x, f)
             r[k], f = bencode.decode_func[x[f]](x, f)
         return (r, f + 1)
 
     bencode.decode_dict = decode_dict
-    bencode.decode_func["d"] = decode_dict
+    bencode.decode_func[b"d"] = decode_dict
 
     def encode_ordered_dict(x,r):
-        r.append('d')
+        r.append(b'd')
         for k, v in x.items():
-            r.extend((str(len(k)), ':', k))
+            assert isinstance(k, bytes), repr(k)
+            r.extend((str(len(k)).encode('utf8'), b':', k))
             bencode.encode_func[type(v)](v, r)
-        r.append('e')
+        r.append(b'e')
 
     bencode.encode_func[OrderedDict] = encode_ordered_dict
 
