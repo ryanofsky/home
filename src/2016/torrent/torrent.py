@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from cStringIO import StringIO
+from io import StringIO
 from collections import OrderedDict
 from deluge import bencode
 from deluge.core.torrentmanager import TorrentState, TorrentManagerState
@@ -46,19 +46,19 @@ def import_torrents(in_dir, out_dir):
             torrent_id = st.torrent_id
             t = torrents.setdefault(torrent_id, OrderedDict())
             t["state"]= tstate = sort_dicts(obj_dict(st))
-            for k, v in tstate.items():
+            for k, v in list(tstate.items()):
                 if v == getattr(default_torrent, k):
                     del tstate[k]
 
     resume_file = os.path.join(in_dir, "torrents.fastresume")
     if os.path.exists(resume_file):
         resume = bencode.bdecode(open(resume_file).read())
-        for torrent_id, rt in resume.iteritems():
+        for torrent_id, rt in resume.items():
             t = torrents.setdefault(torrent_id, OrderedDict())
             t["fastresume"] = bencode.bdecode(rt)
 
     # Sort dictionary keys
-    for torrent_id, t in torrents.iteritems():
+    for torrent_id, t in torrents.items():
         sort_keys(t, ("data", "state", "fastresume", "download"))
 
     save_torrents(torrents, out_dir)
@@ -71,7 +71,7 @@ def export_torrents(torrents, out_dir):
     tm = TorrentManagerState()
     fr = OrderedDict()
     for torrent_id, t in sorted(torrents.items()):
-        for k, v in t.iteritems():
+        for k, v in t.items():
             if k == "data":
                 with open(os.path.join(out_dir, torrent_id + ".torrent"),
                           "w") as fp:
@@ -93,7 +93,7 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None, ro_download_path=Non
     """Print selected torrent info and optionally export to deluge dir."""
     torrents = load_torrents(json_dir)
     print_torrents = []
-    for torrent_id, torrent in torrents.items():
+    for torrent_id, torrent in list(torrents.items()):
         tags = []
         if "data" in torrent:
             info = torrent["data"]["info"]
@@ -167,12 +167,12 @@ def select_torrents(json_dir, torrent_dir, deluge_dir=None, ro_download_path=Non
         print_torrents.append((timestamp, name, torrent_id, counts, tags, torrent))
 
     print_torrents.sort()
-    print >> sys.stderr, ("Date       Hash     Total  Phys/Sym/Missing  Good/Bad/Skip  Name  Tags")
+    print(("Date       Hash     Total  Phys/Sym/Missing  Good/Bad/Skip  Name  Tags"), file=sys.stderr)
     deluge_torrents = {}
     for timestamp, name, torrent_id, counts, tags, torrent in print_torrents:
         tag_str = " [{}]".format(", ".join(tags)) if tags else ""
-        print >> sys.stderr, ("{:%Y-%m-%d} {} {:20} {!r}{}".format(
-            datetime.datetime.fromtimestamp(timestamp), torrent_id[:8], counts, name, tag_str))
+        print(("{:%Y-%m-%d} {} {:20} {!r}{}".format(
+            datetime.datetime.fromtimestamp(timestamp), torrent_id[:8], counts, name, tag_str)), file=sys.stderr)
 
         deluge_torrents[torrent_id] = torrent
         if "rw" in tags:
@@ -211,7 +211,7 @@ def find_files(json_dir, src_dir, torrent_dir, skip_empty=False):
 
     torrents = load_torrents(json_dir)
     base_idx = {}  # File basename -> torrent_id, file name
-    for torrent_id, torrent in torrents.items():
+    for torrent_id, torrent in list(torrents.items()):
         if not "data" in torrent:
             continue
         info = torrent["data"]["info"]
@@ -220,7 +220,7 @@ def find_files(json_dir, src_dir, torrent_dir, skip_empty=False):
             if basename not in base_idx:
                 base_idx[basename] = torrent_id, path
             elif base_idx[basename] not in (None, (torrent_id, path)):
-                print("Ignoring non-unique basename {!r} in {} and {}".format(basename, (torrent_id, path), base_idx[basename]))
+                print(("Ignoring non-unique basename {!r} in {} and {}".format(basename, (torrent_id, path), base_idx[basename])))
                 base_idx[basename] = None
 
     # Crawl source directory and make matches
@@ -247,7 +247,7 @@ def find_files(json_dir, src_dir, torrent_dir, skip_empty=False):
     subs = sorted(subs)
 
     # Create torrent dirs inferring file locations with file_idx and subs.
-    for torrent_id, torrent in torrents.items():
+    for torrent_id, torrent in list(torrents.items()):
         if not "data" in torrent:
             continue
         info = torrent["data"]["info"]
@@ -347,7 +347,7 @@ def compute_sums(json_dir, torrent_dir):
         if not "data" in torrent:
             continue
 
-        print("== {} ==".format(torrent_id))
+        print(("== {} ==".format(torrent_id)))
         info = torrent["data"]["info"]
         download = torrent.setdefault("download", OrderedDict())
         #download.pop("md5", None) # Drop preexisting checksums.
@@ -373,7 +373,7 @@ def compute_sums(json_dir, torrent_dir):
             file_skip_bytes = 0  # Number of bytes to skip from reading current file.
             piece_skip_bytes = 0  # Above plus number of bytes in skipped piece before file if file begins at odd piece boundary.
             if size != file_length:
-                print >> sys.stderr, ("Bad file size {!r}, expected {} bytes, found {}.".format(rel_path, file_length, size))
+                print(("Bad file size {!r}, expected {} bytes, found {}.".format(rel_path, file_length, size)), file=sys.stderr)
                 file_skip_bytes = file_length
             elif download_md5[i]:
                 file_skip_bytes = file_length
@@ -391,7 +391,7 @@ def compute_sums(json_dir, torrent_dir):
                 md5s = []
                 md5_file = i + 1
 
-            print("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, file_skip_bytes))
+            print(("  file {} {!r} tot {}/{} piece {}/{} file {} skip {}".format(i, rel_path, total_bytes, total_length, piece_bytes, piece_length, file_length, file_skip_bytes)))
             if file_skip_bytes == 0 or file_skip_bytes != file_length:
                 assert file_skip_bytes <= file_length
                 file_bytes = 0
@@ -430,7 +430,7 @@ def compute_sums(json_dir, torrent_dir):
                             del md5s[:]
 
                             if sha != sha1_digest and not trailing_empty:
-                                print >> sys.stderr, "Bad checksum {!r} pos {}".format(rel_path, file_bytes - len(piece))
+                                print("Bad checksum {!r} pos {}".format(rel_path, file_bytes - len(piece)), file=sys.stderr)
                                 file_skip_bytes = file_length - file_bytes
                                 if total_bytes + file_skip_bytes < total_length:
                                     file_skip_bytes -= file_skip_bytes % piece_length
@@ -467,7 +467,7 @@ def compute_sums(json_dir, torrent_dir):
 
 def save_torrents(torrents, json_dir):
     make_unicode(torrents)
-    for torrent_id, t in torrents.iteritems():
+    for torrent_id, t in torrents.items():
         save_json_torrent(t, json_dir, torrent_id)
 
 
@@ -530,7 +530,7 @@ def sort_dicts(obj):
 
 
 def unsort_dicts(obj):
-    return update_obj(obj, lambda v: dict(v.items())
+    return update_obj(obj, lambda v: dict(list(v.items()))
                            if isinstance(v, OrderedDict) else v)
 
 
@@ -543,12 +543,12 @@ def make_unicode(obj):
 def make_str(obj):
     return update_obj(obj,
                       lambda v: encode_ascii_surrogateescape(v)
-                      if isinstance(v, unicode) else v)
+                      if isinstance(v, str) else v)
 
 def update_obj(obj, cb):
     obj = cb(obj)
     if hasattr(obj, "items"):
-        for k, v in obj.items():
+        for k, v in list(obj.items()):
             del obj[k]
             obj[cb(k)] = update_obj(v, cb)
     elif hasattr(obj, "__setitem__"):
@@ -573,13 +573,13 @@ def sort_keys(ordered_dict, keys):
 # Equivalent to python3: bytestr.decode("ascii", errors="surrogateescape"))
 def decode_ascii_surrogateescape(bytestr):
     assert isinstance(bytestr, str)
-    return u"".join(unichr(b if b < 128 else b + 0xdc00)
+    return "".join(chr(b if b < 128 else b + 0xdc00)
                     for b in map(ord, bytestr))
 
 
 # Equivalent to python3: unicodestr.encode("ascii", errors="surrogateescape"))
 def encode_ascii_surrogateescape(unicodestr):
-    assert isinstance(unicodestr, unicode)
+    assert isinstance(unicodestr, str)
     return "".join(chr(c if c < 128 else c - 0xdc00)
                    for c in map(ord, unicodestr))
 
@@ -618,7 +618,7 @@ def monkeypatch_bencode():
 
     def encode_ordered_dict(x,r):
         r.append('d')
-        for k, v in x.iteritems():
+        for k, v in x.items():
             r.extend((str(len(k)), ':', k))
             bencode.encode_func[type(v)](v, r)
         r.append('e')
