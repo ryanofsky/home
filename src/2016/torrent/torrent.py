@@ -608,10 +608,10 @@ def check(cond, error=None):
 def monkeypatch_bencode():
     """Change deluge bencode decoder to preserve dict key order."""
     def decode_dict(x, f):
-        r, f = OrderedDict(), f+1
-        while x[f] != b"e":
+        r, f = OrderedDict(), f + 1
+        while x[f : f + 1] != b"e":
             k, f = bencode.decode_string(x, f)
-            r[k], f = bencode.decode_func[x[f]](x, f)
+            r[k], f = bencode.decode_func[x[f : f + 1]](x, f)
         return (r, f + 1)
 
     bencode.decode_dict = decode_dict
