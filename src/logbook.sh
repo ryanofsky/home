@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#export TZ=Europe/Zurich
+
 prev=
 while read line; do
     date="${line%% -- *}"
